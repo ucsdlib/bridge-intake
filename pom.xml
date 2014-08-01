@@ -26,6 +26,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.chronopolis</groupId>
+            <artifactId>chron-db</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.chronopolis.ingest</groupId>
             <artifactId>bagger</artifactId>
             <version>1.0-SNAPSHOT</version>

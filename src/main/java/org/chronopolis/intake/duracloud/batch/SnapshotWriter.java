@@ -35,7 +35,7 @@ import java.util.UUID;
 public class SnapshotWriter {
     private final Logger log = Logger.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotWriter.class);
 
-    private StatusRepository statusRepository;
+    // private StatusRepository statusRepository;
     private final ChronopolisSettings settings;
     private final ChronProducer producer;
     private final MessageFactory messageFactory;
@@ -54,7 +54,7 @@ public class SnapshotWriter {
     public void write(BagModel model) {
         final ChronPackage workingPackage = model.getChronPackage();
         // RegistryService registryService = new RegistryServiceImpl();
-        Status bagStatus = statusRepository.findById(model.getBagId());
+        // Status bagStatus = statusRepository.findById(model.getBagId());
         Path base = Paths.get(settings.getBagStage());
 
         final ManifestBuilder builder = new ManifestBuilder(workingPackage,
@@ -127,9 +127,11 @@ public class SnapshotWriter {
             // setStatusInvalidDigests(bagStatus, e.getDigests());
         }
 
+        log.info("Adding to registry;");
         // registryService.addBagToRegistry(registry, model);
         // setStatusComplete(bagStatus);
-        sendToChronopolis(model);
+        log.info("AMQP Message");
+        // sendToChronopolis(model);
     }
 
 

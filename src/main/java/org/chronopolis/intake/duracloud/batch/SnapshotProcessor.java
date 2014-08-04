@@ -24,7 +24,7 @@ public class SnapshotProcessor {
     public static final String MANIFEST_NAME = "manifest-sha256.txt";
 
     private final IntakeSettings settings;
-    private StatusRepository repository;
+    // private StatusRepository repository;
 
     public SnapshotProcessor(IntakeSettings settings) {
         this.settings = settings;
@@ -32,7 +32,7 @@ public class SnapshotProcessor {
 
     public BagModel process(final BagModel bagModel) {
         String bagId = bagModel.getBagId();
-        Status status = repository.findById(bagId);
+        // Status status = repository.findById(bagId);
 
         try {
             // Will want these to come from the sha256 file given by duraspace

@@ -30,7 +30,7 @@ public class SnapshotReader {
     private final DuracloudRequest bag;
     private final IntakeSettings intakeSettings;
     private final DirectoryStream.Filter<Path> filter;
-    private StatusRepository statusRepository;
+    // private StatusRepository statusRepository;
 
     public SnapshotReader(DuracloudRequest bag, final IntakeSettings intakeSettings) {
         this.bag = bag;
@@ -53,6 +53,7 @@ public class SnapshotReader {
         try (DirectoryStream<Path> stream =
                      Files.newDirectoryStream(snapshot, filter)) {
             for (Path p : stream) {
+                System.out.println("Adding tag file " + p.toString());
                 log.trace("Adding tag file " + p.toString());
                 pkg.addTagFile(p.toFile());
             }
@@ -77,7 +78,9 @@ public class SnapshotReader {
 
         // TODO: How to store the bag model
         // models.put(bagId, model);
-        statusRepository.save(status);
+        System.out.print("Saving status to repo");
+        // statusRepository.save(status);
+        System.out.println("...done");
 
         return model;
     }

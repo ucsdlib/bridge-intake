@@ -1,6 +1,8 @@
 package org.chronopolis.intake.duracloud.model;
 
 /**
+ * A snapshot request from Duracloud
+ *
  * Created by shake on 8/1/14.
  */
 public class DuracloudRequest {

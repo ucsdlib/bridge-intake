@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
  * Created by shake on 8/1/14.
  */
 @Component
+@SuppressWarnings("UnusedDeclaration")
 public class IntakeSettings {
 
     @Value("${intake.duracloudStage:/export/duracloud/staging}")

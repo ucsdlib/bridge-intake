@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @SuppressWarnings("UnusedDeclaration")
 public class JPASettings {
 
-    @Value("${db.driver:org.h2.driver}")
+    @Value("${db.driver:org.h2.Driver}")
     private String dbDriver;
 
     @Value("${db.url:jdbc:h2:intakedb}")

@@ -1,8 +1,5 @@
 package org.chronopolis.intake.duracloud.config;
 
-import org.chronopolis.db.DatabaseManager;
-import org.chronopolis.db.ingest.IngestDB;
-import org.chronopolis.db.ingest.ReplicationFlowTable;
 import org.chronopolis.db.intake.StatusRepository;
 import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +26,7 @@ import java.sql.SQLException;
  * Created by shake on 8/4/14.
  */
 @Configuration
-@EnableJpaRepositories(basePackages = "org.chronopolis.db",
+@EnableJpaRepositories(basePackages = "org.chronopolis.db.intake",
         includeFilters = @ComponentScan.Filter(value = {StatusRepository.class},
                                                type = FilterType.ASSIGNABLE_TYPE))
 @EnableTransactionManagement
@@ -38,9 +35,9 @@ public class JPAConfiguration {
     @Autowired
     JPASettings jpaSettings;
 
+    @Bean
     public DataSource dataSource() throws SQLException {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        // TODO: Grab from properties (environment)
         dataSource.setDriverClassName(jpaSettings.getDbDriver());
         dataSource.setUrl(jpaSettings.getDbURL());
         dataSource.setUsername(jpaSettings.getDbUser());
@@ -58,7 +55,7 @@ public class JPAConfiguration {
         LocalContainerEntityManagerFactoryBean factory =
                 new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(vendorAdapter);
-        factory.setPackagesToScan("org.chronopolis.db.model");
+        factory.setPackagesToScan("org.chronopolis.db.intake.model");
         factory.setDataSource(dataSource());
         factory.setJpaDialect(vendorAdapter.getJpaDialect());
         factory.setPersistenceProviderClass(HibernatePersistenceProvider.class);

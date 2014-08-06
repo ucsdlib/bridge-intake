@@ -38,7 +38,6 @@ public class SnapshotJobManager {
 
     public void addSnapshotJob(DuracloudRequest bag) {
         log.trace("Adding job for bag {}", bag.getSnapshotID());
-        System.out.println("Adding bag job");
         BagModel model = models.get(bag.getSnapshotID());
         if (model == null) {
             SnapshotThread thread = new SnapshotThread(bag);
@@ -50,7 +49,7 @@ public class SnapshotJobManager {
 
     @SuppressWarnings("UnusedDeclaration")
     public void destroy() throws Exception {
-        System.out.println("Shutting down thread pools");
+        log.debug("Shutting down thread pools");
         executor.shutdown();
 
         if (!executor.isTerminated()) {
@@ -70,12 +69,9 @@ public class SnapshotJobManager {
         @Override
         public void run() {
             SnapshotReader reader = new SnapshotReader(bag, intakeSettings);
-            System.out.println("Reading request to get model");
             BagModel model = reader.read();
             models.put(bag.getSnapshotID(), model);
-            System.out.println("Processing model");
             model = processor.process(model);
-            System.out.println("Writing model to bag");
             writer.write(model);
         }
     }

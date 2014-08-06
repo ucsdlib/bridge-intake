@@ -1,8 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.apache.log4j.Logger;
-import org.chronopolis.db.intake.StatusRepository;
-import org.chronopolis.db.intake.model.Status;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.ingest.bagger.BagType;
 import org.chronopolis.ingest.bagger.IngestionType;
@@ -68,7 +66,7 @@ public class SnapshotReader {
         pkg.addTagFiles(tagFiles);
         pkg.setProvidedManifest(true);
 
-        Status status = new Status(bagId, depositor, collectionName);
+        // Status status = new Status(bagId, depositor, collectionName);
         BagModel model = createBagModel(bagId,
                 pkg,
                 BagType.FILLED,

@@ -5,8 +5,6 @@ import org.chronopolis.amqp.ChronProducer;
 import org.chronopolis.amqp.RoutingKey;
 import org.chronopolis.common.digest.Digest;
 import org.chronopolis.common.settings.ChronopolisSettings;
-import org.chronopolis.db.intake.StatusRepository;
-import org.chronopolis.db.intake.model.Status;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.ingest.bagger.BagType;
 import org.chronopolis.ingest.bagger.IngestionType;

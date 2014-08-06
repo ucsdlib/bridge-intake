@@ -2,8 +2,6 @@ package org.chronopolis.intake.duracloud.batch;
 
 import org.apache.log4j.Logger;
 import org.chronopolis.common.digest.Digest;
-import org.chronopolis.db.intake.StatusRepository;
-import org.chronopolis.db.intake.model.Status;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 

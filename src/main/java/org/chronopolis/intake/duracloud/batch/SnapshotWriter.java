@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.apache.log4j.Logger;
 import org.chronopolis.amqp.ChronProducer;
 import org.chronopolis.amqp.RoutingKey;
 import org.chronopolis.common.digest.Digest;
@@ -18,6 +17,8 @@ import org.chronopolis.ingest.pkg.TarBagBuildListener;
 import org.chronopolis.ingest.pkg.Writer;
 import org.chronopolis.messaging.factory.MessageFactory;
 import org.chronopolis.messaging.pkg.PackageReadyMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +32,7 @@ import java.util.UUID;
  * Created by shake on 7/29/14.
  */
 public class SnapshotWriter {
-    private final Logger log = Logger.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotWriter.class);
+    private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotWriter.class);
 
     // private StatusRepository statusRepository;
     private final ChronopolisSettings settings;

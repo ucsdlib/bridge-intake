@@ -1,9 +1,10 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.apache.log4j.Logger;
 import org.chronopolis.common.digest.Digest;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.Map;
  * Created by shake on 7/29/14.
  */
 public class SnapshotProcessor {
-    private final Logger log = Logger.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotProcessor.class);
     public static final String MANIFEST_NAME = "manifest-sha256.txt";
 
     private final IntakeSettings settings;
@@ -38,7 +39,7 @@ public class SnapshotProcessor {
             String duracloudBase = settings.getDuracloudStage();
             Path manifestPath = Paths.get(duracloudBase, bagId, MANIFEST_NAME);
 
-            log.info("Loading digests from " + manifestPath);
+            log.info("Loading digests from {}", manifestPath);
             Map<String, String> digests = readManifest(manifestPath);
 
             // Add digests to bag

@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.apache.log4j.Logger;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.ingest.bagger.BagType;
 import org.chronopolis.ingest.bagger.IngestionType;
@@ -8,6 +7,8 @@ import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagDirectoryFilter;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.Set;
  * Created by shake on 7/29/14.
  */
 public class SnapshotReader {
-    private final Logger log = Logger.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotReader.class);
+    private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotReader.class);
 
     private final DuracloudRequest bag;
     private final IntakeSettings intakeSettings;

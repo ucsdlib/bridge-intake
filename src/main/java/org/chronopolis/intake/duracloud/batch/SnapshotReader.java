@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.db.intake.StatusRepository;
+import org.chronopolis.db.intake.model.Status;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.ingest.bagger.BagType;
 import org.chronopolis.ingest.bagger.IngestionType;
@@ -29,11 +31,14 @@ public class SnapshotReader {
     private final DuracloudRequest bag;
     private final IntakeSettings intakeSettings;
     private final DirectoryStream.Filter<Path> filter;
-    // private StatusRepository statusRepository;
+    private StatusRepository statusRepository;
 
-    public SnapshotReader(DuracloudRequest bag, final IntakeSettings intakeSettings) {
+    public SnapshotReader(DuracloudRequest bag,
+                          IntakeSettings intakeSettings,
+                          StatusRepository statusRepository) {
         this.bag = bag;
         this.intakeSettings = intakeSettings;
+        this.statusRepository = statusRepository;
         this.filter = new BagDirectoryFilter();
     }
 
@@ -58,7 +63,6 @@ public class SnapshotReader {
             }
         } catch (IOException e) {
             log.error("IOException", e);
-            //return serverError("Error creating tag files");
         }
 
         pkg.setName(collectionName);
@@ -67,19 +71,15 @@ public class SnapshotReader {
         pkg.addTagFiles(tagFiles);
         pkg.setProvidedManifest(true);
 
-        // Status status = new Status(bagId, depositor, collectionName);
         BagModel model = createBagModel(bagId,
                 pkg,
                 BagType.FILLED,
                 IngestionType.DPN,
                 false);
 
-
-        // TODO: How to store the bag model
-        // models.put(bagId, model);
-        System.out.print("Saving status to repo");
-        // statusRepository.save(status);
-        System.out.println("...done");
+        // TODO: How to store the bag model (if we want to?)
+        Status bagStatus = new Status(bagId, depositor, collectionName);
+        statusRepository.save(bagStatus);
 
         return model;
     }

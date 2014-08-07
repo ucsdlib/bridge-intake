@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.db.intake.StatusRepository;
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
@@ -17,21 +18,26 @@ import java.util.concurrent.Executors;
 public class SnapshotJobManager {
     private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotJobManager.class);
 
-    private ExecutorService executor;
-
+    // From beans
+    private StatusRepository statusRepository;
     private SnapshotProcessor processor;
     private SnapshotWriter writer;
     private IntakeSettings intakeSettings;
 
+    // Instantiated per manager
+    private ExecutorService executor;
     private HashMap<String, BagModel> models;
 
     @Autowired
     public SnapshotJobManager(SnapshotProcessor processor,
                               SnapshotWriter writer,
-                              IntakeSettings intakeSettings) {
+                              IntakeSettings intakeSettings,
+                              StatusRepository statusRepository) {
         this.processor = processor;
         this.writer = writer;
         this.intakeSettings = intakeSettings;
+        this.statusRepository = statusRepository;
+
         this.executor = Executors.newSingleThreadExecutor();
         this.models = new HashMap<>();
     }
@@ -68,7 +74,7 @@ public class SnapshotJobManager {
 
         @Override
         public void run() {
-            SnapshotReader reader = new SnapshotReader(bag, intakeSettings);
+            SnapshotReader reader = new SnapshotReader(bag, intakeSettings, statusRepository);
             BagModel model = reader.read();
             models.put(bag.getSnapshotID(), model);
             model = processor.process(model);

@@ -130,7 +130,7 @@ public class SnapshotWriter {
         // registryService.addBagToRegistry(registry, model);
         // setStatusComplete(bagStatus);
         log.info("AMQP Message");
-        // sendToChronopolis(model);
+        sendToChronopolis(model);
     }
 
 

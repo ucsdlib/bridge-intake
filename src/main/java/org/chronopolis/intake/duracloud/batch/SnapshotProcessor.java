@@ -5,6 +5,7 @@ import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.item.ItemProcessor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,8 +19,8 @@ import java.util.Map;
 /**
  * Created by shake on 7/29/14.
  */
-public class SnapshotProcessor {
-    private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotProcessor.class);
+public class SnapshotProcessor implements ItemProcessor<BagModel, BagModel> {
+    private final Logger log = LoggerFactory.getLogger(SnapshotProcessor.class);
     public static final String MANIFEST_NAME = "manifest-sha256.txt";
 
     private final IntakeSettings settings;
@@ -29,7 +30,8 @@ public class SnapshotProcessor {
         this.settings = settings;
     }
 
-    public BagModel process(final BagModel bagModel) {
+    @Override
+    public BagModel process(final BagModel bagModel) throws Exception {
         String bagId = bagModel.getBagId();
         // Status status = repository.findById(bagId);
 

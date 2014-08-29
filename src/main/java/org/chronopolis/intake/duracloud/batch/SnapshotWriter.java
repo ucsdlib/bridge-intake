@@ -19,6 +19,7 @@ import org.chronopolis.messaging.factory.MessageFactory;
 import org.chronopolis.messaging.pkg.PackageReadyMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.item.ItemWriter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,12 +27,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Created by shake on 7/29/14.
  */
-public class SnapshotWriter {
+public class SnapshotWriter implements ItemWriter<BagModel> {
     private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotWriter.class);
 
     // private StatusRepository statusRepository;
@@ -50,7 +52,9 @@ public class SnapshotWriter {
         // this.registry = registry;
     }
 
-    public void write(BagModel model) {
+    @Override
+    public void write(List<? extends BagModel> models) {
+        BagModel model = models.get(0);
         final ChronPackage workingPackage = model.getChronPackage();
         // RegistryService registryService = new RegistryServiceImpl();
         // Status bagStatus = statusRepository.findById(model.getBagId());

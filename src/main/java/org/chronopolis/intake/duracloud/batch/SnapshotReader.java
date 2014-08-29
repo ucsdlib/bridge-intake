@@ -11,6 +11,7 @@ import org.chronopolis.intake.duracloud.model.BagDirectoryFilter;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.item.ItemReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +26,8 @@ import java.util.Set;
 /**
  * Created by shake on 7/29/14.
  */
-public class SnapshotReader {
-    private final Logger log = LoggerFactory.getLogger(org.chronopolis.intake.duracloud.batch.SnapshotReader.class);
+public class SnapshotReader implements ItemReader<BagModel> {
+    private final Logger log = LoggerFactory.getLogger(SnapshotReader.class);
 
     private final DuracloudRequest bag;
     private final IntakeSettings intakeSettings;
@@ -42,6 +43,7 @@ public class SnapshotReader {
         this.filter = new BagDirectoryFilter();
     }
 
+    @Override
     public BagModel read() {
         String base = intakeSettings.getDuracloudStage();
         String bagId = bag.getSnapshotID();

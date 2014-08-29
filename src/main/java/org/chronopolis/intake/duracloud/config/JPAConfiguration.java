@@ -45,6 +45,7 @@ public class JPAConfiguration {
         return dataSource;
     }
 
+    /*
     @Bean
     public EntityManagerFactory entityManagerFactory() throws SQLException {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
@@ -80,5 +81,6 @@ public class JPAConfiguration {
     public HibernateExceptionTranslator hibernateExceptionTranslator() {
         return new HibernateExceptionTranslator();
     }
+    */
 
 }

@@ -19,7 +19,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -29,7 +31,7 @@ import java.util.Set;
 public class SnapshotReader implements ItemReader<BagModel> {
     private final Logger log = LoggerFactory.getLogger(SnapshotReader.class);
 
-    private final DuracloudRequest bag;
+    private final List<DuracloudRequest> requests;
     private final IntakeSettings intakeSettings;
     private final DirectoryStream.Filter<Path> filter;
     private StatusRepository statusRepository;
@@ -37,7 +39,8 @@ public class SnapshotReader implements ItemReader<BagModel> {
     public SnapshotReader(DuracloudRequest bag,
                           IntakeSettings intakeSettings,
                           StatusRepository statusRepository) {
-        this.bag = bag;
+        this.requests = new ArrayList<>();
+        this.requests.add(bag);
         this.intakeSettings = intakeSettings;
         this.statusRepository = statusRepository;
         this.filter = new BagDirectoryFilter();
@@ -45,10 +48,17 @@ public class SnapshotReader implements ItemReader<BagModel> {
 
     @Override
     public BagModel read() {
+        // Required to be a proper ItemReader
+        if (requests.isEmpty()) {
+            return null;
+        }
+
+        DuracloudRequest request = requests.remove(0);
+
         String base = intakeSettings.getDuracloudStage();
-        String bagId = bag.getSnapshotID();
-        String depositor = bag.getDepositor();
-        String collectionName = bag.getCollectionName();
+        String bagId = request.getSnapshotID();
+        String depositor = request.getDepositor();
+        String collectionName = request.getCollectionName();
         ChronPackage pkg = new ChronPackage();
 
         Set<File> tagFiles = new HashSet<>();

@@ -45,11 +45,17 @@ public class SnapshotJobManager {
     public SnapshotJobManager(SnapshotProcessor processor,
                               SnapshotWriter writer,
                               IntakeSettings intakeSettings,
-                              StatusRepository statusRepository) {
+                              StatusRepository statusRepository,
+                              JobBuilderFactory jobBuilderFactory,
+                              StepBuilderFactory stepBuilderFactory,
+                              JobLauncher jobLauncher) {
         this.processor = processor;
         this.writer = writer;
         this.intakeSettings = intakeSettings;
         this.statusRepository = statusRepository;
+        this.jobBuilderFactory = jobBuilderFactory;
+        this.stepBuilderFactory = stepBuilderFactory;
+        this.jobLauncher = jobLauncher;
 
         this.models = new HashMap<>();
     }

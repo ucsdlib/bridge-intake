@@ -54,54 +54,55 @@ public class SnapshotWriter implements ItemWriter<BagModel> {
 
     @Override
     public void write(List<? extends BagModel> models) {
-        BagModel model = models.get(0);
-        final ChronPackage workingPackage = model.getChronPackage();
-        // RegistryService registryService = new RegistryServiceImpl();
-        // Status bagStatus = statusRepository.findById(model.getBagId());
-        Path base = Paths.get(settings.getBagStage());
+        for (BagModel model: models) {
 
-        final ManifestBuilder builder = new ManifestBuilder(workingPackage,
-                0);
-        OutputStream os = null;
-        final boolean isLocal = (model.getIngestionType() == IngestionType.LOCAL ||
-                model.getIngestionType() == IngestionType.DPN);
+            final ChronPackage workingPackage = model.getChronPackage();
+            // RegistryService registryService = new RegistryServiceImpl();
+            // Status bagStatus = statusRepository.findById(model.getBagId());
+            Path base = Paths.get(settings.getBagStage());
 
-        Writer bagWriter;
-        // Set the bag writer and root level directory name of the bag
-        if (model.getIngestionType() == IngestionType.DPN) {
-            String uuid = UUID.randomUUID().toString();
-            bagWriter = new DpnBagWriter(base, workingPackage, uuid);
-            // Only use the workingpackage name for now, later we will use the dpn object id
-            workingPackage.setSaveName(workingPackage.getName());
-        } else {
-            bagWriter = new Writer(base, workingPackage);
-            workingPackage.setSaveName(workingPackage.getName());
-        }
+            final ManifestBuilder builder = new ManifestBuilder(workingPackage,
+                    0);
+            OutputStream os = null;
+            final boolean isLocal = (model.getIngestionType() == IngestionType.LOCAL ||
+                    model.getIngestionType() == IngestionType.DPN);
 
-        if (isLocal) {
-            // Sort of janky, should probably fix
-            if (model.getCompression()) {
-                model.setSaveFile(base.resolve(workingPackage.getSaveName() + ".tar").toFile());
-                File f = model.getSaveFile();
-                if (!f.getParentFile().exists()) {
-                    f.getParentFile().mkdirs();
-                }
-                log.trace(f.getAbsolutePath());
+            Writer bagWriter;
+            // Set the bag writer and root level directory name of the bag
+            if (model.getIngestionType() == IngestionType.DPN) {
+                String uuid = UUID.randomUUID().toString();
+                bagWriter = new DpnBagWriter(base, workingPackage, uuid);
+                // Only use the workingpackage name for now, later we will use the dpn object id
+                workingPackage.setSaveName(workingPackage.getName());
+            } else {
+                bagWriter = new Writer(base, workingPackage);
+                workingPackage.setSaveName(workingPackage.getName());
+            }
 
-                try {
-                    os = new FileOutputStream(f);
-                } catch (IOException ioe) {
-                    log.error("Error making output stream for bag", ioe);
-                    // setStatusError(bagStatus);
+            if (isLocal) {
+                // Sort of janky, should probably fix
+                if (model.getCompression()) {
+                    model.setSaveFile(base.resolve(workingPackage.getSaveName() + ".tar").toFile());
+                    File f = model.getSaveFile();
+                    if (!f.getParentFile().exists()) {
+                        f.getParentFile().mkdirs();
+                    }
+                    log.trace(f.getAbsolutePath());
+
+                    try {
+                        os = new FileOutputStream(f);
+                    } catch (IOException ioe) {
+                        log.error("Error making output stream for bag", ioe);
+                        // setStatusError(bagStatus);
+                    }
+                } else {
+                    model.setSaveFile(base.resolve(workingPackage.getSaveName()).toFile());
                 }
             } else {
-                model.setSaveFile(base.resolve(workingPackage.getSaveName()).toFile());
+                // setStatusError(bagStatus);
             }
-        } else {
-            // setStatusError(bagStatus);
-        }
 
-        boolean isHoley = (model.getBagType() == BagType.HOLEY);
+            boolean isHoley = (model.getBagType() == BagType.HOLEY);
 
             /*
             writer.setCloseOutput(true);
@@ -110,31 +111,32 @@ public class SnapshotWriter implements ItemWriter<BagModel> {
             }
             */
 
-        ManifestBuildListener.Adapter listener =
-                (model.getCompression())
-                        ? new TarBagBuildListener(os, base, isHoley, bagWriter)
-                        : new DirectoryBagBuildListener(base, workingPackage.getSaveName(), bagWriter);
+            ManifestBuildListener.Adapter listener =
+                    (model.getCompression())
+                            ? new TarBagBuildListener(os, base, isHoley, bagWriter)
+                            : new DirectoryBagBuildListener(base, workingPackage.getSaveName(), bagWriter);
 
 
-        builder.getBuildListeners().add(listener);
+            builder.getBuildListeners().add(listener);
 
-        try {
-            // On a long bag this may take some time, we could move this into
-            // a separate process and return a 200. Status can be checked through
-            // the Status controller.
-            // Or we can just have this be a long poll - TBD w/ duraspace folks
-            builder.scanPackage();
-        } catch (IOException ex) {
-            // setStatusError(bagStatus);
-        } catch (BaggingException e) {
-            // setStatusInvalidDigests(bagStatus, e.getDigests());
+            try {
+                // On a long bag this may take some time, we could move this into
+                // a separate process and return a 200. Status can be checked through
+                // the Status controller.
+                // Or we can just have this be a long poll - TBD w/ duraspace folks
+                builder.scanPackage();
+            } catch (IOException ex) {
+                // setStatusError(bagStatus);
+            } catch (BaggingException e) {
+                // setStatusInvalidDigests(bagStatus, e.getDigests());
+            }
+
+            log.info("Adding to registry;");
+            // registryService.addBagToRegistry(registry, model);
+            // setStatusComplete(bagStatus);
+            log.info("AMQP Message");
+            sendToChronopolis(model);
         }
-
-        log.info("Adding to registry;");
-        // registryService.addBagToRegistry(registry, model);
-        // setStatusComplete(bagStatus);
-        log.info("AMQP Message");
-        sendToChronopolis(model);
     }
 
 

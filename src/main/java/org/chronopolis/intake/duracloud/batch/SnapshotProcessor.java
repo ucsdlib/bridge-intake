@@ -38,7 +38,7 @@ public class SnapshotProcessor implements ItemProcessor<BagModel, BagModel> {
         try {
             // Will want these to come from the sha256 file given by duraspace
             // Path manifestPath = bagModel.getChronPackage()
-            String duracloudBase = settings.getDuracloudStage();
+            String duracloudBase = settings.getDuracloudSnapshotStage();
             Path manifestPath = Paths.get(duracloudBase, bagId, MANIFEST_NAME);
 
             log.info("Loading digests from {}", manifestPath);

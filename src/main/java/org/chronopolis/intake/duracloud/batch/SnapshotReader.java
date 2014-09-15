@@ -55,7 +55,7 @@ public class SnapshotReader implements ItemReader<BagModel> {
 
         DuracloudRequest request = requests.remove(0);
 
-        String base = intakeSettings.getDuracloudStage();
+        String base = intakeSettings.getDuracloudSnapshotStage();
         String bagId = request.getSnapshotID();
         String depositor = request.getDepositor();
         String collectionName = request.getCollectionName();

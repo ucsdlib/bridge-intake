@@ -11,20 +11,23 @@ import org.springframework.stereotype.Component;
 @SuppressWarnings("UnusedDeclaration")
 public class IntakeSettings extends ChronopolisSettings {
 
-    @Value("${intake.stage.duracloud:/export/duracloud/staging}")
-    private String duracloudStage;
+    @Value("${duracloud.stage.snapshot:/export/duracloud/staging}")
+    private String duracloudSnapshotStage;
+
+    @Value("${duracloud.stage.restore:/export/duracloud/restore}")
+    private String duracloudRestoreStage;
 
     // The intake service only has a direct queue
     private String directQueueBinding;
     private String directQueueName;
 
-    public String getDuracloudStage() {
-        return duracloudStage;
+    public String getDuracloudSnapshotStage() {
+        return duracloudSnapshotStage;
     }
 
-    public void setDuracloudStage(final String duracloudStage) {
+    public void setDuracloudSnapshotStage(final String duracloudSnapshotStage) {
         // TODO: Change to Paths.get(stage)?
-        this.duracloudStage = duracloudStage;
+        this.duracloudSnapshotStage = duracloudSnapshotStage;
     }
 
     public String getDirectQueueBinding() {
@@ -46,4 +49,11 @@ public class IntakeSettings extends ChronopolisSettings {
         return directQueueBinding;
     }
 
+    public String getDuracloudRestoreStage() {
+        return duracloudRestoreStage;
+    }
+
+    public void setDuracloudRestoreStage(final String duracloudRestoreStage) {
+        this.duracloudRestoreStage = duracloudRestoreStage;
+    }
 }

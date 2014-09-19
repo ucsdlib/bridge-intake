@@ -7,6 +7,7 @@ import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -28,6 +29,7 @@ public class SnapshotJobManager {
     private final Logger log = LoggerFactory.getLogger(SnapshotJobManager.class);
 
     // From beans
+    private SnapshotTasklet snapshotTasklet;
     private StatusRepository statusRepository;
     private SnapshotProcessor processor;
     private SnapshotWriter writer;
@@ -48,13 +50,15 @@ public class SnapshotJobManager {
                               StatusRepository statusRepository,
                               JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
-                              JobLauncher jobLauncher) {
+                              JobLauncher jobLauncher,
+                              SnapshotTasklet snapshotTasklet) {
         this.processor = processor;
         this.writer = writer;
         this.intakeSettings = intakeSettings;
         this.statusRepository = statusRepository;
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
+        this.snapshotTasklet = snapshotTasklet;
         this.jobLauncher = jobLauncher;
 
         this.models = new HashMap<>();
@@ -100,12 +104,15 @@ public class SnapshotJobManager {
         log.trace("Starting tasklet for snapshot {}", request.getSnapshotID());
         Job job = jobBuilderFactory.get("snapshot-job")
                 .start(stepBuilderFactory.get("snapshot-step")
-                    .tasklet(new SnapshotTasklet(request, intakeSettings)
-                    ).build()
+                    .tasklet(snapshotTasklet)
+                    .build()
                 ).build();
 
+        // I don't know why I chose hyphens, I just did
         JobParameters parameters = new JobParametersBuilder()
-                .addString("snapshot-id", request.getSnapshotID())
+                .addString("snapshotID", request.getSnapshotID())
+                .addString("depositor", request.getDepositor())
+                .addString("collectionName", request.getCollectionName())
                 .toJobParameters();
 
         try {

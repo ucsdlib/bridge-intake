@@ -60,6 +60,7 @@ public class SnapshotJobManager {
         this.models = new HashMap<>();
     }
 
+    @Deprecated
     public void addSnapshotJob(DuracloudRequest bag) {
         log.trace("Adding job for bag {}", bag.getSnapshotID());
         Job job = jobBuilderFactory.get("snapshot-job")
@@ -93,6 +94,30 @@ public class SnapshotJobManager {
             log.error("Already started thread for snapshot " + bag.getSnapshotID());
         }
         */
+    }
+
+    public void startSnapshotTasklet(DuracloudRequest request) {
+        log.trace("Starting tasklet for snapshot {}", request.getSnapshotID());
+        Job job = jobBuilderFactory.get("snapshot-job")
+                .start(stepBuilderFactory.get("snapshot-step")
+                    .tasklet(new SnapshotTasklet(request, intakeSettings)
+                    ).build()
+                ).build();
+
+        JobParameters parameters = new JobParametersBuilder()
+                .addString("snapshot-id", request.getSnapshotID())
+                .toJobParameters();
+
+        try {
+            jobLauncher.run(job, parameters);
+        } catch (JobExecutionAlreadyRunningException
+                | JobRestartException
+                | JobInstanceAlreadyCompleteException
+                | JobParametersInvalidException e) {
+            log.error("Error launching job\n", e);
+        }
+
+
     }
 
     @SuppressWarnings("UnusedDeclaration")

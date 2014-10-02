@@ -3,12 +3,11 @@ package org.chronopolis.intake.duracloud.batch;
 import org.chronopolis.amqp.ChronProducer;
 import org.chronopolis.amqp.RoutingKey;
 import org.chronopolis.common.digest.Digest;
-import org.chronopolis.common.mail.MailUtil;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.ManifestBuilder;
+import org.chronopolis.ingest.pkg.Unit;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.messaging.factory.MessageFactory;
 import org.chronopolis.messaging.pkg.PackageReadyMessage;
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,8 +61,8 @@ public class SnapshotTasklet implements Tasklet {
         builder.setRoot(snapshotBase);
         builder.setWriteBase(Paths.get(settings.getBagStage()));
         builder.setDepositor(depositor);
-        // builder.setCompressed(false);
-        // builder.setMaxSize();
+        builder.setCompressed(true);
+        builder.setMaxSize(100, Unit.GIGABYTE);
         builder.setName(collectionName);
         builder.setIngestionType(IngestionType.DPN);
 
@@ -73,23 +71,40 @@ public class SnapshotTasklet implements Tasklet {
                 Charset.defaultCharset()));
         builder.newScanPackage();
 
+        // Send a notification for each package
+        for (ChronPackage chronPackage : builder.getPackages()) {
+            Digest digest = Digest.fromString(chronPackage.getMessageDigest());
+            long size = chronPackage.getTotalSize();
 
-        ChronPackage chronPackage = builder.getPackage();
-        Digest digest = Digest.fromString(chronPackage.getMessageDigest());
-        long size = chronPackage.getTotalSize();
-        Path saveFile = Paths.get(settings.getBagStage(),
-                                  depositor,
-                                  chronPackage.getSaveName());
+            // even though we set this above...
+            // also we'll probably want the save name to have this instead
+            String saveName = (builder.isCompressed())
+                    ? chronPackage.getSaveName() + ".tar"
+                    : chronPackage.getSaveName();
 
-        PackageReadyMessage packageReadyMessage = messageFactory.packageReadyMessage(
-                depositor,
-                digest,
-                saveFile.getFileName().toString(), // We only want the relative path
-                collectionName,                    // (ingest may have a different mount)
-                (int) size
-        );
+            Path saveFile = Paths.get(settings.getBagStage(),
+                    depositor,
+                    saveName);
 
-        producer.send(packageReadyMessage, RoutingKey.INGEST_BROADCAST.asRoute());
+            // And get the relative location
+            Path location = Paths.get(settings.getBagStage()).relativize(saveFile);
+
+            log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
+
+            PackageReadyMessage packageReadyMessage = messageFactory.packageReadyMessage(
+                    depositor,
+                    digest,
+                    location.toString(), // This is the relative path
+                    collectionName,      // (ingest may have a different mount)
+                    size
+            );
+
+            producer.send(packageReadyMessage, RoutingKey.INGEST_BROADCAST.asRoute());
+
+            // TODO: Also register with dpn if we need to
+
+
+        }
 
         return RepeatStatus.FINISHED;
     }

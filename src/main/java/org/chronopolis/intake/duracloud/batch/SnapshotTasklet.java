@@ -94,8 +94,8 @@ public class SnapshotTasklet implements Tasklet {
             PackageReadyMessage packageReadyMessage = messageFactory.packageReadyMessage(
                     depositor,
                     digest,
-                    location.toString(), // This is the relative path
-                    collectionName,      // (ingest may have a different mount)
+                    location.toString(),        // This is the relative path
+                    chronPackage.getSaveName(), // (ingest may have a different mount)
                     size
             );
 

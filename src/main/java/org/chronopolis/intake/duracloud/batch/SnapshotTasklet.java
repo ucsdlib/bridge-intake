@@ -75,6 +75,7 @@ public class SnapshotTasklet implements Tasklet {
         Path duraBase = Paths.get(settings.getDuracloudSnapshotStage());
         Path snapshotBase = duraBase.resolve(snapshotID);
 
+        // Set up the builder
         builder.setRoot(snapshotBase);
         builder.setWriteBase(Paths.get(settings.getBagStage()));
         builder.setDepositor(depositor);
@@ -83,6 +84,7 @@ public class SnapshotTasklet implements Tasklet {
         builder.setName(collectionName);
         builder.setIngestionType(IngestionType.DPN);
 
+        // And bag (with a sha256 manifest)
         builder.loadManifest(Files.newBufferedReader(
                 snapshotBase.resolve("manifest-sha256.txt"),
                 Charset.defaultCharset()));

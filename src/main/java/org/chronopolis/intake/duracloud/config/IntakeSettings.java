@@ -17,6 +17,9 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${duracloud.stage.restore:/export/duracloud/restore}")
     private String duracloudRestoreStage;
 
+    @Value("${duracloud.manifest:manifest-sha256.txt}")
+    private String duracloudManifest;
+
     // The intake service only has a direct queue
     private String directQueueBinding;
     private String directQueueName;
@@ -55,5 +58,13 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public void setDuracloudRestoreStage(final String duracloudRestoreStage) {
         this.duracloudRestoreStage = duracloudRestoreStage;
+    }
+
+    public String getDuracloudManifest() {
+        return duracloudManifest;
+    }
+
+    public void setDuracloudManifest(final String duracloudManifest) {
+        this.duracloudManifest = duracloudManifest;
     }
 }

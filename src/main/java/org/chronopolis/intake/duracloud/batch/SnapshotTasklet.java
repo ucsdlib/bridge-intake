@@ -87,7 +87,7 @@ public class SnapshotTasklet implements Tasklet {
         // And bag (with a sha256 manifest)
         builder.loadManifest(Files.newBufferedReader(
                 snapshotBase.resolve(settings.getDuracloudManifest()),
-                Charset.defaultCharset()));
+                                     Charset.defaultCharset()));
         builder.newScanPackage();
 
         // Send a notification for each package

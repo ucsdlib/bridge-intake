@@ -1,14 +1,9 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import org.chronopolis.amqp.ChronProducer;
-import org.chronopolis.amqp.RoutingKey;
-import org.chronopolis.common.digest.Digest;
+import org.chronopolis.common.dpn.DPNBag;
 import org.chronopolis.common.dpn.DPNService;
-import org.chronopolis.common.dpn.RegistryItemModel;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.DpnBagWriter;
@@ -16,19 +11,15 @@ import org.chronopolis.ingest.pkg.ManifestBuilder;
 import org.chronopolis.ingest.pkg.Unit;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.messaging.factory.MessageFactory;
-import org.chronopolis.messaging.pkg.PackageReadyMessage;
+import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -46,11 +37,14 @@ public class SnapshotTasklet implements Tasklet {
     private String collectionName;
     private String depositor;
     private IntakeSettings settings;
-    private ChronProducer producer;
-    private MessageFactory messageFactory;
+
+
+    // Services to talk with both Chronopolis and DPN
+    private IngestAPI chronAPI;
     private DPNService dpnService;
 
 
+    @Deprecated
     public SnapshotTasklet(String snapshotID,
                            String collectionName,
                            String depositor,
@@ -62,11 +56,25 @@ public class SnapshotTasklet implements Tasklet {
         this.collectionName = collectionName;
         this.depositor = depositor;
         this.settings = settings;
-        this.producer = producer;
-        this.messageFactory = messageFactory;
+        // this.producer = producer;
+        // this.messageFactory = messageFactory;
         this.dpnService = dpnService;
     }
 
+    public SnapshotTasklet(String snapshotID,
+                           String collectionName,
+                           String depositor,
+                           IntakeSettings settings,
+                           IngestAPI chronAPI,
+                           DPNService dpnService) {
+        this.snapshotID = snapshotID;
+        this.collectionName = collectionName;
+        this.depositor = depositor;
+        this.settings = settings;
+
+        this.chronAPI = chronAPI;
+        this.dpnService = dpnService;
+    }
 
     @Override
     public RepeatStatus execute(final StepContribution stepContribution, final ChunkContext chunkContext) throws Exception {
@@ -80,23 +88,19 @@ public class SnapshotTasklet implements Tasklet {
         builder.setWriteBase(Paths.get(settings.getBagStage()));
         builder.setDepositor(depositor);
         builder.setCompressed(true);
-        builder.setMaxSize(100, Unit.GIGABYTE);
+        builder.setMaxSize(250, Unit.GIGABYTE); // Max size defined by DPN, todo: externalize
         builder.setName(collectionName);
         builder.setIngestionType(IngestionType.DPN);
 
         // And bag (with a sha256 manifest)
         builder.loadManifest(Files.newBufferedReader(
-                snapshotBase.resolve(settings.getDuracloudManifest()),
+                    snapshotBase.resolve(settings.getDuracloudManifest()),
                                      Charset.defaultCharset()));
         builder.newScanPackage();
 
         // Send a notification for each package
         for (ChronPackage chronPackage : builder.getPackages()) {
-            Digest digest = Digest.fromString(chronPackage.getMessageDigest());
-            long size = chronPackage.getTotalSize();
-
-            // even though we set this above...
-            // also we'll probably want the save name to have this instead
+            // If we compress the bag, add .tar to the save name
             String saveName = (builder.isCompressed())
                     ? chronPackage.getSaveName() + ".tar"
                     : chronPackage.getSaveName();
@@ -111,73 +115,64 @@ public class SnapshotTasklet implements Tasklet {
 
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
-            PackageReadyMessage packageReadyMessage = messageFactory.packageReadyMessage(
-                    depositor,
-                    digest,
-                    location.toString(),        // This is the relative path
-                    chronPackage.getSaveName(), // (ingest may have a different mount)
-                    size
-            );
 
-            producer.send(packageReadyMessage, RoutingKey.INGEST_BROADCAST.asRoute());
+            log.info("Pushing to chronopolis... ");
+            // pushToChronopolis(chronPackage, location);
 
+            log.info("Pushing to dpn...");
             // TODO: Also register with dpn if we need to
-            registerDPNObject(chronPackage, location.toString());
-
+            // registerDPNObject(chronPackage);
         }
 
         return RepeatStatus.FINISHED;
     }
 
-    private void registerDPNObject(ChronPackage chronPackage, String location) {
+    /**
+     * Use the {@link IngestAPI} to register the bag with Chronopolis
+     *
+     * @param chronPackage - the bag to register
+     * @param location - the relative location of the bag
+     */
+    private void pushToChronopolis(ChronPackage chronPackage, Path location) {
+            IngestRequest chronRequest = new IngestRequest();
+            chronRequest.setName(chronPackage.getSaveName());
+            chronRequest.setDepositor(depositor);
+            chronRequest.setLocation(location.toString()); // This is the relative path
+
+            chronAPI.stageBag(chronRequest);
+    }
+
+    /**
+     * Register the bag with the DPN REST API
+     *
+     * @param chronPackage
+     */
+    private void registerDPNObject(ChronPackage chronPackage) {
         // We know the bag writer is a DpnBagWriter because IngestionType == DPN
         DpnBagWriter writer = (DpnBagWriter) chronPackage.getBuildListenerWriter();
-        RegistryItemModel model = new RegistryItemModel();
+        DPNBag bag = new DPNBag();
 
         // We know we have a dpn writer associated with it, so no fear
-        DateTimeFormatter formatter = ISODateTimeFormat.dateTimeNoMillis().withZoneUTC();
-        String now = formatter.print(new DateTime());
 
         // The two maps containing the dpn-info contents
         Map<String, String> dpnMetamap = writer.getDpnMetadata();
         Multimap<String, String> dpnMultimap = writer.getDpnMultimap();
 
-        model.setBagSize(chronPackage.getTotalSize());
-        model.setBrighteningObjectId(Sets.newHashSet(dpnMultimap.get(DpnBagWriter.BRIGHTENING_OBJECT_ID)));
-        model.setCreationDate(now);
-        model.setDpnObjectId(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID));
-        model.setFirstNodeName(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME));
-        model.setFirstVersionId(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID));
-        // model.setForwardVersionObjectId();
-        model.setFixityAlgorithm("sha256");
-        // model.setFixityValue();
-        model.setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID));
+        bag.setAdminNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+                .setBagType('D')
+                .setCreatedAt(new DateTime())
+                .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
+                // .setFixities()
+                // .setInterpretive()
+                .setIngestNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+                .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
+                // .setRights()
+                .addReplicatingNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+                .setSize(chronPackage.getTotalSize())
+                .setUpdatedAt(new DateTime())
+                .setUuid(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID))
+                .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
 
-        // This is the relative location of the package, so the same thing we
-        // used for the amqp message
-        model.setLocation(location);
-
-        model.setLastFixityDate(now);
-        model.setLastModifiedDate(now);
-        model.setObjectType(dpnMetamap.get(DpnBagWriter.OBJECT_TYPE));
-        model.setPreviousVersionObjectId(dpnMetamap.get(DpnBagWriter.PREVIOUS_VERSION_ID));
-        model.addReplicatingNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME));
-        model.setRightsObjectId(Sets.newHashSet(dpnMultimap.get(DpnBagWriter.RIGHTS_OBJECT_ID)));
-        model.setState("staged");
-        model.setVersionNumber(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
-
-
-        dpnService.putRegistryItem(model, new Callback<Void>() {
-            @Override
-            public void success(final Void aVoid, final Response response) {
-                log.info("Successfully registered registry item");
-            }
-
-            @Override
-            public void failure(final RetrofitError error) {
-                log.error("Failed to register registry item", error);
-            }
-        });
     }
 
 }

@@ -23,6 +23,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
+ *
  * Created by shake on 8/4/14.
  */
 @Configuration
@@ -32,6 +33,7 @@ import java.sql.SQLException;
 @EnableTransactionManagement
 public class JPAConfiguration {
 
+    /*
     @Autowired
     JPASettings jpaSettings;
 
@@ -45,7 +47,6 @@ public class JPAConfiguration {
         return dataSource;
     }
 
-    /*
     @Bean
     public EntityManagerFactory entityManagerFactory() throws SQLException {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

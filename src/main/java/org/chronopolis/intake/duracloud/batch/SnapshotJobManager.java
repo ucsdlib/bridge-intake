@@ -20,7 +20,11 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by shake on 7/29/14.
@@ -30,10 +34,6 @@ public class SnapshotJobManager {
 
     // From beans
     private SnapshotTasklet snapshotTasklet;
-    private StatusRepository statusRepository;
-    private SnapshotProcessor processor;
-    private SnapshotWriter writer;
-    private IntakeSettings intakeSettings;
 
     private JobBuilderFactory jobBuilderFactory;
     private StepBuilderFactory stepBuilderFactory;
@@ -44,60 +44,17 @@ public class SnapshotJobManager {
     private HashMap<String, BagModel> models;
 
     @Autowired
-    public SnapshotJobManager(SnapshotProcessor processor,
-                              SnapshotWriter writer,
-                              IntakeSettings intakeSettings,
-                              StatusRepository statusRepository,
-                              JobBuilderFactory jobBuilderFactory,
+    public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
                               SnapshotTasklet snapshotTasklet) {
-        this.processor = processor;
-        this.writer = writer;
-        this.intakeSettings = intakeSettings;
-        this.statusRepository = statusRepository;
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.snapshotTasklet = snapshotTasklet;
         this.jobLauncher = jobLauncher;
 
+        this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         this.models = new HashMap<>();
-    }
-
-    @Deprecated
-    public void addSnapshotJob(DuracloudRequest bag) {
-        log.trace("Adding job for bag {}", bag.getSnapshotID());
-        Job job = jobBuilderFactory.get("snapshot-job")
-                .start(stepBuilderFactory.get("step1")
-                    .<BagModel, BagModel> chunk(1)
-                    .reader(new SnapshotReader(bag, intakeSettings, statusRepository))
-                    .processor(processor)
-                    .writer(writer)
-                    .build())
-                .build();
-
-        JobParameters parameters = new JobParametersBuilder()
-                .addString("snapshot-id", bag.getSnapshotID())
-                .toJobParameters();
-
-        try {
-            jobLauncher.run(job, parameters);
-        } catch (JobExecutionAlreadyRunningException
-                | JobRestartException
-                | JobInstanceAlreadyCompleteException
-                | JobParametersInvalidException e) {
-            log.error("Error launching job\n", e);
-        }
-
-        /*
-        BagModel model = models.get(bag.getSnapshotID());
-        if (model == null) {
-            SnapshotThread thread = new SnapshotThread(bag);
-            executor.submit(thread);
-        } else {
-            log.error("Already started thread for snapshot " + bag.getSnapshotID());
-        }
-        */
     }
 
     public void startSnapshotTasklet(DuracloudRequest request) {
@@ -108,7 +65,6 @@ public class SnapshotJobManager {
                     .build()
                 ).build();
 
-        // I don't know why I chose hyphens, I just did
         JobParameters parameters = new JobParametersBuilder()
                 .addString("snapshotID", request.getSnapshotID())
                 .addString("depositor", request.getDepositor())
@@ -124,7 +80,6 @@ public class SnapshotJobManager {
             log.error("Error launching job\n", e);
         }
 
-
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -139,20 +94,4 @@ public class SnapshotJobManager {
         executor = null;
     }
 
-    public class SnapshotThread implements Runnable {
-        private final DuracloudRequest bag;
-
-        public SnapshotThread(final DuracloudRequest bag) {
-            this.bag = bag;
-        }
-
-        @Override
-        public void run() {
-            SnapshotReader reader = new SnapshotReader(bag, intakeSettings, statusRepository);
-            BagModel model = reader.read();
-            models.put(bag.getSnapshotID(), model);
-            // model = processor.process(model);
-            // writer.write(model);
-        }
-    }
 }

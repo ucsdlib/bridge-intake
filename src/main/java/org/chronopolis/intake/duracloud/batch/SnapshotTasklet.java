@@ -125,7 +125,7 @@ public class SnapshotTasklet implements Tasklet {
 
             log.info("Pushing to dpn...");
             // TODO: Also register with dpn if we need to
-            registerDPNObject(chronPackage);
+            registerDPNObject(chronPackage, tagDigest);
         }
 
         return RepeatStatus.FINISHED;
@@ -161,7 +161,7 @@ public class SnapshotTasklet implements Tasklet {
      *
      * @param chronPackage
      */
-    private void registerDPNObject(ChronPackage chronPackage) {
+    private void registerDPNObject(ChronPackage chronPackage, String tagDigest) {
         // We know the bag writer is a DpnBagWriter because IngestionType == DPN
         DpnBagWriter writer = (DpnBagWriter) chronPackage.getBuildListenerWriter();
         DPNBag bag = new DPNBag();
@@ -176,7 +176,7 @@ public class SnapshotTasklet implements Tasklet {
                 .setBagType('D')
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
-                // .setFixities()
+                .addFixity("sha256", tagDigest)
                 // .setInterpretive()
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
@@ -186,6 +186,7 @@ public class SnapshotTasklet implements Tasklet {
                 .setUpdatedAt(new DateTime())
                 .setUuid(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID))
                 .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
+
 
         dpnService.createBag(bag);
     }

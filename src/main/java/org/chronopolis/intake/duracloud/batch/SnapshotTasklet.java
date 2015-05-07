@@ -9,6 +9,7 @@ import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.DpnBagWriter;
 import org.chronopolis.ingest.pkg.ManifestBuilder;
 import org.chronopolis.ingest.pkg.Unit;
+import org.chronopolis.ingest.pkg.Writer;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.messaging.factory.MessageFactory;
 import org.chronopolis.rest.api.IngestAPI;
@@ -115,16 +116,29 @@ public class SnapshotTasklet implements Tasklet {
 
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
+            String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
+            log.info("Tag digest is {}", tagDigest);
+
 
             log.info("Pushing to chronopolis... ");
             // pushToChronopolis(chronPackage, location);
 
             log.info("Pushing to dpn...");
             // TODO: Also register with dpn if we need to
-            // registerDPNObject(chronPackage);
+            registerDPNObject(chronPackage);
         }
 
         return RepeatStatus.FINISHED;
+    }
+
+    private String getTagDigest(Writer writer) {
+        for (String s : writer.getFormattedTagDigests()) {
+            // TODO: tagmanifest-${alg}.txt
+            if (s.endsWith("tagmanifest-sha256.txt")) {
+                return s;
+            }
+        }
+        return null;
     }
 
     /**
@@ -173,6 +187,7 @@ public class SnapshotTasklet implements Tasklet {
                 .setUuid(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID))
                 .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
 
+        dpnService.createBag(bag);
     }
 
 }

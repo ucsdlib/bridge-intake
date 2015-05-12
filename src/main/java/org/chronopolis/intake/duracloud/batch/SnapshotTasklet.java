@@ -29,6 +29,9 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 /**
+ * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
+ * push it to both Chronopolis and DPN.
+ *
  * Created by shake on 9/19/14.
  */
 public class SnapshotTasklet implements Tasklet {
@@ -120,11 +123,11 @@ public class SnapshotTasklet implements Tasklet {
             log.info("Tag digest is {}", tagDigest);
 
 
+            // TODO: Make this configurable
             log.info("Pushing to chronopolis... ");
-            // pushToChronopolis(chronPackage, location);
+            pushToChronopolis(chronPackage, location);
 
             log.info("Pushing to dpn...");
-            // TODO: Also register with dpn if we need to
             registerDPNObject(chronPackage, tagDigest);
         }
 
@@ -173,10 +176,10 @@ public class SnapshotTasklet implements Tasklet {
         Multimap<String, String> dpnMultimap = writer.getDpnMultimap();
 
         bag.setAdminNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
-                .setBagType('D')
+                .setBagType('D')                                            // Data
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
-                .addFixity("sha256", tagDigest)
+                .addFixity(chronPackage.getBagFormattedDigest(), tagDigest) // sha256 digest
                 // .setInterpretive()
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))

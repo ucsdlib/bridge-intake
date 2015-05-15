@@ -137,8 +137,10 @@ public class SnapshotTasklet implements Tasklet {
     private String getTagDigest(Writer writer) {
         for (String s : writer.getFormattedTagDigests()) {
             // TODO: tagmanifest-${alg}.txt
+            // TODO: Let's save the tagmanifest in the writer
             if (s.endsWith("tagmanifest-sha256.txt")) {
-                return s;
+                // split based on spaces and grab the first item (the digest)
+                return s.split("[\\s+]")[0];
             }
         }
         return null;

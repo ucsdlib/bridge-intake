@@ -20,10 +20,6 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${duracloud.manifest:manifest-sha256.txt}")
     private String duracloudManifest;
 
-    // The intake service only has a direct queue
-    private String directQueueBinding;
-    private String directQueueName;
-
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
     }
@@ -31,25 +27,6 @@ public class IntakeSettings extends ChronopolisSettings {
     public void setDuracloudSnapshotStage(final String duracloudSnapshotStage) {
         // TODO: Change to Paths.get(stage)?
         this.duracloudSnapshotStage = duracloudSnapshotStage;
-    }
-
-    public String getDirectQueueBinding() {
-        if (directQueueBinding == null) {
-            directQueueBinding = "duracloud-intake.direct." + getNode();
-        }
-        return directQueueBinding;
-    }
-
-    public String getDirectQueueName() {
-        if (directQueueName == null) {
-            directQueueName = "duracloud-intake-direct-" + getNode();
-        }
-        return directQueueName;
-    }
-
-    @Override
-    public String getInboundKey() {
-        return directQueueBinding;
     }
 
     public String getDuracloudRestoreStage() {

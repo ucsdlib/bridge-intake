@@ -1,7 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.Multimap;
-import org.chronopolis.amqp.ChronProducer;
+import com.google.common.hash.Hashing;
 import org.chronopolis.common.dpn.DPNBag;
 import org.chronopolis.common.dpn.DPNService;
 import org.chronopolis.ingest.bagger.IngestionType;
@@ -11,7 +11,6 @@ import org.chronopolis.ingest.pkg.ManifestBuilder;
 import org.chronopolis.ingest.pkg.Unit;
 import org.chronopolis.ingest.pkg.Writer;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.messaging.factory.MessageFactory;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
@@ -42,28 +41,9 @@ public class SnapshotTasklet implements Tasklet {
     private String depositor;
     private IntakeSettings settings;
 
-
     // Services to talk with both Chronopolis and DPN
     private IngestAPI chronAPI;
     private DPNService dpnService;
-
-
-    @Deprecated
-    public SnapshotTasklet(String snapshotID,
-                           String collectionName,
-                           String depositor,
-                           IntakeSettings settings,
-                           ChronProducer producer,
-                           MessageFactory messageFactory,
-                           DPNService dpnService) {
-        this.snapshotID = snapshotID;
-        this.collectionName = collectionName;
-        this.depositor = depositor;
-        this.settings = settings;
-        // this.producer = producer;
-        // this.messageFactory = messageFactory;
-        this.dpnService = dpnService;
-    }
 
     public SnapshotTasklet(String snapshotID,
                            String collectionName,
@@ -119,16 +99,20 @@ public class SnapshotTasklet implements Tasklet {
 
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
-            String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
-            log.info("Tag digest is {}", tagDigest);
+            // String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
+            String receipt = com.google.common.io.Files.hash(location.toFile(),
+                                                             Hashing.sha256())
+                                                       .toString();
+            log.info("Digest is {}", receipt);
 
 
             // TODO: Make this configurable
+            // TODO: Don't rely on these to succeed, we may need to try multiple times
             log.info("Pushing to chronopolis... ");
             pushToChronopolis(chronPackage, location);
 
             log.info("Pushing to dpn...");
-            registerDPNObject(chronPackage, tagDigest);
+            registerDPNObject(chronPackage, receipt);
         }
 
         return RepeatStatus.FINISHED;
@@ -166,7 +150,7 @@ public class SnapshotTasklet implements Tasklet {
      *
      * @param chronPackage
      */
-    private void registerDPNObject(ChronPackage chronPackage, String tagDigest) {
+    private void registerDPNObject(ChronPackage chronPackage, String receipt) {
         // We know the bag writer is a DpnBagWriter because IngestionType == DPN
         DpnBagWriter writer = (DpnBagWriter) chronPackage.getBuildListenerWriter();
         DPNBag bag = new DPNBag();
@@ -181,7 +165,7 @@ public class SnapshotTasklet implements Tasklet {
                 .setBagType('D')                                            // Data
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
-                .addFixity(chronPackage.getBagFormattedDigest(), tagDigest) // sha256 digest
+                .addFixity(chronPackage.getBagFormattedDigest(), receipt) // sha256 digest
                 // .setInterpretive()
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))

@@ -3,7 +3,6 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.chronopolis.common.ace.CredentialRequestInterceptor;
 import org.chronopolis.common.dpn.DPNService;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;

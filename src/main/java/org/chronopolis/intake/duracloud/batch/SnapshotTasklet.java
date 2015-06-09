@@ -161,16 +161,16 @@ public class SnapshotTasklet implements Tasklet {
         Map<String, String> dpnMetamap = writer.getDpnMetadata();
         Multimap<String, String> dpnMultimap = writer.getDpnMultimap();
 
-        bag.setAdminNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+        bag.setAdminNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setBagType('D')                                            // Data
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
                 .addFixity(chronPackage.getBagFormattedDigest(), receipt) // sha256 digest
                 // .setInterpretive()
-                .setIngestNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+                .setIngestNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
                 // .setRights()
-                .addReplicatingNode(dpnMetamap.get(DpnBagWriter.FIRST_NODE_NAME))
+                .addReplicatingNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setSize(chronPackage.getTotalSize())
                 .setUpdatedAt(new DateTime())
                 .setUuid(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID))

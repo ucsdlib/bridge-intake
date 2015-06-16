@@ -100,7 +100,7 @@ public class SnapshotTasklet implements Tasklet {
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
             // String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
-            String receipt = com.google.common.io.Files.hash(location.toFile(),
+            String receipt = com.google.common.io.Files.hash(saveFile.toFile(),
                                                              Hashing.sha256())
                                                        .toString();
             log.info("Digest is {}", receipt);

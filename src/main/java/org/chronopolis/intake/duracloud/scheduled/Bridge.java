@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
+ * Define a scheduled task which polls the Bridge server for snapshots
+ *
  *
  * Created by shake on 7/27/15.
  */
@@ -32,21 +34,22 @@ public class Bridge {
 
     @Scheduled(cron = "0 * * * * *")
     public void findSnapshots() {
+        log.trace("Polling for snapshots...");
         List<Snapshot> snapshots = bridge.getSnapshots(null);
         for (Snapshot snapshot : snapshots) {
             String snapshotId = snapshot.getSnapshotId();
-            log.info("Bagging snapshot ", snapshotId);
-
             if (snapshot.getStatus() == SnapshotStatus.WAITING_FOR_DPN) {
+                log.info("Bagging snapshot ", snapshotId);
                 SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
-                // push snapshot to chron
+
+                // bag and push to chron/dpn
                 manager.startSnapshotTasklet(details);
             }
 
         }
     }
 
-    @Scheduled(cron = "5 * * * * *")
+    // I don't think we need this - depends on when we close snapshots
     public void updateSnapshots() {
     }
 

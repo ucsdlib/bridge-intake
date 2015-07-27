@@ -107,7 +107,7 @@ public class SnapshotTasklet implements Tasklet {
             log.info("Digest is {}", receipt);
 
 
-            // TODO: Make this configurable
+            // TODO: Make this configurable (load based on profile - can have an interface for both and a null/real impl)
             // TODO: Don't rely on these to succeed, we may need to try multiple times
             log.info("Pushing to chronopolis... ");
             pushToChronopolis(chronPackage, location);

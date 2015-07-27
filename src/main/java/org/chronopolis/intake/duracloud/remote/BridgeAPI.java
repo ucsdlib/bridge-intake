@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.remote;
 
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.Snapshot;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotContent;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import retrofit.http.Body;
@@ -29,6 +30,6 @@ public interface BridgeAPI {
     SnapshotContent getSnapshotContent(@Path("snapshotId") String snapshotId);
 
     @POST("/snapshot/{snapshotId}/complete")
-    String completeSnapshot(@Path("snapshotId") String snapshotId, @Body AlternateIds alternateIds);
+    SnapshotComplete completeSnapshot(@Path("snapshotId") String snapshotId, @Body AlternateIds alternateIds);
 
 }

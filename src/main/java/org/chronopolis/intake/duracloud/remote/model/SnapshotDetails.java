@@ -9,7 +9,7 @@ public class SnapshotDetails {
 
     String snapshotId;
     String snapshotDate;
-    String status;
+    SnapshotStatus status;
     String sourceHost;
     String sourceSpaceId;
     String sourceStoreId;
@@ -35,11 +35,11 @@ public class SnapshotDetails {
         return this;
     }
 
-    public String getStatus() {
+    public SnapshotStatus getStatus() {
         return status;
     }
 
-    public SnapshotDetails setStatus(String status) {
+    public SnapshotDetails setStatus(SnapshotStatus status) {
         this.status = status;
         return this;
     }

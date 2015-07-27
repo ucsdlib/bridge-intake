@@ -2,6 +2,10 @@ package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -23,6 +27,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Start a {@link SnapshotTasklet} based on the type of request that comes in
+ *
  * Created by shake on 7/29/14.
  */
 public class SnapshotJobManager {
@@ -53,29 +59,9 @@ public class SnapshotJobManager {
         this.models = new HashMap<>();
     }
 
+    @Deprecated
     public void startSnapshotTasklet(DuracloudRequest request) {
-        log.trace("Starting tasklet for snapshot {}", request.getSnapshotID());
-        Job job = jobBuilderFactory.get("snapshot-job")
-                .start(stepBuilderFactory.get("snapshot-step")
-                    .tasklet(snapshotTasklet)
-                    .build()
-                ).build();
-
-        JobParameters parameters = new JobParametersBuilder()
-                .addString("snapshotID", request.getSnapshotID())
-                .addString("depositor", request.getDepositor())
-                .addString("collectionName", request.getCollectionName())
-                .toJobParameters();
-
-        try {
-            jobLauncher.run(job, parameters);
-        } catch (JobExecutionAlreadyRunningException
-                | JobRestartException
-                | JobInstanceAlreadyCompleteException
-                | JobParametersInvalidException e) {
-            log.error("Error launching job\n", e);
-        }
-
+        startJob(request.getSnapshotID(), request.getDepositor(), request.getCollectionName());
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -90,4 +76,35 @@ public class SnapshotJobManager {
         executor = null;
     }
 
+    public void startSnapshotTasklet(SnapshotDetails details) {
+        // TODO: Need the depositor and a good collection name
+        startJob(details.getSnapshotId(), details.getSourceSpaceId(), details.getSourceHost());
+    }
+
+    private void startJob(String snapshotId, String depositor, String collectionName) {
+        log.trace("Starting tasklet for snapshot {}", snapshotId);
+        DateTimeFormatter fmt = ISODateTimeFormat.basicDateTimeNoMillis().withZoneUTC();
+        Job job = jobBuilderFactory.get("snapshot-job")
+                .start(stepBuilderFactory.get("snapshot-step")
+                    .tasklet(snapshotTasklet)
+                    .build()
+                ).build();
+
+        JobParameters parameters = new JobParametersBuilder()
+                .addString("snapshotId", snapshotId)
+                .addString("depositor", depositor)
+                .addString("collectionName", collectionName)
+                .addString("date", fmt.print(new DateTime()))
+                .toJobParameters();
+
+        try {
+            jobLauncher.run(job, parameters);
+        } catch (JobExecutionAlreadyRunningException
+                | JobRestartException
+                | JobInstanceAlreadyCompleteException
+                | JobParametersInvalidException e) {
+            log.error("Error launching job\n", e);
+        }
+
+    }
 }

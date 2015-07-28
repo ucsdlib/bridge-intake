@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.chronopolis.ingest.bagger.BagModel;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.joda.time.DateTime;
@@ -20,7 +19,6 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 public class SnapshotJobManager {
     private final Logger log = LoggerFactory.getLogger(SnapshotJobManager.class);
 
-    // From beans
+    // Autowired from the configuration
     private SnapshotTasklet snapshotTasklet;
 
     private JobBuilderFactory jobBuilderFactory;
@@ -43,7 +41,6 @@ public class SnapshotJobManager {
 
     // Instantiated per manager
     private ExecutorService executor;
-    private HashMap<String, BagModel> models;
 
     @Autowired
     public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
@@ -56,12 +53,13 @@ public class SnapshotJobManager {
         this.jobLauncher = jobLauncher;
 
         this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        this.models = new HashMap<>();
     }
 
     @Deprecated
     public void startSnapshotTasklet(DuracloudRequest request) {
-        startJob(request.getSnapshotID(), request.getDepositor(), request.getCollectionName());
+        startJob(request.getSnapshotID(),
+                request.getDepositor(),
+                request.getCollectionName());
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -78,7 +76,9 @@ public class SnapshotJobManager {
 
     public void startSnapshotTasklet(SnapshotDetails details) {
         // TODO: Need the depositor and a good collection name
-        startJob(details.getSnapshotId(), details.getSourceSpaceId(), details.getSourceHost());
+        startJob(details.getSnapshotId(),
+                details.getSourceSpaceId(),
+                "USER_PLACEHOLDER");
     }
 
     private void startJob(String snapshotId, String depositor, String collectionName) {

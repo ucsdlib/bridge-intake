@@ -1,4 +1,5 @@
-import org.chronopolis.intake.duracloud.DataCollector;
+package org.chronopolis.intake.duracloud;
+
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.slf4j.Logger;

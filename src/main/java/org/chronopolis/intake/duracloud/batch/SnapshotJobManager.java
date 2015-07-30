@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.intake.duracloud.DataCollector;
+import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.joda.time.DateTime;
@@ -39,6 +41,8 @@ public class SnapshotJobManager {
     private StepBuilderFactory stepBuilderFactory;
     private JobLauncher jobLauncher;
 
+    private DataCollector collector;
+
     // Instantiated per manager
     private ExecutorService executor;
 
@@ -46,11 +50,13 @@ public class SnapshotJobManager {
     public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
-                              SnapshotTasklet snapshotTasklet) {
+                              SnapshotTasklet snapshotTasklet,
+                              DataCollector collector) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.snapshotTasklet = snapshotTasklet;
         this.jobLauncher = jobLauncher;
+        this.collector = collector;
 
         this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
     }
@@ -76,9 +82,15 @@ public class SnapshotJobManager {
 
     public void startSnapshotTasklet(SnapshotDetails details) {
         // TODO: Need the depositor and a good collection name
-        startJob(details.getSnapshotId(),
-                details.getSourceSpaceId(),
-                "USER_PLACEHOLDER");
+        // TODO: Read the collection in from the .collection.properties
+
+        // data = infoAquierer.getBagInformation
+        // startJob(data.snapshotId, data.name, data.depositor)
+        BagData data = collector.collectBagData(details.getSnapshotId());
+
+        startJob(data.snapshotId(),
+                data.depositor(),
+                data.name());
     }
 
     private void startJob(String snapshotId, String depositor, String collectionName) {

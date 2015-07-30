@@ -14,7 +14,7 @@ public class BagData {
     public BagData() {
     }
 
-    public String getSnapshotId() {
+    public String snapshotId() {
         return snapshotId;
     }
 
@@ -23,7 +23,7 @@ public class BagData {
         return this;
     }
 
-    public String getName() {
+    public String name() {
         return name;
     }
 
@@ -32,7 +32,7 @@ public class BagData {
         return this;
     }
 
-    public String getDepositor() {
+    public String depositor() {
         return depositor;
     }
 

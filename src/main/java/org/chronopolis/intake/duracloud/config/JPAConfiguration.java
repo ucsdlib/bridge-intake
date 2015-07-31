@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.config;
 
-import org.chronopolis.db.intake.StatusRepository;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -11,11 +10,11 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  *
  * Created by shake on 8/4/14.
  */
-@Configuration
-@EnableJpaRepositories(basePackages = "org.chronopolis.db.intake",
-        includeFilters = @ComponentScan.Filter(value = {StatusRepository.class},
-                                               type = FilterType.ASSIGNABLE_TYPE))
-@EnableTransactionManagement
+// @Configuration
+// @EnableJpaRepositories(basePackages = "org.chronopolis.db.intake",
+//         includeFilters = @ComponentScan.Filter(value = {StatusRepository.class},
+//                                                type = FilterType.ASSIGNABLE_TYPE))
+// @EnableTransactionManagement
 public class JPAConfiguration {
 
     /*

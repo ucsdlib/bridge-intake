@@ -3,7 +3,6 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.chronopolis.common.dpn.DPNService;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.earth.api.BalustradeBag;
@@ -70,29 +69,6 @@ public class DPNConfig {
                 .setBagAPI(adapter.create(BalustradeBag.class))
                 .setNodeAPI(adapter.create(BalustradeNode.class))
                 .setTransfersAPI(adapter.create(BalustradeTransfers.class));
-    }
-
-    @Bean
-    DPNService dpnService(DPNSettings dpnSettings) {
-        String endpoint = dpnSettings.getDPNEndpoints().get(0);
-
-        TokenInterceptor interceptor = new TokenInterceptor(dpnSettings.getApiKey());
-
-        Gson gson = new GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .registerTypeAdapter(DateTime.class, new DateTimeSerializer())
-                .registerTypeAdapter(DateTime.class, new DateTimeDeserializer())
-                .create();
-
-        RestAdapter restAdapter = new RestAdapter.Builder()
-                .setEndpoint(endpoint)
-                .setRequestInterceptor(interceptor)
-                .setErrorHandler(logger())
-                .setLogLevel(RestAdapter.LogLevel.FULL)
-                .setConverter(new GsonConverter(gson))
-                .build();
-
-        return restAdapter.create(DPNService.class);
     }
 
 }

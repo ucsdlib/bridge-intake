@@ -1,11 +1,13 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.Hashing;
-import org.chronopolis.common.dpn.DPNBag;
-import org.chronopolis.common.dpn.DPNNode;
-import org.chronopolis.common.dpn.DPNService;
+import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.earth.models.Bag;
+import org.chronopolis.earth.models.Node;
+import org.chronopolis.earth.models.Response;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.DpnBagWriter;
@@ -27,13 +29,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
  * push it to both Chronopolis and DPN.
- * <p/>
+ *
  * Created by shake on 9/19/14.
  */
 public class SnapshotTasklet implements Tasklet {
@@ -46,21 +48,21 @@ public class SnapshotTasklet implements Tasklet {
 
     // Services to talk with both Chronopolis and DPN
     private IngestAPI chronAPI;
-    private DPNService dpnService;
+    private LocalAPI dpn;
 
     public SnapshotTasklet(String snapshotID,
                            String collectionName,
                            String depositor,
                            IntakeSettings settings,
                            IngestAPI chronAPI,
-                           DPNService dpnService) {
+                           LocalAPI dpn) {
         this.snapshotID = snapshotID;
         this.collectionName = collectionName;
         this.depositor = depositor;
         this.settings = settings;
 
         this.chronAPI = chronAPI;
-        this.dpnService = dpnService;
+        this.dpn = dpn;
     }
 
     @Override
@@ -98,14 +100,14 @@ public class SnapshotTasklet implements Tasklet {
 
             // And get the relative location
             Path location = Paths.get(settings.getBagStage())
-                    .relativize(saveFile);
+                                 .relativize(saveFile);
 
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
             // String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
             String receipt = com.google.common.io.Files.hash(saveFile.toFile(),
-                    Hashing.sha256())
-                    .toString();
+                                                             Hashing.sha256())
+                                                       .toString();
             log.info("Digest is {}", receipt);
 
 
@@ -129,7 +131,7 @@ public class SnapshotTasklet implements Tasklet {
         //   * Get DPN Nodes
         //   * Chose 2 random
         //   * Create replication requests
-        List<DPNNode> nodes = dpnService.getNodes();
+        Response<Node> nodes = dpn.getNodeAPI().getNodes(new HashMap<String, Integer>());
 
     }
 
@@ -149,7 +151,7 @@ public class SnapshotTasklet implements Tasklet {
      * Use the {@link IngestAPI} to register the bag with Chronopolis
      *
      * @param chronPackage - the bag to register
-     * @param location     - the relative location of the bag
+     * @param location - the relative location of the bag
      */
     private void pushToChronopolis(ChronPackage chronPackage, Path location) {
         IngestRequest chronRequest = new IngestRequest();
@@ -172,31 +174,33 @@ public class SnapshotTasklet implements Tasklet {
     private void registerDPNObject(ChronPackage chronPackage, String receipt) {
         // We know the bag writer is a DpnBagWriter because IngestionType == DPN
         DpnBagWriter writer = (DpnBagWriter) chronPackage.getBuildListenerWriter();
-        DPNBag bag = new DPNBag();
+
+        // dpn bag
+        Bag bag = new Bag();
 
         // We know we have a dpn writer associated with it, so no fear
 
         // The two maps containing the dpn-info contents
         Map<String, String> dpnMetamap = writer.getDpnMetadata();
         Multimap<String, String> dpnMultimap = writer.getDpnMultimap();
+        String uuid = dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID);
 
         bag.setAdminNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setBagType('D')                                            // Data
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
-                .addFixity(chronPackage.getBagFormattedDigest(), receipt) // sha256 digest
-                        // .setInterpretive()
+                .setFixities(ImmutableMap.of(chronPackage.getBagFormattedDigest(), receipt)) // sha256 digest
+                // .setInterpretive()
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
-                        // .setRights()
-                .addReplicatingNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
+                // .setRights()
+                .setReplicatingNodes(ImmutableList.of(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME)))
                 .setSize(chronPackage.getTotalSize())
                 .setUpdatedAt(new DateTime())
-                .setUuid(dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID))
+                .setUuid(uuid)
                 .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
 
-
-        dpnService.createBag(bag);
+        dpn.getBagAPI().createBag(uuid, bag);
     }
 
 }

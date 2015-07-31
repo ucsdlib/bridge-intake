@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.Hashing;
 import org.chronopolis.common.dpn.DPNBag;
+import org.chronopolis.common.dpn.DPNNode;
 import org.chronopolis.common.dpn.DPNService;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
@@ -26,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -109,14 +111,26 @@ public class SnapshotTasklet implements Tasklet {
 
             // TODO: Make this configurable (load based on profile - can have an interface for both and a null/real impl)
             // TODO: Don't rely on these to succeed, we may need to try multiple times
-            log.info("Pushing to chronopolis... ");
+            log.info("Registering with chronopolis... ");
             pushToChronopolis(chronPackage, location);
 
-            log.info("Pushing to dpn...");
+            log.info("Registering with dpn...");
             registerDPNObject(chronPackage, receipt);
+
+            log.info("Creating replications for dpn...");
+            createDPNReplications(chronPackage);
         }
 
         return RepeatStatus.FINISHED;
+    }
+
+    private void createDPNReplications(ChronPackage chronPackage) {
+        // Steps:
+        //   * Get DPN Nodes
+        //   * Chose 2 random
+        //   * Create replication requests
+        List<DPNNode> nodes = dpnService.getNodes();
+
     }
 
     private String getTagDigest(Writer writer) {

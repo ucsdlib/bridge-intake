@@ -22,17 +22,12 @@
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>amqp-core</artifactId>
+            <artifactId>chron-common</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>chron-messaging</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.chronopolis</groupId>
-            <artifactId>chron-db</artifactId>
+            <artifactId>earth-core</artifactId>
         </dependency>
 
         <dependency>

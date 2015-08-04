@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
@@ -7,6 +8,7 @@ import com.google.common.hash.Hashing;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Node;
+import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
@@ -29,8 +31,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
@@ -131,7 +136,35 @@ public class SnapshotTasklet implements Tasklet {
         //   * Get DPN Nodes
         //   * Chose 2 random
         //   * Create replication requests
-        Response<Node> nodes = dpn.getNodeAPI().getNodes(new HashMap<String, Integer>());
+        // TODO: Remove magic values
+        int replications = 2;
+        int count = 0;
+        Response<Node> response = dpn.getNodeAPI().getNodes(ImmutableMap.of("page_size", 5));
+        List<Node> nodes = response.getResults();
+
+        Random r = new Random();
+        while (count < replications) {
+            int index = r.nextInt(nodes.size());
+            Node node = nodes.get(index);
+
+            if (node.getName().equals("chron")) {
+                continue;
+            }
+
+            Replication dpnRepl = new Replication();
+            dpnRepl.setStatus(Replication.Status.REQUESTED);
+            dpnRepl.setCreatedAt(DateTime.now());
+            dpnRepl.setFromNode("chron");
+            dpnRepl.setToNode(node.getName());
+            dpnRepl.setLink("chronopolis@chronopolis:/" + chronPackage.getName());
+            dpnRepl.setProtocol("rsync");
+            dpnRepl.setUuid(chronPackage.getName());
+            dpnRepl.setFixityAlgorithm("sha256");
+
+            dpn.getTransfersAPI().createReplication(dpnRepl);
+            ++count;
+        }
+
 
     }
 

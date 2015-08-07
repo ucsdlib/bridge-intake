@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.Hashing;
 import org.chronopolis.common.dpn.DPNBag;
@@ -30,7 +31,7 @@ import java.util.Map;
 /**
  * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
  * push it to both Chronopolis and DPN.
- *
+ * <p/>
  * Created by shake on 9/19/14.
  */
 public class SnapshotTasklet implements Tasklet {
@@ -78,8 +79,8 @@ public class SnapshotTasklet implements Tasklet {
 
         // And bag (with a sha256 manifest)
         builder.loadManifest(Files.newBufferedReader(
-                    snapshotBase.resolve(settings.getDuracloudManifest()),
-                                     Charset.defaultCharset()));
+                snapshotBase.resolve(settings.getDuracloudManifest()),
+                Charset.defaultCharset()));
         builder.newScanPackage();
 
         // Send a notification for each package
@@ -95,14 +96,14 @@ public class SnapshotTasklet implements Tasklet {
 
             // And get the relative location
             Path location = Paths.get(settings.getBagStage())
-                                 .relativize(saveFile);
+                    .relativize(saveFile);
 
             log.info("Save file {}; Save Name {}", saveFile, chronPackage.getSaveName());
 
             // String tagDigest = getTagDigest(chronPackage.getBuildListenerWriter());
             String receipt = com.google.common.io.Files.hash(saveFile.toFile(),
-                                                             Hashing.sha256())
-                                                       .toString();
+                    Hashing.sha256())
+                    .toString();
             log.info("Digest is {}", receipt);
 
 
@@ -134,15 +135,19 @@ public class SnapshotTasklet implements Tasklet {
      * Use the {@link IngestAPI} to register the bag with Chronopolis
      *
      * @param chronPackage - the bag to register
-     * @param location - the relative location of the bag
+     * @param location     - the relative location of the bag
      */
     private void pushToChronopolis(ChronPackage chronPackage, Path location) {
-            IngestRequest chronRequest = new IngestRequest();
-            chronRequest.setName(chronPackage.getSaveName());
-            chronRequest.setDepositor(depositor);
-            chronRequest.setLocation(location.toString()); // This is the relative path
+        IngestRequest chronRequest = new IngestRequest();
+        chronRequest.setName(chronPackage.getSaveName());
+        chronRequest.setDepositor(depositor);
+        chronRequest.setLocation(location.toString()); // This is the relative path
 
-            chronAPI.stageBag(chronRequest);
+        // TODO: Be able to specify which nodes we want to replicate to
+        //       externally instead of relying on a magic value
+        chronRequest.setReplicatingNodes(ImmutableList.of("ucsd"));
+
+        chronAPI.stageBag(chronRequest);
     }
 
     /**
@@ -166,10 +171,10 @@ public class SnapshotTasklet implements Tasklet {
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
                 .addFixity(chronPackage.getBagFormattedDigest(), receipt) // sha256 digest
-                // .setInterpretive()
+                        // .setInterpretive()
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
-                // .setRights()
+                        // .setRights()
                 .addReplicatingNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setSize(chronPackage.getTotalSize())
                 .setUpdatedAt(new DateTime())

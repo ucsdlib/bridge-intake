@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
@@ -31,11 +30,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
@@ -137,20 +136,28 @@ public class SnapshotTasklet implements Tasklet {
         //   * Chose 2 random
         //   * Create replication requests
         // TODO: Remove magic values
+        //       - node (dpn context - chron) ? maybe keep that as a constant
+        //       - link : generate from staging area and what not
+        //       - protocol : rsync for now, can probably just be a constant
+        //       - fixity : sha256, can probably just be a constant
         int replications = 2;
         int count = 0;
+
+        // 5 nodes -> page size of 5
         Response<Node> response = dpn.getNodeAPI().getNodes(ImmutableMap.of("page_size", 5));
         List<Node> nodes = response.getResults();
 
         Random r = new Random();
+        Set<Integer> seen = new HashSet<>();
         while (count < replications) {
             int index = r.nextInt(nodes.size());
             Node node = nodes.get(index);
 
-            if (node.getName().equals("chron")) {
+            if (seen.contains(index) && node.getName().equals("chron")) {
                 continue;
             }
 
+            seen.add(index);
             Replication dpnRepl = new Replication();
             dpnRepl.setStatus(Replication.Status.REQUESTED);
             dpnRepl.setCreatedAt(DateTime.now());

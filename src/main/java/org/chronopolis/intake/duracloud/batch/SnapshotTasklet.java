@@ -45,6 +45,10 @@ import java.util.Set;
 public class SnapshotTasklet implements Tasklet {
     private final Logger log = LoggerFactory.getLogger(SnapshotTasklet.class);
 
+    private final String PARAM_PAGE_SIZE = "page_size";
+    private final String PROTOCOL = "rsync";
+    private final String ALGORITHM = "sha256";
+
     private String snapshotID;
     private String collectionName;
     private String depositor;
@@ -136,15 +140,18 @@ public class SnapshotTasklet implements Tasklet {
         //   * Chose 2 random
         //   * Create replication requests
         // TODO: Remove magic values
-        //       - node (dpn context - chron) ? maybe keep that as a constant
-        //       - link : generate from staging area and what not
-        //       - protocol : rsync for now, can probably just be a constant
-        //       - fixity : sha256, can probably just be a constant
+        //       - user/hostname : should be set in external properties
+        Path save = Paths.get(settings.getBagStage(),
+                chronPackage.getDepositor(),
+                chronPackage.getSaveName() + ".tar");
+        settings.getDuracloudSnapshotStage();
+        String ourNode = dpn.getNode();
         int replications = 2;
         int count = 0;
 
+
         // 5 nodes -> page size of 5
-        Response<Node> response = dpn.getNodeAPI().getNodes(ImmutableMap.of("page_size", 5));
+        Response<Node> response = dpn.getNodeAPI().getNodes(ImmutableMap.of(PARAM_PAGE_SIZE, 5));
         List<Node> nodes = response.getResults();
 
         Random r = new Random();
@@ -153,22 +160,22 @@ public class SnapshotTasklet implements Tasklet {
             int index = r.nextInt(nodes.size());
             Node node = nodes.get(index);
 
-            if (seen.contains(index) && node.getName().equals("chron")) {
+            if (seen.contains(index) && node.getName().equals(ourNode)) {
                 continue;
             }
 
             seen.add(index);
-            Replication dpnRepl = new Replication();
-            dpnRepl.setStatus(Replication.Status.REQUESTED);
-            dpnRepl.setCreatedAt(DateTime.now());
-            dpnRepl.setFromNode("chron");
-            dpnRepl.setToNode(node.getName());
-            dpnRepl.setLink("chronopolis@chronopolis:/" + chronPackage.getName());
-            dpnRepl.setProtocol("rsync");
-            dpnRepl.setUuid(chronPackage.getName());
-            dpnRepl.setFixityAlgorithm("sha256");
+            Replication repl = new Replication();
+            repl.setStatus(Replication.Status.REQUESTED);
+            repl.setCreatedAt(DateTime.now());
+            repl.setFromNode(ourNode);
+            repl.setToNode(node.getName());
+            repl.setLink("chronopolis@chronopolis:" + save.toString());
+            repl.setProtocol(PROTOCOL);
+            repl.setUuid(chronPackage.getName());
+            repl.setFixityAlgorithm(ALGORITHM);
 
-            dpn.getTransfersAPI().createReplication(dpnRepl);
+            dpn.getTransfersAPI().createReplication(repl);
             ++count;
         }
 

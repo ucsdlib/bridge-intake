@@ -45,6 +45,7 @@ import java.util.Set;
 public class SnapshotTasklet implements Tasklet {
     private final Logger log = LoggerFactory.getLogger(SnapshotTasklet.class);
 
+    private final char DATA_BAG = 'D';
     private final String PARAM_PAGE_SIZE = "page_size";
     private final String PROTOCOL = "rsync";
     private final String ALGORITHM = "sha256";
@@ -233,7 +234,7 @@ public class SnapshotTasklet implements Tasklet {
         String uuid = dpnMetamap.get(DpnBagWriter.DPN_OBJECT_ID);
 
         bag.setAdminNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
-                .setBagType('D')                                            // Data
+                .setBagType(DATA_BAG)
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
                 .setFixities(ImmutableMap.of(chronPackage.getBagFormattedDigest(), receipt)) // sha256 digest

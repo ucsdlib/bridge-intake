@@ -21,7 +21,7 @@ import java.util.Properties;
 public class PropertiesDataCollector implements DataCollector {
     private final Logger log = LoggerFactory.getLogger(PropertiesDataCollector.class);
 
-    private final String FILE = ".collection.properties";
+    private final String FILE = ".collection-snapshot.properties";
     private final String PROPERTY_OWNER_ID = "owner-id";
     private final String PROPERTY_SPACE_ID = "duracloud-space-id";
 

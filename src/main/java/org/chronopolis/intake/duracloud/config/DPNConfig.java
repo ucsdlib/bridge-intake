@@ -56,6 +56,7 @@ public class DPNConfig {
                 .registerTypeAdapter(DateTime.class, new DateTimeDeserializer())
                 .registerTypeAdapter(Replication.Status.class, new ReplicationStatusSerializer())
                 .registerTypeAdapter(Replication.Status.class, new ReplicationStatusDeserializer())
+                .serializeNulls()
                 .create();
 
         RestAdapter adapter = new RestAdapter.Builder()

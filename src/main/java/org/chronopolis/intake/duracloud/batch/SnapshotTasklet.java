@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * {@link Tasklet} which processes a snapshot from Duraspace. We bag the snapshot and
@@ -169,14 +170,32 @@ public class SnapshotTasklet implements Tasklet {
             Replication repl = new Replication();
             repl.setStatus(Replication.Status.REQUESTED);
             repl.setCreatedAt(DateTime.now());
+            repl.setUpdatedAt(DateTime.now());
+            repl.setReplicationId(UUID.randomUUID().toString());
             repl.setFromNode(ourNode);
             repl.setToNode(node.getName());
             repl.setLink("chronopolis@chronopolis:" + save.toString());
             repl.setProtocol(PROTOCOL);
-            repl.setUuid(chronPackage.getName());
+            repl.setUuid(chronPackage.getSaveName());
             repl.setFixityAlgorithm(ALGORITHM);
 
-            dpn.getTransfersAPI().createReplication(repl);
+            dpn.getTransfersAPI().createReplication(repl); /*, new Callback<Void>() {
+                @Override
+                public void success(Void aVoid, retrofit.client.Response response) {
+                    log.info("Success!!");
+                }
+
+                @Override
+                public void failure(RetrofitError retrofitError) {
+                    if (retrofitError.getResponse() != null) {
+                        log.info("Failure! {} {}", retrofitError.getResponse().getStatus(), retrofitError.getResponse().getReason());
+                    } else {
+                        log.info("Failure! {} {}", retrofitError.getUrl(), retrofitError.getMessage());
+                    }
+
+                }
+            });
+            */
             ++count;
         }
 
@@ -219,7 +238,7 @@ public class SnapshotTasklet implements Tasklet {
      *
      * @param chronPackage
      */
-    private void registerDPNObject(ChronPackage chronPackage, String receipt) {
+    private void registerDPNObject(ChronPackage chronPackage, final String receipt) {
         // We know the bag writer is a DpnBagWriter because IngestionType == DPN
         DpnBagWriter writer = (DpnBagWriter) chronPackage.getBuildListenerWriter();
 
@@ -238,17 +257,34 @@ public class SnapshotTasklet implements Tasklet {
                 .setCreatedAt(new DateTime())
                 .setFirstVersionUuid(dpnMetamap.get(DpnBagWriter.FIRST_VERSION_ID))
                 .setFixities(ImmutableMap.of(chronPackage.getBagFormattedDigest(), receipt)) // sha256 digest
-                // .setInterpretive()
+                .setInterpretive(ImmutableList.<String>of())
                 .setIngestNode(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME))
                 .setLocalId(dpnMetamap.get(DpnBagWriter.LOCAL_ID))
-                // .setRights()
+                .setRights(ImmutableList.<String>of())
                 .setReplicatingNodes(ImmutableList.of(dpnMetamap.get(DpnBagWriter.INGEST_NODE_NAME)))
                 .setSize(chronPackage.getTotalSize())
                 .setUpdatedAt(new DateTime())
                 .setUuid(uuid)
+                .setMember("invalid-uuid") // must be a valid uuid
                 .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
 
-        dpn.getBagAPI().createBag(uuid, bag);
+        dpn.getBagAPI().createBag(bag); /*, new retrofit.Callback<Bag>() {
+            @Override
+            public void success(Bag bag, retrofit.client.Response response) {
+                log.info("Success! ");
+            }
+
+            @Override
+            public void failure(RetrofitError retrofitError) {
+                if (retrofitError.getResponse() != null) {
+                    log.info("Failure! {} {}", retrofitError.getResponse().getStatus(), retrofitError.getResponse().getReason());
+                } else {
+                    log.info("Failure! {} {}", retrofitError.getUrl(), retrofitError.getMessage());
+                }
+
+            }
+        });
+        */
     }
 
 }

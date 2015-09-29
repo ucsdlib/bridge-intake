@@ -81,11 +81,6 @@ public class SnapshotJobManager {
     }
 
     public void startSnapshotTasklet(SnapshotDetails details) {
-        // TODO: Need the depositor and a good collection name
-        // TODO: Read the collection in from the .collection.properties
-
-        // data = infoAquierer.getBagInformation
-        // startJob(data.snapshotId, data.name, data.depositor)
         BagData data = collector.collectBagData(details.getSnapshotId());
 
         startJob(data.snapshotId(),

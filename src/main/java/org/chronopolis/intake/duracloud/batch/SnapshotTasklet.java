@@ -142,7 +142,7 @@ public class SnapshotTasklet implements Tasklet {
         //   * Chose 2 random
         //   * Create replication requests
         // TODO: Remove magic values
-        //       - user/hostname : should be set in external properties
+        //       - hostname : should be set in external properties
         Path save = Paths.get(settings.getBagStage(),
                 chronPackage.getDepositor(),
                 chronPackage.getSaveName() + ".tar");
@@ -161,8 +161,9 @@ public class SnapshotTasklet implements Tasklet {
         while (count < replications) {
             int index = r.nextInt(nodes.size());
             Node node = nodes.get(index);
+            String nodeName = node.getName();
 
-            if (seen.contains(index) && node.getName().equals(ourNode)) {
+            if (seen.contains(index) && nodeName.equals(ourNode)) {
                 continue;
             }
 
@@ -173,8 +174,8 @@ public class SnapshotTasklet implements Tasklet {
             repl.setUpdatedAt(DateTime.now());
             repl.setReplicationId(UUID.randomUUID().toString());
             repl.setFromNode(ourNode);
-            repl.setToNode(node.getName());
-            repl.setLink("chronopolis@chronopolis:" + save.toString());
+            repl.setToNode(nodeName);
+            repl.setLink(nodeName + "@chronopolis:" + save.toString());
             repl.setProtocol(PROTOCOL);
             repl.setUuid(chronPackage.getSaveName());
             repl.setFixityAlgorithm(ALGORITHM);

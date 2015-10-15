@@ -14,7 +14,6 @@ import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.DpnBagWriter;
 import org.chronopolis.ingest.pkg.ManifestBuilder;
 import org.chronopolis.ingest.pkg.Unit;
-import org.chronopolis.ingest.pkg.Writer;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
@@ -123,6 +122,7 @@ public class SnapshotTasklet implements Tasklet {
 
             // TODO: Make this configurable (load based on profile - can have an interface for both and a null/real impl)
             // TODO: Don't rely on these to succeed, we may need to try multiple times
+            //       Maybe by v1.2 have a db backend so that we can persist things
             log.info("Registering with chronopolis... ");
             pushToChronopolis(chronPackage, location);
 
@@ -203,18 +203,6 @@ public class SnapshotTasklet implements Tasklet {
 
     }
 
-    private String getTagDigest(Writer writer) {
-        for (String s : writer.getFormattedTagDigests()) {
-            // TODO: tagmanifest-${alg}.txt
-            // TODO: Let's save the tagmanifest in the writer
-            if (s.endsWith("tagmanifest-sha256.txt")) {
-                // split based on spaces and grab the first item (the digest)
-                return s.split("[\\s+]")[0];
-            }
-        }
-        return null;
-    }
-
     /**
      * Use the {@link IngestAPI} to register the bag with Chronopolis
      *
@@ -229,7 +217,7 @@ public class SnapshotTasklet implements Tasklet {
 
         // TODO: Be able to specify which nodes we want to replicate to
         //       externally instead of relying on a magic value
-        chronRequest.setReplicatingNodes(ImmutableList.of("ucsd"));
+        chronRequest.setReplicatingNodes(ImmutableList.of("ucsd-dpn"));
 
         chronAPI.stageBag(chronRequest);
     }
@@ -286,6 +274,9 @@ public class SnapshotTasklet implements Tasklet {
             }
         });
         */
+    }
+
+    private void getMember() {
     }
 
 }

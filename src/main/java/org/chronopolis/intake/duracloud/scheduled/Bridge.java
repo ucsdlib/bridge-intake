@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.scheduled;
 
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
+import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.Snapshot;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
@@ -31,10 +32,13 @@ public class Bridge {
     @Autowired
     SnapshotJobManager manager;
 
+    @Autowired
+    IntakeSettings settings;
+
     @Scheduled(cron = "0 * * * * *")
     public void findSnapshots() {
         log.trace("Polling for snapshots...");
-        Snapshots snapshots = bridge.getSnapshots(null);
+        Snapshots snapshots = bridge.getSnapshots(settings.getDuracloudHost());
         for (Snapshot snapshot : snapshots.getSnapshots()) {
             String snapshotId = snapshot.getSnapshotId();
             if (snapshot.getStatus() == SnapshotStatus.WAITING_FOR_DPN) {

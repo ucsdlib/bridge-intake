@@ -20,6 +20,9 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${duracloud.manifest:manifest-sha256.txt}")
     private String duracloudManifest;
 
+    @Value("${duracloud.host:test.duracloud.org}")
+    private String duracloudHost;
+
     @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge}")
     private String bridgeEndpoint;
 
@@ -102,6 +105,15 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setBridgePassword(String bridgePassword) {
         this.bridgePassword = bridgePassword;
+        return this;
+    }
+
+    public String getDuracloudHost() {
+        return duracloudHost;
+    }
+
+    public IntakeSettings setDuracloudHost(String duracloudHost) {
+        this.duracloudHost = duracloudHost;
         return this;
     }
 }

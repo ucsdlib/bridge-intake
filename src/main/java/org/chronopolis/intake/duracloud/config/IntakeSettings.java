@@ -23,6 +23,12 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge}")
     private String bridgeEndpoint;
 
+    @Value("${push.chronopolis:true}")
+    private Boolean pushChronopolis;
+
+    @Value("${push.dpn:true}")
+    private Boolean pushDPN;
+
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
     }
@@ -54,6 +60,24 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setBridgeEndpoint(String bridgeEndpoint) {
         this.bridgeEndpoint = bridgeEndpoint;
+        return this;
+    }
+
+    public Boolean pushChronopolis() {
+        return pushChronopolis;
+    }
+
+    public IntakeSettings setPushChronopolis(Boolean pushChronopolis) {
+        this.pushChronopolis = pushChronopolis;
+        return this;
+    }
+
+    public Boolean pushDPN() {
+        return pushDPN;
+    }
+
+    public IntakeSettings setPushDPN(Boolean pushDPN) {
+        this.pushDPN = pushDPN;
         return this;
     }
 }

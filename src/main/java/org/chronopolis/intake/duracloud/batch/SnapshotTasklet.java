@@ -123,14 +123,18 @@ public class SnapshotTasklet implements Tasklet {
             // TODO: Make this configurable (load based on profile - can have an interface for both and a null/real impl)
             // TODO: Don't rely on these to succeed, we may need to try multiple times
             //       Maybe by v1.2 have a db backend so that we can persist things
-            log.info("Registering with chronopolis... ");
-            pushToChronopolis(chronPackage, location);
+            if (settings.pushChronopolis()) {
+                log.info("Registering with chronopolis... ");
+                pushToChronopolis(chronPackage, location);
+            }
 
-            log.info("Registering with dpn...");
-            registerDPNObject(chronPackage, receipt);
+            if (settings.pushDPN()) {
+                log.info("Registering with dpn...");
+                registerDPNObject(chronPackage, receipt);
 
-            log.info("Creating replications for dpn...");
-            createDPNReplications(chronPackage);
+                log.info("Creating replications for dpn...");
+                createDPNReplications(chronPackage);
+            }
         }
 
         return RepeatStatus.FINISHED;

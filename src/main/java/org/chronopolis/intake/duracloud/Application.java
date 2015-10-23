@@ -5,13 +5,22 @@ import org.chronopolis.common.mail.MailUtil;
 import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.common.settings.IngestAPISettings;
 import org.chronopolis.common.settings.SMTPSettings;
+import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
+import org.chronopolis.intake.duracloud.batch.SnapshotTasklet;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.JobScope;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,8 +42,9 @@ import java.io.InputStreamReader;
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@ComponentScan(basePackageClasses = {DPNSettings.class, IntakeSettings.class})
+@ComponentScan(basePackageClasses = {DPNSettings.class, IntakeSettings.class, Bridge.class})
 public class Application implements CommandLineRunner {
+    private final Logger log = LoggerFactory.getLogger(Application.class);
 
     @Autowired
     SnapshotJobManager manager;
@@ -43,21 +53,25 @@ public class Application implements CommandLineRunner {
     Bridge bridge;
 
     public static void main(String[] args) {
-        SpringApplication.run(Application.class);
+        SpringApplication.exit(SpringApplication.run(Application.class));
     }
 
     @Override
     public void run(String... strings) throws Exception {
         boolean done = false;
-        System.out.println("Enter 'q' to quit");
+        System.out.println("Enter 'q' to quit; 'p' or 'b' to poll the bridge server");
         while (!done) {
             String input = readLine();
             if ("q".equalsIgnoreCase(input)) {
                 done = true;
             } else if ("t".equalsIgnoreCase(input)) {
                 test();
-            } else if ("p".equalsIgnoreCase(input)) {
-                bridge.findSnapshots();
+            } else if ("p".equalsIgnoreCase(input) || "b".equalsIgnoreCase(input)) {
+                try {
+                    bridge.findSnapshots();
+                } catch (Exception e) {
+                    log.error("Error calling bridge!", e);
+                }
             }
         }
 
@@ -67,6 +81,7 @@ public class Application implements CommandLineRunner {
     // Test based on some static content
     private void test() {
         /*
+        log.info("Push chron: {} Push DPN: {}", settings.pushChronopolis(), settings.pushDPN());
         SnapshotDetails details = new SnapshotDetails();
         details.setSnapshotId("erik-3-erik-test-space-2014-02-21-20-17-58");
         manager.startSnapshotTasklet(details);
@@ -118,7 +133,6 @@ public class Application implements CommandLineRunner {
 
 
 
-    /*
     @Bean
     @JobScope
     SnapshotTasklet snapshotTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotID,
@@ -147,6 +161,5 @@ public class Application implements CommandLineRunner {
                 snapshotTasklet,
                 new PropertiesDataCollector(settings));
     }
-    */
 
 }

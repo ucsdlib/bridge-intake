@@ -1,17 +1,15 @@
 package org.chronopolis.intake.duracloud.remote;
 
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
-import org.chronopolis.intake.duracloud.remote.model.Snapshot;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotContent;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.intake.duracloud.remote.model.Snapshots;
 import retrofit.http.Body;
 import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.Path;
 import retrofit.http.Query;
-
-import java.util.List;
 
 /**
  * API definition for the Brdige server
@@ -21,7 +19,7 @@ import java.util.List;
 public interface BridgeAPI {
 
     @GET("/snapshot")
-    List<Snapshot> getSnapshots(@Query("host") String host);
+    Snapshots getSnapshots(@Query("host") String host);
 
     @GET("/snapshot/{snapshotId}")
     SnapshotDetails getSnapshotDetails(@Path("snapshotId") String snapshotId);

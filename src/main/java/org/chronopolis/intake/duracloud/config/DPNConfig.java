@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.chronopolis.common.ace.CredentialRequestInterceptor;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.earth.api.BalustradeBag;
@@ -38,6 +39,9 @@ public class DPNConfig {
     @Bean
     BridgeAPI bridgeAPI(IntakeSettings settings) {
         RestAdapter adapter = new RestAdapter.Builder()
+                .setRequestInterceptor(new CredentialRequestInterceptor(
+                        settings.getBridgeUsername(),
+                        settings.getBridgePassword()))
                 .setEndpoint(settings.getBridgeEndpoint())
                 .setLogLevel(RestAdapter.LogLevel.BASIC)
                 .build();

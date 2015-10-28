@@ -38,6 +38,9 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${push.dpn:true}")
     private Boolean pushDPN;
 
+    @Value("${dpn.member.uuid:bad-uuid}")
+    private String memberUUID;
+
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
     }
@@ -114,6 +117,15 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setDuracloudHost(String duracloudHost) {
         this.duracloudHost = duracloudHost;
+        return this;
+    }
+
+    public String getMemberUUID() {
+        return memberUUID;
+    }
+
+    public IntakeSettings setMemberUUID(String memberUUID) {
+        this.memberUUID = memberUUID;
         return this;
     }
 }

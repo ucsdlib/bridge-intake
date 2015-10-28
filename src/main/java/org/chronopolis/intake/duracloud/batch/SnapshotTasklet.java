@@ -258,7 +258,7 @@ public class SnapshotTasklet implements Tasklet {
                 .setSize(chronPackage.getTotalSize())
                 .setUpdatedAt(new DateTime())
                 .setUuid(uuid)
-                .setMember("invalid-uuid") // must be a valid uuid
+                .setMember(settings.getMemberUUID()) // must be a valid uuid
                 .setVersion(Long.parseLong(dpnMetamap.get(DpnBagWriter.VERSION_NUMBER)));
 
         dpn.getBagAPI().createBag(bag); /*, new retrofit.Callback<Bag>() {

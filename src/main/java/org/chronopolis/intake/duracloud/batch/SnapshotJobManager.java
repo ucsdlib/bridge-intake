@@ -4,7 +4,6 @@ import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
-import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
@@ -101,7 +100,7 @@ public class SnapshotJobManager {
                 .addString("snapshotId", snapshotId)
                 .addString("depositor", depositor)
                 .addString("collectionName", collectionName)
-                .addString("date", fmt.print(new DateTime()))
+                // .addString("date", fmt.print(new DateTime()))
                 .toJobParameters();
 
         try {

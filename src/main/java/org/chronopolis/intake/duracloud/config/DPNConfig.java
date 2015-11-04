@@ -67,7 +67,7 @@ public class DPNConfig {
                 .setEndpoint(endpoint)
                 .setConverter(new GsonConverter(gson))
                 .setRequestInterceptor(interceptor)
-                .setLogLevel(RestAdapter.LogLevel.NONE)
+                .setLogLevel(RestAdapter.LogLevel.BASIC)
                 .build();
 
         return new LocalAPI().setNode("chron")

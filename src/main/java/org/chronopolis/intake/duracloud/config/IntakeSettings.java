@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
+ * One day we'll migrate to configuration properties. I swear it.
+ *
  * Created by shake on 8/1/14.
  */
 @Component
@@ -40,6 +42,9 @@ public class IntakeSettings extends ChronopolisSettings {
 
     @Value("${dpn.member.uuid:bad-uuid}")
     private String memberUUID;
+
+    @Value("${dpn.replication.server:localhost}")
+    private String dpnReplicationServer;
 
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
@@ -126,6 +131,15 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setMemberUUID(String memberUUID) {
         this.memberUUID = memberUUID;
+        return this;
+    }
+
+    public String getDpnReplicationServer() {
+        return dpnReplicationServer;
+    }
+
+    public IntakeSettings setDpnReplicationServer(String dpnReplicationServer) {
+        this.dpnReplicationServer = dpnReplicationServer;
         return this;
     }
 }

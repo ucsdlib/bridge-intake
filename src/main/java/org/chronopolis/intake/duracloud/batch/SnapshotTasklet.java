@@ -181,7 +181,7 @@ public class SnapshotTasklet implements Tasklet {
             repl.setReplicationId(UUID.randomUUID().toString());
             repl.setFromNode(ourNode);
             repl.setToNode(node);
-            repl.setLink(node + "@chronopolis:" + save.toString());
+            repl.setLink(node + "@" + settings.getDpnReplicationServer() + ":" + save.toString());
             repl.setProtocol(PROTOCOL);
             repl.setUuid(chronPackage.getSaveName());
             repl.setFixityAlgorithm(ALGORITHM);

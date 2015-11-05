@@ -40,11 +40,15 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${push.dpn:true}")
     private Boolean pushDPN;
 
+    // Move these to the DPNSettings?
     @Value("${dpn.member.uuid:bad-uuid}")
     private String memberUUID;
 
     @Value("${dpn.replication.server:localhost}")
     private String dpnReplicationServer;
+
+    @Value("${chron.replicate.to:ucsd}")
+    private String chronReplicationNodes;
 
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
@@ -140,6 +144,15 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setDpnReplicationServer(String dpnReplicationServer) {
         this.dpnReplicationServer = dpnReplicationServer;
+        return this;
+    }
+
+    public String getChronReplicationNodes() {
+        return chronReplicationNodes;
+    }
+
+    public IntakeSettings setChronReplicationNodes(String chronReplicationNodes) {
+        this.chronReplicationNodes = chronReplicationNodes;
         return this;
     }
 }

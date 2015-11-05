@@ -221,9 +221,8 @@ public class SnapshotTasklet implements Tasklet {
         chronRequest.setDepositor(depositor);
         chronRequest.setLocation(location.toString()); // This is the relative path
 
-        // TODO: Be able to specify which nodes we want to replicate to
-        //       externally instead of relying on a magic value
-        chronRequest.setReplicatingNodes(ImmutableList.of("ucsd-dpn"));
+        chronRequest.setReplicatingNodes(
+                ImmutableList.of(settings.getChronReplicationNodes()));
 
         chronAPI.stageBag(chronRequest);
     }

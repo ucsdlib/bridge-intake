@@ -8,7 +8,6 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Node;
 import org.chronopolis.earth.models.Replication;
-import org.chronopolis.earth.models.Response;
 import org.chronopolis.ingest.bagger.IngestionType;
 import org.chronopolis.ingest.pkg.ChronPackage;
 import org.chronopolis.ingest.pkg.DpnBagWriter;
@@ -140,11 +139,15 @@ public class SnapshotTasklet implements Tasklet {
         return RepeatStatus.FINISHED;
     }
 
+    /**
+     * Steps:
+     * Get DPN Nodes
+     * Chose 2 random
+     * Create replication requests
+     *
+     * @param chronPackage the package to create replications for
+     */
     private void createDPNReplications(ChronPackage chronPackage) {
-        // Steps:
-        //   * Get DPN Nodes
-        //   * Chose 2 random
-        //   * Create replication requests
         // TODO: Remove magic values
         //       - hostname : should be set in external properties
         Path save = Paths.get(settings.getBagStage(),
@@ -157,17 +160,16 @@ public class SnapshotTasklet implements Tasklet {
 
 
         // 5 nodes -> page size of 5
-        Response<Node> response = dpn.getNodeAPI().getNodes(ImmutableMap.of(PARAM_PAGE_SIZE, 5));
-        List<Node> nodes = response.getResults();
+        Node myNode = dpn.getNodeAPI().getNode(settings.getNode());
+        List<String> nodes = myNode.getReplicateTo();
 
         Random r = new Random();
         Set<Integer> seen = new HashSet<>();
         while (count < replications) {
             int index = r.nextInt(nodes.size());
-            Node node = nodes.get(index);
-            String nodeName = node.getName();
+            String node = nodes.get(index);
 
-            if (seen.contains(index) && nodeName.equals(ourNode)) {
+            if (seen.contains(index)) {
                 continue;
             }
 
@@ -178,8 +180,8 @@ public class SnapshotTasklet implements Tasklet {
             repl.setUpdatedAt(DateTime.now());
             repl.setReplicationId(UUID.randomUUID().toString());
             repl.setFromNode(ourNode);
-            repl.setToNode(nodeName);
-            repl.setLink(nodeName + "@chronopolis:" + save.toString());
+            repl.setToNode(node);
+            repl.setLink(node + "@chronopolis:" + save.toString());
             repl.setProtocol(PROTOCOL);
             repl.setUuid(chronPackage.getSaveName());
             repl.setFixityAlgorithm(ALGORITHM);

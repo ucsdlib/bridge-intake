@@ -1,7 +1,9 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.intake.duracloud.DataCollector;
+import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
+import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.joda.time.format.DateTimeFormatter;
@@ -35,6 +37,8 @@ public class SnapshotJobManager {
 
     // Autowired from the configuration
     private SnapshotTasklet snapshotTasklet;
+    private BaggingTasklet baggingTasklet;
+    private ReplicationTasklet replicationTasklet;
 
     private JobBuilderFactory jobBuilderFactory;
     private StepBuilderFactory stepBuilderFactory;
@@ -50,10 +54,14 @@ public class SnapshotJobManager {
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
                               SnapshotTasklet snapshotTasklet,
+                              BaggingTasklet baggingTasklet,
+                              ReplicationTasklet replicationTasklet,
                               DataCollector collector) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.snapshotTasklet = snapshotTasklet;
+        this.baggingTasklet = baggingTasklet;
+        this.replicationTasklet = replicationTasklet;
         this.jobLauncher = jobLauncher;
         this.collector = collector;
 
@@ -89,10 +97,11 @@ public class SnapshotJobManager {
 
     private void startJob(String snapshotId, String depositor, String collectionName) {
         log.trace("Starting tasklet for snapshot {}", snapshotId);
+        log.info("Tasklet {}", baggingTasklet == null);
         DateTimeFormatter fmt = ISODateTimeFormat.basicDateTimeNoMillis().withZoneUTC();
-        Job job = jobBuilderFactory.get("snapshot-job")
-                .start(stepBuilderFactory.get("snapshot-step")
-                    .tasklet(snapshotTasklet)
+        Job job = jobBuilderFactory.get("bagging-job")
+                .start(stepBuilderFactory.get("bagging-step")
+                    .tasklet(baggingTasklet)
                     .build()
                 ).build();
 
@@ -109,6 +118,32 @@ public class SnapshotJobManager {
                 | JobRestartException
                 | JobInstanceAlreadyCompleteException
                 | JobParametersInvalidException e) {
+            log.error("Error launching job\n", e);
+        }
+
+    }
+
+    public void startReplicationTasklet(SnapshotDetails details, BagReceipt receipt, IntakeSettings settings) {
+        BagData data = collector.collectBagData(details.getSnapshotId());
+        log.trace("Starting replication tasklet for snapshot {}", data.snapshotId());
+        Job job = jobBuilderFactory.get("replication-create-job")
+                .start(stepBuilderFactory.get("replication-create-step")
+                    .tasklet(replicationTasklet)
+                    .build()
+                ).build();
+
+        JobParameters parameters = new JobParametersBuilder()
+                .addString("depositor", data.depositor())
+                .addString("name", receipt.getName())
+                .addString("receipt", receipt.getReceipt())
+                .toJobParameters();
+
+        try {
+            jobLauncher.run(job, parameters);
+        } catch (JobInstanceAlreadyCompleteException
+                | JobExecutionAlreadyRunningException
+                | JobParametersInvalidException
+                | JobRestartException e) {
             log.error("Error launching job\n", e);
         }
 

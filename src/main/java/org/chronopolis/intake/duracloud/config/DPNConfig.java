@@ -15,6 +15,8 @@ import org.chronopolis.earth.serializers.ReplicationStatusDeserializer;
 import org.chronopolis.earth.serializers.ReplicationStatusSerializer;
 import org.chronopolis.intake.duracloud.DateTimeDeserializer;
 import org.chronopolis.intake.duracloud.DateTimeSerializer;
+import org.chronopolis.intake.duracloud.model.BaggingHistory;
+import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.joda.time.DateTime;
@@ -38,12 +40,17 @@ public class DPNConfig {
 
     @Bean
     BridgeAPI bridgeAPI(IntakeSettings settings) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
+                .create();
+
         RestAdapter adapter = new RestAdapter.Builder()
                 .setRequestInterceptor(new CredentialRequestInterceptor(
                         settings.getBridgeUsername(),
                         settings.getBridgePassword()))
                 .setEndpoint(settings.getBridgeEndpoint())
-                .setLogLevel(RestAdapter.LogLevel.BASIC)
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .setConverter(new GsonConverter(gson))
                 .build();
 
         return adapter.create(BridgeAPI.class);
@@ -67,7 +74,7 @@ public class DPNConfig {
                 .setEndpoint(endpoint)
                 .setConverter(new GsonConverter(gson))
                 .setRequestInterceptor(interceptor)
-                .setLogLevel(RestAdapter.LogLevel.BASIC)
+                .setLogLevel(RestAdapter.LogLevel.FULL)
                 .build();
 
         return new LocalAPI().setNode("chron")

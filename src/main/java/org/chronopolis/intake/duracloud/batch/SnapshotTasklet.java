@@ -14,6 +14,7 @@ import org.chronopolis.ingest.pkg.DpnBagWriter;
 import org.chronopolis.ingest.pkg.ManifestBuilder;
 import org.chronopolis.ingest.pkg.Unit;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
@@ -41,6 +42,7 @@ import java.util.UUID;
  *
  * Created by shake on 9/19/14.
  */
+@Deprecated
 public class SnapshotTasklet implements Tasklet {
     private final Logger log = LoggerFactory.getLogger(SnapshotTasklet.class);
 
@@ -118,6 +120,8 @@ public class SnapshotTasklet implements Tasklet {
                                                        .toString();
             log.info("Digest is {}", receipt);
 
+            // Save the bag to duracloud
+            updateDuracloudHistory(chronPackage.getSaveName(), receipt);
 
             // TODO: Make this configurable (load based on profile - can have an interface for both and a null/real impl)
             // TODO: Don't rely on these to succeed, we may need to try multiple times
@@ -137,6 +141,11 @@ public class SnapshotTasklet implements Tasklet {
         }
 
         return RepeatStatus.FINISHED;
+    }
+
+    private void updateDuracloudHistory(String saveName, String receipt) {
+        BaggingHistory history = new BaggingHistory(false);
+        history.addBaggingData(saveName, receipt);
     }
 
     /**

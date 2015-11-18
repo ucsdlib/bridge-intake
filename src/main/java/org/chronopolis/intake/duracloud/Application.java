@@ -6,9 +6,12 @@ import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.common.settings.IngestAPISettings;
 import org.chronopolis.common.settings.SMTPSettings;
 import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
+import org.chronopolis.intake.duracloud.batch.ReplicationTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.SnapshotTasklet;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
@@ -149,16 +152,41 @@ public class Application implements CommandLineRunner {
                 localAPI);
     }
 
+    @Bean
+    @JobScope
+    BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
+                                  @Value("#{jobParameters[depositor]}") String depositor,
+                                  @Value("#{jobParameters[collectionName]}") String collectionName,
+                                  IntakeSettings settings,
+                                  BridgeAPI bridge) {
+        return new BaggingTasklet(snapshotId, collectionName, depositor, settings, bridge);
+    }
+
+    @Bean
+    @JobScope
+    ReplicationTasklet replicationTasklet(@Value("#{jobParameters[name]}") String name,
+                                          @Value("#{jobParameters[depositor]}") String depositor,
+                                          @Value("#{jobParameters[receipt]}") String receipt,
+                                          IntakeSettings settings,
+                                          IngestAPI ingest,
+                                          LocalAPI dpn) {
+        return new ReplicationTasklet(settings, name, depositor, receipt, ingest, dpn);
+    }
+
     @Bean(destroyMethod = "destroy")
     SnapshotJobManager snapshotJobManager(JobBuilderFactory jobBuilderFactory,
                                           StepBuilderFactory stepBuilderFactory,
                                           JobLauncher jobLauncher,
                                           SnapshotTasklet snapshotTasklet,
+                                          BaggingTasklet baggingTasklet,
+                                          ReplicationTasklet replicationTasklet,
                                           IntakeSettings settings) {
         return new SnapshotJobManager(jobBuilderFactory,
                 stepBuilderFactory,
                 jobLauncher,
                 snapshotTasklet,
+                baggingTasklet,
+                replicationTasklet,
                 new PropertiesDataCollector(settings));
     }
 

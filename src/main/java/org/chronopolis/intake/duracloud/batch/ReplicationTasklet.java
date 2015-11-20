@@ -11,15 +11,16 @@ import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.model.BagData;
+import org.chronopolis.intake.duracloud.model.BagReceipt;
+import org.chronopolis.intake.duracloud.model.ReplicationHistory;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.StepContribution;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.core.step.tasklet.Tasklet;
-import org.springframework.batch.repeat.RepeatStatus;
 import retrofit.RetrofitError;
 
 import java.io.IOException;
@@ -34,10 +35,13 @@ import java.util.UUID;
 
 /**
  * Creates replications for both DPN and Chronopolis
- *
+ * <p/>
+ * Ok so originally this was a Tasklet but since bags can be multiparted,
+ * we want to work on one bag (chunk) at a time.
+ * <p/>
  * Created by shake on 11/12/15.
  */
-public class ReplicationTasklet implements Tasklet {
+public class ReplicationTasklet implements Runnable {
     private final Logger log = LoggerFactory.getLogger(ReplicationTasklet.class);
 
     private final char DATA_BAG = 'D';
@@ -46,43 +50,100 @@ public class ReplicationTasklet implements Tasklet {
     private final String ALGORITHM = "sha256";
 
     IntakeSettings settings;
-    String name;
+    String snapshot;
     String depositor;
-    String receipt;
+
+    BagData data;
+    List<BagReceipt> receipts;
+
 
     // Services to talk with both Chronopolis and DPN
     private LocalAPI dpn;
     private IngestAPI chronAPI;
 
-    public ReplicationTasklet(IntakeSettings settings, String name, String depositor, String receipt, IngestAPI ingest, LocalAPI dpn) {
-        this.settings = settings;
-        this.name = name;
-        this.depositor = depositor;
-        this.receipt = receipt;
+    // And now featuring Duracloud
+    private BridgeAPI bridge;
+
+    public ReplicationTasklet(BagData data,
+                              List<BagReceipt> receipts,
+                              BridgeAPI bridge,
+                              IngestAPI ingest,
+                              LocalAPI dpn,
+                              IntakeSettings settings) {
+        this.data = data;
+        this.receipts = receipts;
+        this.bridge = bridge;
         this.chronAPI = ingest;
         this.dpn = dpn;
+        this.settings = settings;
+
     }
 
     @Override
-    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        Path save = Paths.get(settings.getBagStage(),
-                depositor,
-                name + ".tar");
+    public void run() {
+        boolean close = true;
+        AlternateIds alternates = new AlternateIds();
+        snapshot = data.snapshotId();
+        depositor = data.depositor();
 
-        registerDPNObject(save, receipt);
-        Response<Replication> uuid = dpn.getTransfersAPI().getReplications(ImmutableMap.of("uuid", name));
-        if (uuid.getCount() == 0) {
-            createDPNReplications(save);
-        } else {
-            checkDPNReplications(save);
+        // Create a bag and replications for each receipt
+        for (BagReceipt receipt : receipts) {
+            log.info("Working on receipt {}", receipt.getName());
+            String name = receipt.getName();
+            alternates.addAlternateId(name);
+
+            Path save = Paths.get(settings.getBagStage(),
+                    depositor,
+                    name + ".tar");
+
+            registerDPNObject(save, receipt.getReceipt(), name);
+            Response<Replication> response = dpn.getTransfersAPI().getReplications(ImmutableMap.of("uuid", name));
+            if (response.getCount() == 0) {
+                log.info("Creating replications for {}", name);
+                createDPNReplications(save, name);
+            } else {
+                log.info("Checking replications for {}", name);
+                close = close && checkDPNReplications(save, response.getResults());
+            }
+
+            pushToChronopolis(save, name);
         }
-        pushToChronopolis(save);
 
-        return RepeatStatus.FINISHED;
+        if (close) {
+            log.info("Closing snapshot {}", snapshot);
+            try {
+                bridge.completeSnapshot(snapshot, alternates);
+            } catch (Exception e) {
+                log.warn("bridge crying: ");
+            }
+        }
     }
 
-    private void checkDPNReplications(Path save) {
+    /**
+     * Checks the status of the replications to see if they are stored, and if so, closes the snapshot
+     *
+     * @param save
+     * @param replications
+     */
+    private boolean checkDPNReplications(Path save, List<Replication> replications) {
+        boolean success = true;
+        for (Replication replication : replications) {
+            boolean stored = replication.status() == Replication.Status.STORED;
+            if (stored) {
+                ReplicationHistory history = new ReplicationHistory(false);
+                history.addReplicationReceipt(replication.getUuid(), replication.getToNode());
+                log.info("Adding ReplicationHistory for snapshot {}: {}", snapshot, history);
+                try {
+                    bridge.postHistory(snapshot, history);
+                } catch (Exception e) {
+                    log.warn("bridge crying: ");
+                }
+            }
 
+            // Also set the success value
+            success = stored && success;
+        }
+        return success;
     }
 
 
@@ -91,9 +152,8 @@ public class ReplicationTasklet implements Tasklet {
      * Get DPN Nodes
      * Chose 2 random
      * Create replication requests
-     *
      */
-    private void createDPNReplications(Path save) {
+    private void createDPNReplications(Path save, String name) {
         settings.getDuracloudSnapshotStage();
         String ourNode = dpn.getNode();
         int replications = 2;
@@ -155,8 +215,9 @@ public class ReplicationTasklet implements Tasklet {
      * Use the {@link IngestAPI} to register the bag with Chronopolis
      *
      * @param location - the relative location of the bag
+     * @param name
      */
-    private void pushToChronopolis(Path location) {
+    private void pushToChronopolis(Path location, String name) {
         IngestRequest chronRequest = new IngestRequest();
         chronRequest.setName(name);
         chronRequest.setDepositor(depositor);
@@ -170,11 +231,11 @@ public class ReplicationTasklet implements Tasklet {
 
     /**
      * Register the bag with the DPN REST API
-     *
-     * @param save - the path of the serialized bag
+     *  @param save    - the path of the serialized bag
      * @param receipt - the receipt of the serialized bag
+     * @param name
      */
-    private boolean registerDPNObject(Path save, final String receipt) {
+    private boolean registerDPNObject(Path save, final String receipt, String name) {
         DpnInfoReader reader;
         try {
             TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(save));
@@ -209,7 +270,7 @@ public class ReplicationTasklet implements Tasklet {
                 .setFirstVersionUuid(reader.getFirstVersionUUID())       // uuid
                 .setReplicatingNodes(ImmutableList.<String>of("chron")); // chron
 
-        dpn.getBagAPI().createBag(bag); new retrofit.Callback<Bag>() {
+        dpn.getBagAPI().createBag(bag, new retrofit.Callback<Bag>() {
             @Override
             public void success(Bag bag, retrofit.client.Response response) {
                 log.info("Success! ");
@@ -224,7 +285,7 @@ public class ReplicationTasklet implements Tasklet {
                 }
 
             }
-        };
+        });
 
         return true;
     }

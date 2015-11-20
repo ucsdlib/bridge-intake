@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.intake.duracloud.DataCollector;
+import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -22,6 +23,7 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -38,13 +40,13 @@ public class SnapshotJobManager {
     // Autowired from the configuration
     private SnapshotTasklet snapshotTasklet;
     private BaggingTasklet baggingTasklet;
-    private ReplicationTasklet replicationTasklet;
 
     private JobBuilderFactory jobBuilderFactory;
     private StepBuilderFactory stepBuilderFactory;
     private JobLauncher jobLauncher;
 
     private DataCollector collector;
+    private APIHolder holder;
 
     // Instantiated per manager
     private ExecutorService executor;
@@ -53,17 +55,17 @@ public class SnapshotJobManager {
     public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
+                              APIHolder holder,
                               SnapshotTasklet snapshotTasklet,
                               BaggingTasklet baggingTasklet,
-                              ReplicationTasklet replicationTasklet,
                               DataCollector collector) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.snapshotTasklet = snapshotTasklet;
         this.baggingTasklet = baggingTasklet;
-        this.replicationTasklet = replicationTasklet;
         this.jobLauncher = jobLauncher;
         this.collector = collector;
+        this.holder = holder;
 
         this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
     }
@@ -123,29 +125,20 @@ public class SnapshotJobManager {
 
     }
 
-    public void startReplicationTasklet(SnapshotDetails details, BagReceipt receipt, IntakeSettings settings) {
+    /**
+     * Start a standalone ReplicationTasklet
+     *
+     * We do it here just for consistency, even though it's not
+     * part of the batch stuff
+     *
+     * @param details
+     * @param receipts
+     * @param settings
+     */
+    public void startReplicationTasklet(SnapshotDetails details, List<BagReceipt> receipts, IntakeSettings settings) {
         BagData data = collector.collectBagData(details.getSnapshotId());
-        log.trace("Starting replication tasklet for snapshot {}", data.snapshotId());
-        Job job = jobBuilderFactory.get("replication-create-job")
-                .start(stepBuilderFactory.get("replication-create-step")
-                    .tasklet(replicationTasklet)
-                    .build()
-                ).build();
-
-        JobParameters parameters = new JobParametersBuilder()
-                .addString("depositor", data.depositor())
-                .addString("name", receipt.getName())
-                .addString("receipt", receipt.getReceipt())
-                .toJobParameters();
-
-        try {
-            jobLauncher.run(job, parameters);
-        } catch (JobInstanceAlreadyCompleteException
-                | JobExecutionAlreadyRunningException
-                | JobParametersInvalidException
-                | JobRestartException e) {
-            log.error("Error launching job\n", e);
-        }
-
+        ReplicationTasklet task = new ReplicationTasklet(data, receipts, holder.bridge, holder.ingest, holder.dpn, settings);
+        task.run();
     }
+
 }

@@ -21,6 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,13 +52,13 @@ public class Bridge {
         for (Snapshot snapshot : snapshots.getSnapshots()) {
             String snapshotId = snapshot.getSnapshotId();
             if (snapshot.getStatus() == SnapshotStatus.WAITING_FOR_DPN) {
-                log.info("Bagging snapshot ", snapshotId);
                 SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
                 SnapshotHistory history = bridge.getSnapshotHistory(snapshotId, null);
 
                 if (history.getTotalCount() > 0) {
-                    // try to deserialize the history returned to us
+                    // try to deserialize the history
                     Gson gson = new GsonBuilder().create();
+                    List<BagReceipt> validReceipts = new ArrayList<>();
                     for (HistoryItem historyItem : history.getHistoryItems()) {
                         log.info(historyItem.getHistory());
                         try {
@@ -66,7 +67,7 @@ public class Bridge {
                             for (BagReceipt receipt : bd) {
                                 log.info("{} ? {} ", receipt.isInitialized(), (receipt.isInitialized() ? receipt.getName() : "null"));
                                 if (receipt.isInitialized()) {
-                                    manager.startReplicationTasklet(details, receipt, settings);
+                                    validReceipts.add(receipt);
                                 }
 
                             }
@@ -74,8 +75,10 @@ public class Bridge {
                             log.warn("Error deserializing some of the history", e);
                         }
                     }
+                    manager.startReplicationTasklet(details, validReceipts, settings);
                 } else {
                     // bag
+                    log.info("Bagging snapshot ", snapshotId);
                     manager.startSnapshotTasklet(details);
                 }
 

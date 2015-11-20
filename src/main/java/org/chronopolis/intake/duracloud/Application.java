@@ -10,6 +10,7 @@ import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.ReplicationTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.SnapshotTasklet;
+import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
@@ -163,30 +164,24 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    @JobScope
-    ReplicationTasklet replicationTasklet(@Value("#{jobParameters[name]}") String name,
-                                          @Value("#{jobParameters[depositor]}") String depositor,
-                                          @Value("#{jobParameters[receipt]}") String receipt,
-                                          IntakeSettings settings,
-                                          IngestAPI ingest,
-                                          LocalAPI dpn) {
-        return new ReplicationTasklet(settings, name, depositor, receipt, ingest, dpn);
+    APIHolder holder(IngestAPI ingest, BridgeAPI bridge, LocalAPI dpn) {
+        return new APIHolder(ingest, bridge, dpn);
     }
 
     @Bean(destroyMethod = "destroy")
     SnapshotJobManager snapshotJobManager(JobBuilderFactory jobBuilderFactory,
                                           StepBuilderFactory stepBuilderFactory,
                                           JobLauncher jobLauncher,
+                                          APIHolder holder,
                                           SnapshotTasklet snapshotTasklet,
                                           BaggingTasklet baggingTasklet,
-                                          ReplicationTasklet replicationTasklet,
                                           IntakeSettings settings) {
         return new SnapshotJobManager(jobBuilderFactory,
                 stepBuilderFactory,
                 jobLauncher,
+                holder,
                 snapshotTasklet,
                 baggingTasklet,
-                replicationTasklet,
                 new PropertiesDataCollector(settings));
     }
 

@@ -111,11 +111,7 @@ public class ReplicationTasklet implements Runnable {
 
         if (close) {
             log.info("Closing snapshot {}", snapshot);
-            try {
-                bridge.completeSnapshot(snapshot, alternates);
-            } catch (Exception e) {
-                log.warn("bridge crying: ");
-            }
+            bridge.completeSnapshot(snapshot, alternates);
         }
     }
 
@@ -133,11 +129,7 @@ public class ReplicationTasklet implements Runnable {
                 ReplicationHistory history = new ReplicationHistory(false);
                 history.addReplicationReceipt(replication.getUuid(), replication.getToNode());
                 log.info("Adding ReplicationHistory for snapshot {}: {}", snapshot, history);
-                try {
-                    bridge.postHistory(snapshot, history);
-                } catch (Exception e) {
-                    log.warn("bridge crying: ");
-                }
+                bridge.postHistory(snapshot, history);
             }
 
             // Also set the success value

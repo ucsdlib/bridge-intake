@@ -1,8 +1,5 @@
 package org.chronopolis.intake.duracloud.remote.model;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,8 +10,6 @@ import java.util.List;
  * Created by shake on 7/27/15.
  */
 public class AlternateIds {
-    private final Logger log = LoggerFactory.getLogger(AlternateIds.class);
-
     List<String> alternateIds;
 
     public AlternateIds() {

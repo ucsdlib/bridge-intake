@@ -16,6 +16,7 @@ public class SnapshotDetails {
     String description;
     String contentItemCount;
     String totalSizeInBytes;
+    String memberId;
 
     public String getSnapshotId() {
         return snapshotId;
@@ -95,6 +96,15 @@ public class SnapshotDetails {
 
     public SnapshotDetails setTotalSizeInBytes(String totalSizeInBytes) {
         this.totalSizeInBytes = totalSizeInBytes;
+        return this;
+    }
+
+    public String getMemberId() {
+        return memberId;
+    }
+
+    public SnapshotDetails setMemberId(String memberId) {
+        this.memberId = memberId;
         return this;
     }
 }

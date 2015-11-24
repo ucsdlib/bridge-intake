@@ -254,13 +254,13 @@ public class ReplicationTasklet implements Runnable {
                 .setSize(save.toFile().length()) // idk
                 .setLocalId(reader.getLocalId())
                 .setRights(reader.getRightsIds())
-                .setMember(settings.getMemberUUID())                     // must be a valid uuid
+                .setMember(data.member())                                // must be a valid uuid
                 .setVersion(reader.getVersionNumber())
                 .setIngestNode(reader.getIngestNodeName())
                 .setInterpretive(reader.getInterpretiveIds())
                 .setFixities(ImmutableMap.of("sha256", receipt))         // sha256 digest
                 .setFirstVersionUuid(reader.getFirstVersionUUID())       // uuid
-                .setReplicatingNodes(ImmutableList.<String>of("chron")); // chron
+                .setReplicatingNodes(ImmutableList.<String>of("chron"));      // chron
 
         dpn.getBagAPI().createBag(bag, new retrofit.Callback<Bag>() {
             @Override

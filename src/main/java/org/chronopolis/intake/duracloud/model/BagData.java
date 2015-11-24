@@ -10,6 +10,7 @@ public class BagData {
     private String snapshotId;
     private String name;
     private String depositor;
+    private String member;
 
     public BagData() {
     }
@@ -41,4 +42,12 @@ public class BagData {
         return this;
     }
 
+    public String member() {
+        return member;
+    }
+
+    public BagData setMember(String member) {
+        this.member = member;
+        return this;
+    }
 }

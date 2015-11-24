@@ -137,6 +137,7 @@ public class SnapshotJobManager {
      */
     public void startReplicationTasklet(SnapshotDetails details, List<BagReceipt> receipts, IntakeSettings settings) {
         BagData data = collector.collectBagData(details.getSnapshotId());
+        data.setMember(details.getMemberId());
         ReplicationTasklet task = new ReplicationTasklet(data, receipts, holder.bridge, holder.ingest, holder.dpn, settings);
         task.run();
     }

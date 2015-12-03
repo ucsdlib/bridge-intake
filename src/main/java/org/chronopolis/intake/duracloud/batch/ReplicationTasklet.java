@@ -101,6 +101,7 @@ public class ReplicationTasklet implements Runnable {
             if (response.getCount() == 0) {
                 log.info("Creating replications for {}", name);
                 createDPNReplications(save, name);
+                close = false;
             } else {
                 log.info("Checking replications for {}", name);
                 close = close && checkDPNReplications(save, response.getResults());

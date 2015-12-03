@@ -51,6 +51,7 @@ public class Bridge {
         Snapshots snapshots = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
         for (Snapshot snapshot : snapshots.getSnapshots()) {
             String snapshotId = snapshot.getSnapshotId();
+            // TODO: Can remove this
             if (snapshot.getStatus() == SnapshotStatus.WAITING_FOR_DPN) {
                 SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
                 SnapshotHistory history = bridge.getSnapshotHistory(snapshotId, null);

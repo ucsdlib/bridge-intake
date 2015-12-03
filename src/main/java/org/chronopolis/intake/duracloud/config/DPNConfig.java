@@ -17,6 +17,8 @@ import org.chronopolis.intake.duracloud.DateTimeDeserializer;
 import org.chronopolis.intake.duracloud.DateTimeSerializer;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
+import org.chronopolis.intake.duracloud.model.ReplicationHistory;
+import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.joda.time.DateTime;
@@ -42,6 +44,7 @@ public class DPNConfig {
     BridgeAPI bridgeAPI(IntakeSettings settings) {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
+                .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
                 .create();
 
         RestAdapter adapter = new RestAdapter.Builder()

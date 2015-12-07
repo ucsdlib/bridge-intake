@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
@@ -19,8 +18,12 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
+import org.junit.FixMethodOrder;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit.RetrofitError;
 
 import java.io.IOException;
@@ -36,12 +39,28 @@ import java.util.UUID;
 /**
  * Creates replications for both DPN and Chronopolis
  * <p/>
- * Ok so originally this was a Tasklet but since bags can be multiparted,
+ * Ok so originally this was a Tasklet but since bags can be multipart,
  * we want to work on one bag (chunk) at a time.
  * <p/>
+ * TODO: This does a lot (dpn {bag/replication}/chron). Might want to split it up.
  * Created by shake on 11/12/15.
  */
+@RunWith(SpringJUnit4ClassRunner.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+// @SpringApplicationConfiguration(classes = TestApplication.class)
 public class ReplicationTasklet implements Runnable {
+
+    /**
+     * static factory class fo' testin'
+     *
+     */
+    static class ReaderFactory {
+        DpnInfoReader reader(Path save, String name) throws IOException {
+            TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(save));
+            return DpnInfoReader.read(is, name);
+        }
+    }
+
     private final Logger log = LoggerFactory.getLogger(ReplicationTasklet.class);
 
     private final char DATA_BAG = 'D';
@@ -49,6 +68,7 @@ public class ReplicationTasklet implements Runnable {
     private final String PROTOCOL = "rsync";
     private final String ALGORITHM = "sha256";
 
+    ReaderFactory readerFactory;
     IntakeSettings settings;
     String snapshot;
     String depositor;
@@ -76,13 +96,14 @@ public class ReplicationTasklet implements Runnable {
         this.chronAPI = ingest;
         this.dpn = dpn;
         this.settings = settings;
-
+        this.readerFactory = new ReaderFactory();
     }
 
     @Override
     public void run() {
         boolean close = true;
         AlternateIds alternates = new AlternateIds();
+        ReplicationHistory history = new ReplicationHistory(false);
         snapshot = data.snapshotId();
         depositor = data.depositor();
 
@@ -104,13 +125,18 @@ public class ReplicationTasklet implements Runnable {
                 close = false;
             } else {
                 log.info("Checking replications for {}", name);
-                close = close && checkDPNReplications(save, response.getResults());
+                close = close && checkDPNReplications(response.getResults(), history);
             }
 
             pushToChronopolis(save, name);
         }
 
         if (close) {
+            // only post replications when ALL have completed
+            // not the best scenario, but it will avoid duplication of history entries for now
+            log.info("Updating bridge with ReplicationHistory of snapshot {}", snapshot);
+            bridge.postHistory(snapshot, history);
+
             log.info("Closing snapshot {}", snapshot);
             bridge.completeSnapshot(snapshot, alternates);
         }
@@ -119,23 +145,26 @@ public class ReplicationTasklet implements Runnable {
     /**
      * Checks the status of the replications to see if they are stored, and if so, closes the snapshot
      *
-     * @param save
-     * @param replications
+     * @param replications the list of replications associated with the snapshot
+     * @param history the replication history associated with the snapshot
+     * @return if all replications for the node are finished
      */
-    private boolean checkDPNReplications(Path save, List<Replication> replications) {
+    private boolean checkDPNReplications(List<Replication> replications, ReplicationHistory history) {
         boolean success = true;
+
         for (Replication replication : replications) {
             boolean stored = replication.status() == Replication.Status.STORED;
             if (stored) {
-                ReplicationHistory history = new ReplicationHistory(false);
+                log.debug("Adding ReplicationHistory for snapshot {}: {}", snapshot, history);
                 history.addReplicationReceipt(replication.getUuid(), replication.getToNode());
-                log.info("Adding ReplicationHistory for snapshot {}: {}", snapshot, history);
-                bridge.postHistory(snapshot, history);
             }
 
             // Also set the success value
             success = stored && success;
         }
+
+        log.info("Success for snapshot? {}", success);
+
         return success;
     }
 
@@ -160,6 +189,7 @@ public class ReplicationTasklet implements Runnable {
 
         Random r = new Random();
         Set<Integer> seen = new HashSet<>();
+        // this can get stuck if we don't replicate to at least 2 nodes
         while (count < replications) {
             int index = r.nextInt(nodes.size());
             String node = nodes.get(index);
@@ -224,15 +254,14 @@ public class ReplicationTasklet implements Runnable {
 
     /**
      * Register the bag with the DPN REST API
-     *  @param save    - the path of the serialized bag
+     * @param save    - the path of the serialized bag
      * @param receipt - the receipt of the serialized bag
      * @param name
      */
     private boolean registerDPNObject(Path save, final String receipt, String name) {
         DpnInfoReader reader;
         try {
-            TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(save));
-            reader = DpnInfoReader.read(is, name);
+            reader = readerFactory.reader(save, name);
         } catch (IOException e) {
             log.error("Unable to read dpn-info from bag, abortin'", e);
             return false;
@@ -240,11 +269,6 @@ public class ReplicationTasklet implements Runnable {
 
         // dpn bag
         Bag bag = new Bag();
-
-        // We know we have a dpn writer associated with it, so no fear
-
-        // The two maps containing the dpn-info contents
-        Multimap<DpnInfoReader.Tag, String> info = reader.getTags();
 
         // TODO: No magic
         bag.setAdminNode("chron")

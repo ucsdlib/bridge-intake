@@ -7,14 +7,36 @@
     <parent>
         <groupId>org.chronopolis</groupId>
         <artifactId>chronopolis</artifactId>
-        <version>1.0.1-RELEASE</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.chronopolis</groupId>
     <artifactId>duracloud-backend</artifactId>
-    <version>1.0.1-RELEASE</version>
+    <version>1.1.0-SNAPSHOT</version>
+
+    <build>
+        <plugins>
+                <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>springloaded</artifactId>
+                        <version>1.2.4.RELEASE</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.chronopolis</groupId>
             <artifactId>rest-common</artifactId>
@@ -22,17 +44,12 @@
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>amqp-core</artifactId>
+            <artifactId>chron-common</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>chron-messaging</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.chronopolis</groupId>
-            <artifactId>chron-db</artifactId>
+            <artifactId>earth-core</artifactId>
         </dependency>
 
         <dependency>

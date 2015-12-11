@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
+ * One day we'll migrate to configuration properties. I swear it.
+ *
  * Created by shake on 8/1/14.
  */
 @Component
@@ -19,6 +21,34 @@ public class IntakeSettings extends ChronopolisSettings {
 
     @Value("${duracloud.manifest:manifest-sha256.txt}")
     private String duracloudManifest;
+
+    @Value("${duracloud.host:test.duracloud.org}")
+    private String duracloudHost;
+
+    @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge}")
+    private String bridgeEndpoint;
+
+    @Value("${duracloud.bridge.username:root}")
+    private String bridgeUsername;
+
+    @Value("${duracloud.bridge.password:password}")
+    private String bridgePassword;
+
+    @Value("${push.chronopolis:true}")
+    private Boolean pushChronopolis;
+
+    @Value("${push.dpn:true}")
+    private Boolean pushDPN;
+
+    // Move these to the DPNSettings?
+    @Value("${dpn.member.uuid:bad-uuid}")
+    private String memberUUID;
+
+    @Value("${dpn.replication.server:localhost}")
+    private String dpnReplicationServer;
+
+    @Value("${chron.replicate.to:ucsd}")
+    private String chronReplicationNodes;
 
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
@@ -43,5 +73,86 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public void setDuracloudManifest(final String duracloudManifest) {
         this.duracloudManifest = duracloudManifest;
+    }
+
+    public String getBridgeEndpoint() {
+        return bridgeEndpoint;
+    }
+
+    public IntakeSettings setBridgeEndpoint(String bridgeEndpoint) {
+        this.bridgeEndpoint = bridgeEndpoint;
+        return this;
+    }
+
+    public Boolean pushChronopolis() {
+        return pushChronopolis;
+    }
+
+    public IntakeSettings setPushChronopolis(Boolean pushChronopolis) {
+        this.pushChronopolis = pushChronopolis;
+        return this;
+    }
+
+    public Boolean pushDPN() {
+        return pushDPN;
+    }
+
+    public IntakeSettings setPushDPN(Boolean pushDPN) {
+        this.pushDPN = pushDPN;
+        return this;
+    }
+
+    public String getBridgeUsername() {
+        return bridgeUsername;
+    }
+
+    public IntakeSettings setBridgeUsername(String bridgeUsername) {
+        this.bridgeUsername = bridgeUsername;
+        return this;
+    }
+
+    public String getBridgePassword() {
+        return bridgePassword;
+    }
+
+    public IntakeSettings setBridgePassword(String bridgePassword) {
+        this.bridgePassword = bridgePassword;
+        return this;
+    }
+
+    public String getDuracloudHost() {
+        return duracloudHost;
+    }
+
+    public IntakeSettings setDuracloudHost(String duracloudHost) {
+        this.duracloudHost = duracloudHost;
+        return this;
+    }
+
+    public String getMemberUUID() {
+        return memberUUID;
+    }
+
+    public IntakeSettings setMemberUUID(String memberUUID) {
+        this.memberUUID = memberUUID;
+        return this;
+    }
+
+    public String getDpnReplicationServer() {
+        return dpnReplicationServer;
+    }
+
+    public IntakeSettings setDpnReplicationServer(String dpnReplicationServer) {
+        this.dpnReplicationServer = dpnReplicationServer;
+        return this;
+    }
+
+    public String getChronReplicationNodes() {
+        return chronReplicationNodes;
+    }
+
+    public IntakeSettings setChronReplicationNodes(String chronReplicationNodes) {
+        this.chronReplicationNodes = chronReplicationNodes;
+        return this;
     }
 }

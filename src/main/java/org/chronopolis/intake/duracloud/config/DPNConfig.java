@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.squareup.okhttp.OkHttpClient;
 import org.chronopolis.common.ace.CredentialRequestInterceptor;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
@@ -25,7 +26,10 @@ import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit.RestAdapter;
+import retrofit.client.OkClient;
 import retrofit.converter.GsonConverter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration for our beans
@@ -73,11 +77,15 @@ public class DPNConfig {
                 .serializeNulls()
                 .create();
 
+        OkHttpClient okClient = new OkHttpClient();
+        okClient.setReadTimeout(5, TimeUnit.HOURS);
+
         RestAdapter adapter = new RestAdapter.Builder()
                 .setEndpoint(endpoint)
                 .setConverter(new GsonConverter(gson))
                 .setRequestInterceptor(interceptor)
                 .setLogLevel(RestAdapter.LogLevel.FULL)
+                .setClient(new OkClient(okClient))
                 .build();
 
         return new LocalAPI().setNode("chron")

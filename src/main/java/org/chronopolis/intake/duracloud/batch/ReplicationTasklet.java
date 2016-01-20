@@ -24,7 +24,7 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import retrofit.RetrofitError;
+import retrofit2.Call;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +52,6 @@ public class ReplicationTasklet implements Runnable {
 
     /**
      * static factory class fo' testin'
-     *
      */
     static class ReaderFactory {
         DpnInfoReader reader(Path save, String name) throws IOException {
@@ -118,14 +117,25 @@ public class ReplicationTasklet implements Runnable {
                     name + ".tar");
 
             registerDPNObject(save, receipt.getReceipt(), name);
-            Response<Replication> response = dpn.getTransfersAPI().getReplications(ImmutableMap.of("uuid", name));
-            if (response.getCount() == 0) {
-                log.info("Creating replications for {}", name);
-                createDPNReplications(save, name);
-                close = false;
-            } else {
-                log.info("Checking replications for {}", name);
-                close = close && checkDPNReplications(response.getResults(), history);
+            Call<Response<Replication>> call = dpn.getTransfersAPI().getReplications(ImmutableMap.of("uuid", name));
+            // TODO: Rename executeResponse
+            retrofit2.Response<Response<Replication>> executeResponse = null;
+            try {
+                executeResponse = call.execute();
+            } catch (IOException e) {
+                log.error("Error communicating with dpn registry server", e);
+            }
+
+            if (executeResponse != null && executeResponse.isSuccess()) {
+                Response<Replication> response = executeResponse.body();
+                if (response.getCount() == 0) {
+                    log.info("Creating replications for {}", name);
+                    createDPNReplications(save, name);
+                    close = false;
+                } else {
+                    log.info("Checking replications for {}", name);
+                    close = close && checkDPNReplications(response.getResults(), history);
+                }
             }
 
             pushToChronopolis(save, name);
@@ -146,7 +156,7 @@ public class ReplicationTasklet implements Runnable {
      * Checks the status of the replications to see if they are stored, and if so, closes the snapshot
      *
      * @param replications the list of replications associated with the snapshot
-     * @param history the replication history associated with the snapshot
+     * @param history      the replication history associated with the snapshot
      * @return if all replications for the node are finished
      */
     private boolean checkDPNReplications(List<Replication> replications, ReplicationHistory history) {
@@ -184,8 +194,23 @@ public class ReplicationTasklet implements Runnable {
 
         // 5 nodes -> page size of 5
         // TODO: DPN Namespace
-        Node myNode = dpn.getNodeAPI().getNode(settings.getNode());
-        List<String> nodes = myNode.getReplicateTo();
+        List<String> nodes;
+        retrofit2.Response<Node> response = null;
+        Call<Node> call = dpn.getNodeAPI().getNode(settings.getNode());
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            log.error("", e);
+        }
+
+        if (response != null && response.isSuccess()) {
+            Node myNode = response.body();
+            nodes = myNode.getReplicateTo();
+        } else {
+            // error communicating, don't make an attempt to create replications
+            nodes = ImmutableList.of();
+            replications = 0;
+        }
 
         Random r = new Random();
         Set<Integer> seen = new HashSet<>();
@@ -211,7 +236,7 @@ public class ReplicationTasklet implements Runnable {
             repl.setUuid(name);
             repl.setFixityAlgorithm(ALGORITHM);
 
-            dpn.getTransfersAPI().createReplication(repl); /*, new Callback<Void>() {
+            Call<Replication> replCall = dpn.getTransfersAPI().createReplication(repl);/*, new Callback<Void>() {
                 @Override
                 public void success(Void aVoid, retrofit.client.Response response) {
                     log.info("Success!!");
@@ -228,10 +253,16 @@ public class ReplicationTasklet implements Runnable {
                 }
             });
             */
-            ++count;
+
+            try {
+                retrofit2.Response<Replication> replResponse = replCall.execute();
+                if (replResponse.isSuccess()) {
+                    ++count;
+                }
+            } catch (IOException e) {
+                log.error("", e);
+            }
         }
-
-
     }
 
     /**
@@ -254,6 +285,7 @@ public class ReplicationTasklet implements Runnable {
 
     /**
      * Register the bag with the DPN REST API
+     *
      * @param save    - the path of the serialized bag
      * @param receipt - the receipt of the serialized bag
      * @param name
@@ -287,7 +319,7 @@ public class ReplicationTasklet implements Runnable {
                 .setFirstVersionUuid(reader.getFirstVersionUUID())       // uuid
                 .setReplicatingNodes(ImmutableList.<String>of("chron"));      // chron
 
-        dpn.getBagAPI().createBag(bag, new retrofit.Callback<Bag>() {
+        Call<Bag> call = dpn.getBagAPI().createBag(bag);/*, new retrofit.Callback<Bag>() {
             @Override
             public void success(Bag bag, retrofit.client.Response response) {
                 log.info("Success! ");
@@ -302,7 +334,17 @@ public class ReplicationTasklet implements Runnable {
                 }
 
             }
-        });
+        });*/
+        try {
+            retrofit2.Response<Bag> response = call.execute();
+            if (response.isSuccess()) {
+                log.info("Success registering bag {}", bag.getUuid());
+            } else {
+                log.info("Failure registering bag {}. Reason: {}", bag.getUuid(), response.message());
+            }
+        } catch (IOException e) {
+            log.info("Failure communicating with server", e);
+        }
 
         return true;
     }

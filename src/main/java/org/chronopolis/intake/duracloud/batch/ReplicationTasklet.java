@@ -18,12 +18,8 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
-import org.junit.FixMethodOrder;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -45,9 +41,6 @@ import java.util.UUID;
  * TODO: This does a lot (dpn {bag/replication}/chron). Might want to split it up.
  * Created by shake on 11/12/15.
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-// @SpringApplicationConfiguration(classes = TestApplication.class)
 public class ReplicationTasklet implements Runnable {
 
     /**

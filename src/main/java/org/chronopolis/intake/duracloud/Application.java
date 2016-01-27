@@ -1,13 +1,13 @@
 package org.chronopolis.intake.duracloud;
 
-import org.chronopolis.common.ace.CredentialRequestInterceptor;
+import okhttp3.OkHttpClient;
+import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.mail.MailUtil;
 import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.common.settings.IngestAPISettings;
 import org.chronopolis.common.settings.SMTPSettings;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
-import org.chronopolis.intake.duracloud.batch.ReplicationTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.SnapshotTasklet;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
@@ -30,11 +30,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import retrofit.RestAdapter;
+import retrofit2.Retrofit;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 
 // import org.chronopolis.earth.api.LocalAPI;
 // import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
@@ -109,17 +110,22 @@ public class Application implements CommandLineRunner {
     @Bean
     IngestAPI ingestAPI(IngestAPISettings settings) {
         String endpoint = settings.getIngestEndpoints().get(0);
-
-        // TODO: This can timeout on long polls, see SO for potential fix
-        // http://stackoverflow.com/questions/24669309/how-to-increase-timeout-for-retrofit-requests-in-robospice-android
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setEndpoint(endpoint)
-                .setErrorHandler(logger())
-                .setLogLevel(RestAdapter.LogLevel.FULL)
-                .setRequestInterceptor(new CredentialRequestInterceptor(
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new OkBasicInterceptor(
                         settings.getIngestAPIUsername(),
                         settings.getIngestAPIPassword()))
+                .readTimeout(5, TimeUnit.HOURS)
                 .build();
+
+        Retrofit adapter = new Retrofit.Builder()
+                .baseUrl(endpoint)
+                .client(client)
+                .build();
+                // .setErrorHandler(logger())
+                // .setLogLevel(RestAdapter.LogLevel.FULL)
+                //.setRequestInterceptor(new CredentialRequestInterceptor(
+                //        settings.getIngestAPIUsername(),
+                //        settings.getIngestAPIPassword()))
 
         return adapter.create(IngestAPI.class);
 

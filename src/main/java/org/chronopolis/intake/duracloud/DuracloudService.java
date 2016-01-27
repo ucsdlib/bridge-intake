@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud;
 
-import retrofit.http.POST;
+import retrofit2.Call;
+import retrofit2.http.POST;
 
 /**
  * Interface for interacting with the Duracloud Bridge Server
@@ -12,9 +13,9 @@ import retrofit.http.POST;
 public interface DuracloudService {
 
     @POST("/api/snapshot/complete")
-    void snapshotComplete();
+    Call<Void> snapshotComplete();
 
     @POST("/api/restore/complete")
-    void restoreComplete();
+    Call<Void> restoreComplete();
 
 }

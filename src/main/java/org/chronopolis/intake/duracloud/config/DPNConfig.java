@@ -3,10 +3,11 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import org.chronopolis.common.ace.CredentialRequestInterceptor;
+import okhttp3.OkHttpClient;
+import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
+import org.chronopolis.earth.OkTokenInterceptor;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
@@ -25,9 +26,8 @@ import org.chronopolis.rest.api.ErrorLogger;
 import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit.RestAdapter;
-import retrofit.client.OkClient;
-import retrofit.converter.GsonConverter;
+import retrofit2.GsonConverterFactory;
+import retrofit2.Retrofit;
 
 import java.util.concurrent.TimeUnit;
 
@@ -51,13 +51,20 @@ public class DPNConfig {
                 .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
                 .create();
 
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setRequestInterceptor(new CredentialRequestInterceptor(
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new OkBasicInterceptor(
                         settings.getBridgeUsername(),
                         settings.getBridgePassword()))
-                .setEndpoint(settings.getBridgeEndpoint())
-                .setLogLevel(RestAdapter.LogLevel.FULL)
-                .setConverter(new GsonConverter(gson))
+                .build();
+
+        Retrofit adapter = new Retrofit.Builder()
+                //.setRequestInterceptor(new CredentialRequestInterceptor(
+                //        settings.getBridgeUsername(),
+                //        settings.getBridgePassword()))
+                .baseUrl(settings.getBridgeEndpoint())
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .client(client)
+                // .setLogLevel(RestAdapter.LogLevel.FULL)
                 .build();
 
         return adapter.create(BridgeAPI.class);
@@ -77,15 +84,15 @@ public class DPNConfig {
                 .serializeNulls()
                 .create();
 
-        OkHttpClient okClient = new OkHttpClient();
-        okClient.setReadTimeout(5, TimeUnit.HOURS);
+        OkHttpClient okClient = new OkHttpClient.Builder()
+                .addInterceptor(new OkTokenInterceptor(settings.getApiKey()))
+                .readTimeout(5, TimeUnit.HOURS)
+                .build();
 
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setEndpoint(endpoint)
-                .setConverter(new GsonConverter(gson))
-                .setRequestInterceptor(interceptor)
-                .setLogLevel(RestAdapter.LogLevel.FULL)
-                .setClient(new OkClient(okClient))
+        Retrofit adapter = new Retrofit.Builder()
+                .baseUrl(endpoint)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .client(okClient)
                 .build();
 
         return new LocalAPI().setNode("chron")

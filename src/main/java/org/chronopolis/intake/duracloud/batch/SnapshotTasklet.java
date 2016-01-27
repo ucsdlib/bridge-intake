@@ -164,12 +164,14 @@ public class SnapshotTasklet implements Tasklet {
                 chronPackage.getSaveName() + ".tar");
         settings.getDuracloudSnapshotStage();
         String ourNode = dpn.getNode();
-        int replications = 2;
+        int replications = 0;
         int count = 0;
 
 
         // 5 nodes -> page size of 5
-        Node myNode = dpn.getNodeAPI().getNode(settings.getNode());
+        // Node myNode = dpn.getNodeAPI().getNode(settings.getNode());
+        Node myNode = new Node();
+        myNode.setReplicateTo(ImmutableList.<String>of());
         List<String> nodes = myNode.getReplicateTo();
 
         Random r = new Random();

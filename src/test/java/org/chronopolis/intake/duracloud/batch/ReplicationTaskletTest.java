@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import retrofit.Callback;
+import retrofit2.Call;
+import retrofit2.Callback;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -154,11 +155,11 @@ public class ReplicationTaskletTest {
         return r;
     }
 
-    Response<Replication> createResponse(List<Replication> results) {
+    Call<Response<Replication>> createResponse(List<Replication> results) {
         Response<Replication> r = new Response<>();
         r.setResults(results);
         r.setCount(results.size());
-        return r;
+        return new CallWrapper<>(r);
     }
 
     // setting up responses for our mock objects
@@ -190,15 +191,21 @@ public class ReplicationTaskletTest {
     public void testCreateBagAndReplications() throws Exception {
         initialize(1);
         readyBagMocks();
+        // result is ignored so just return an empty bag
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<Bag>(new Bag()));
 
         // set up to return our dpn replications
         when(dpn.getTransfersAPI()).thenReturn(transfers);
         when(transfers.getReplications(anyMap()))
                 .thenReturn(createResponse(new ArrayList<Replication>()));
 
+        // result is ignored so just return an empty replication
+        when(transfers.createReplication(any(Replication.class)))
+                .thenReturn(new CallWrapper<Replication>(new Replication()));
+
         // set up our returned node
         when(dpn.getNodeAPI()).thenReturn(nodes);
-        when(nodes.getNode(anyString())).thenReturn(myDpnNode);
+        when(nodes.getNode(anyString())).thenReturn(new CallWrapper<Node>(myDpnNode));
 
         // run the tasklet
         tasklet.run();
@@ -211,7 +218,7 @@ public class ReplicationTaskletTest {
         verify(reader, times(1)).getIngestNodeName();
         verify(reader, times(1)).getInterpretiveIds();
         verify(reader, times(1)).getFirstVersionUUID();
-        verify(bags, times(1)).createBag(any(Bag.class), any(Callback.class));
+        // verify(bags, times(1)).createBag(any(Bag.class), any(Callback.class));
         verify(transfers, times(2)).createReplication(any(Replication.class));
         verify(ingest, times(1)).stageBag(any(IngestRequest.class));
     }
@@ -222,6 +229,11 @@ public class ReplicationTaskletTest {
         readyBagMocks();
 
         when(dpn.getTransfersAPI()).thenReturn(transfers);
+
+        // TODO: Instantiate this bag somewhere else
+        // result is ignored so just return an empty bag
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<Bag>(new Bag()));
+
         for (BagReceipt receipt : receipts) {
             readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
         }
@@ -239,6 +251,8 @@ public class ReplicationTaskletTest {
         readyBagMocks();
 
         when(dpn.getTransfersAPI()).thenReturn(transfers);
+        // result is ignored so just return an empty bag
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<Bag>(new Bag()));
         int i = 0;
         for (BagReceipt receipt : receipts) {
             // We want one receipt to be complete, and one incomplete
@@ -257,5 +271,42 @@ public class ReplicationTaskletTest {
         verify(bridge, times(0)).completeSnapshot(anyString(), any(AlternateIds.class));
     }
 
+
+       public class CallWrapper<E> implements Call<E> {
+
+        E e;
+
+        public CallWrapper(E e) {
+            this.e = e;
+        }
+
+        @Override
+        public retrofit2.Response<E> execute() throws IOException {
+            return retrofit2.Response.success(e);
+        }
+
+        @Override
+        public void enqueue(Callback<E> callback) {
+        }
+
+        @Override
+        public boolean isExecuted() {
+            return false;
+        }
+
+        @Override
+        public void cancel() {
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return false;
+        }
+
+        @Override
+        public Call<E> clone() {
+            return null;
+        }
+    }
 
 }

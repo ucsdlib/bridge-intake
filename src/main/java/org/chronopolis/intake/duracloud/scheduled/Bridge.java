@@ -26,8 +26,8 @@ import java.util.List;
 
 /**
  * Define a scheduled task which polls the Bridge server for snapshots
- *
- *
+ * <p/>
+ * <p/>
  * Created by shake on 7/27/15.
  */
 @Component
@@ -51,39 +51,37 @@ public class Bridge {
         Snapshots snapshots = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
         for (Snapshot snapshot : snapshots.getSnapshots()) {
             String snapshotId = snapshot.getSnapshotId();
-            // TODO: Can remove this
-            if (snapshot.getStatus() == SnapshotStatus.WAITING_FOR_DPN) {
-                SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
-                SnapshotHistory history = bridge.getSnapshotHistory(snapshotId, null);
+            SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
+            SnapshotHistory history = bridge.getSnapshotHistory(snapshotId, null);
 
-                if (history.getTotalCount() > 0) {
-                    // try to deserialize the history
-                    Gson gson = new GsonBuilder().create();
-                    List<BagReceipt> validReceipts = new ArrayList<>();
-                    for (HistoryItem historyItem : history.getHistoryItems()) {
-                        log.info(historyItem.getHistory());
-                        try {
-                            Type type = new TypeToken<List<BagReceipt>>() {}.getType();
-                            List<BagReceipt> bd = gson.fromJson(historyItem.getHistory(), type);
-                            for (BagReceipt receipt : bd) {
-                                log.info("{} ? {} ", receipt.isInitialized(), (receipt.isInitialized() ? receipt.getName() : "null"));
-                                if (receipt.isInitialized()) {
-                                    validReceipts.add(receipt);
-                                }
-
+            if (history.getTotalCount() > 0) {
+                // try to deserialize the history
+                Gson gson = new GsonBuilder().create();
+                List<BagReceipt> validReceipts = new ArrayList<>();
+                for (HistoryItem historyItem : history.getHistoryItems()) {
+                    log.info(historyItem.getHistory());
+                    try {
+                        Type type = new TypeToken<List<BagReceipt>>() {
+                        }.getType();
+                        List<BagReceipt> bd = gson.fromJson(historyItem.getHistory(), type);
+                        for (BagReceipt receipt : bd) {
+                            log.info("{} ? {} ", receipt.isInitialized(), (receipt.isInitialized() ? receipt.getName() : "null"));
+                            if (receipt.isInitialized()) {
+                                validReceipts.add(receipt);
                             }
-                        } catch (Exception e) {
-                            log.warn("Error deserializing some of the history", e);
-                        }
-                    }
-                    manager.startReplicationTasklet(details, validReceipts, settings);
-                } else {
-                    // bag
-                    log.info("Bagging snapshot ", snapshotId);
-                    manager.startSnapshotTasklet(details);
-                }
 
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error deserializing some of the history", e);
+                    }
+                }
+                manager.startReplicationTasklet(details, validReceipts, settings);
+            } else {
+                // bag
+                log.info("Bagging snapshot ", snapshotId);
+                manager.startSnapshotTasklet(details);
             }
+
         }
     }
 

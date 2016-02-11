@@ -266,6 +266,7 @@ public class ReplicationTasklet implements Runnable {
      */
     private void pushToChronopolis(Path location, String name) {
         IngestRequest chronRequest = new IngestRequest();
+        chronRequest.setRequiredReplications(1);
         chronRequest.setName(name);
         chronRequest.setDepositor(depositor);
         chronRequest.setLocation(location.toString()); // This is the relative path
@@ -273,7 +274,13 @@ public class ReplicationTasklet implements Runnable {
         chronRequest.setReplicatingNodes(
                 ImmutableList.of(settings.getChronReplicationNodes()));
 
-        chronAPI.stageBag(chronRequest);
+        Call<org.chronopolis.rest.models.Bag> stageCall = chronAPI.stageBag(chronRequest);
+        try {
+            retrofit2.Response<org.chronopolis.rest.models.Bag> response = stageCall.execute();
+
+        } catch (IOException e) {
+            log.error("Unable to stage bag with chronopolis", e);
+        }
     }
 
     /**

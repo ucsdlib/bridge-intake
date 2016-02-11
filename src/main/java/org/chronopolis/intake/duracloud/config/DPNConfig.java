@@ -58,13 +58,9 @@ public class DPNConfig {
                 .build();
 
         Retrofit adapter = new Retrofit.Builder()
-                //.setRequestInterceptor(new CredentialRequestInterceptor(
-                //        settings.getBridgeUsername(),
-                //        settings.getBridgePassword()))
                 .baseUrl(settings.getBridgeEndpoint())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(client)
-                // .setLogLevel(RestAdapter.LogLevel.FULL)
                 .build();
 
         return adapter.create(BridgeAPI.class);

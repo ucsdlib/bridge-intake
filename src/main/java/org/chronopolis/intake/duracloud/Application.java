@@ -121,11 +121,6 @@ public class Application implements CommandLineRunner {
                 .baseUrl(endpoint)
                 .client(client)
                 .build();
-                // .setErrorHandler(logger())
-                // .setLogLevel(RestAdapter.LogLevel.FULL)
-                //.setRequestInterceptor(new CredentialRequestInterceptor(
-                //        settings.getIngestAPIUsername(),
-                //        settings.getIngestAPIPassword()))
 
         return adapter.create(IngestAPI.class);
 

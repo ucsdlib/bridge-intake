@@ -176,6 +176,8 @@ public class ReplicationTaskletTest {
 
         // bag api
         when(dpn.getBagAPI()).thenReturn(bags);
+        when(ingest.stageBag(any(IngestRequest.class)))
+                .thenReturn(new CallWrapper<>(new org.chronopolis.rest.models.Bag("test", "test")));
     }
 
     void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {
@@ -192,7 +194,7 @@ public class ReplicationTaskletTest {
         initialize(1);
         readyBagMocks();
         // result is ignored so just return an empty bag
-        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<Bag>(new Bag()));
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(new Bag()));
 
         // set up to return our dpn replications
         when(dpn.getTransfersAPI()).thenReturn(transfers);

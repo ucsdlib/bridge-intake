@@ -30,6 +30,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
 import java.io.BufferedReader;
@@ -118,6 +119,7 @@ public class Application implements CommandLineRunner {
                 .build();
 
         Retrofit adapter = new Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(endpoint)
                 .client(client)
                 .build();

@@ -9,6 +9,7 @@ import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotHistory;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStatus;
 import org.chronopolis.intake.duracloud.remote.model.Snapshots;
+import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
@@ -26,21 +27,21 @@ import java.util.Map;
 public interface BridgeAPI {
 
     @GET("/snapshot")
-    Snapshots getSnapshots(@Query("host") String host, @Query("status") SnapshotStatus status);
+    Call<Snapshots> getSnapshots(@Query("host") String host, @Query("status") SnapshotStatus status);
 
     @GET("/snapshot/{snapshotId}")
-    SnapshotDetails getSnapshotDetails(@Path("snapshotId") String snapshotId);
+    Call<SnapshotDetails> getSnapshotDetails(@Path("snapshotId") String snapshotId);
 
     @GET("/snapshot/{snapshotId}/content")
-    SnapshotContent getSnapshotContent(@Path("snapshotId") String snapshotId);
+    Call<SnapshotContent> getSnapshotContent(@Path("snapshotId") String snapshotId);
 
     @POST("/snapshot/{snapshotId}/complete")
-    SnapshotComplete completeSnapshot(@Path("snapshotId") String snapshotId, @Body AlternateIds alternateIds);
+    Call<SnapshotComplete> completeSnapshot(@Path("snapshotId") String snapshotId, @Body AlternateIds alternateIds);
 
     @GET("/snapshot/{snapshotId}/history")
-    SnapshotHistory getSnapshotHistory(@Path("snapshotId") String snapshotId, @QueryMap Map<String, String> params);
+    Call<SnapshotHistory> getSnapshotHistory(@Path("snapshotId") String snapshotId, @QueryMap Map<String, String> params);
 
     @POST("/snapshot/{snapshotId}/history")
-    HistorySummary postHistory(@Path("snapshotId") String snapshotId, @Body History history);
+    Call<HistorySummary> postHistory(@Path("snapshotId") String snapshotId, @Body History history);
 
 }

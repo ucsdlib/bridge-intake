@@ -8,12 +8,14 @@ import org.chronopolis.ingest.pkg.Unit;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
+import retrofit2.Call;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -103,7 +105,8 @@ public class BaggingTasklet implements Tasklet {
         }
 
         // Save the bag to duracloud
-        bridge.postHistory(snapshotId, history);
+        Call<HistorySummary> historyCall = bridge.postHistory(snapshotId, history);
+        historyCall.execute();
 
         return RepeatStatus.FINISHED;
     }

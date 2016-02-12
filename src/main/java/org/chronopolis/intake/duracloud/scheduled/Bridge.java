@@ -19,7 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import retrofit2.Call;
+import retrofit2.Response;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,13 +49,31 @@ public class Bridge {
     IntakeSettings settings;
 
     @Scheduled(cron = "0 * * * * *")
-    public void findSnapshots() {
+    public void findSnapshots() throws IOException {
         log.trace("Polling for snapshots...");
-        Snapshots snapshots = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
+        Snapshots snapshots;
+        Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
+        Response<Snapshots> response = snapshotCall.execute();
+        if (response.isSuccess()) {
+            snapshots = response.body();
+        } else {
+            log.error("Unable to query Bridge API: {}", response.message());
+            log.error("{}", response.errorBody().string());
+            return;
+        }
+
         for (Snapshot snapshot : snapshots.getSnapshots()) {
             String snapshotId = snapshot.getSnapshotId();
-            SnapshotDetails details = bridge.getSnapshotDetails(snapshotId);
-            SnapshotHistory history = bridge.getSnapshotHistory(snapshotId, null);
+            SnapshotDetails details;
+            SnapshotHistory history;
+
+            Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
+            Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, null);
+
+            Response<SnapshotDetails> detailsResponse = detailsCall.execute();
+            Response<SnapshotHistory> historyResponse = historyCall.execute();
+            details = detailsResponse.body();
+            history = historyResponse.body();
 
             if (history.getTotalCount() > 0) {
                 // try to deserialize the history

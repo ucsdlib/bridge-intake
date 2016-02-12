@@ -26,22 +26,22 @@ import java.util.Map;
  */
 public interface BridgeAPI {
 
-    @GET("/snapshot")
+    @GET("snapshot")
     Call<Snapshots> getSnapshots(@Query("host") String host, @Query("status") SnapshotStatus status);
 
-    @GET("/snapshot/{snapshotId}")
+    @GET("snapshot/{snapshotId}")
     Call<SnapshotDetails> getSnapshotDetails(@Path("snapshotId") String snapshotId);
 
-    @GET("/snapshot/{snapshotId}/content")
+    @GET("snapshot/{snapshotId}/content")
     Call<SnapshotContent> getSnapshotContent(@Path("snapshotId") String snapshotId);
 
-    @POST("/snapshot/{snapshotId}/complete")
+    @POST("snapshot/{snapshotId}/complete")
     Call<SnapshotComplete> completeSnapshot(@Path("snapshotId") String snapshotId, @Body AlternateIds alternateIds);
 
-    @GET("/snapshot/{snapshotId}/history")
+    @GET("snapshot/{snapshotId}/history")
     Call<SnapshotHistory> getSnapshotHistory(@Path("snapshotId") String snapshotId, @QueryMap Map<String, String> params);
 
-    @POST("/snapshot/{snapshotId}/history")
+    @POST("snapshot/{snapshotId}/history")
     Call<HistorySummary> postHistory(@Path("snapshotId") String snapshotId, @Body History history);
 
 }

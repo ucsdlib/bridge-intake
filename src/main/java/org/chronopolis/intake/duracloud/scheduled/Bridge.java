@@ -49,16 +49,24 @@ public class Bridge {
     IntakeSettings settings;
 
     @Scheduled(cron = "0 * * * * *")
-    public void findSnapshots() throws IOException {
+    public void findSnapshots() {
+        // TODO: Use enqueue for calls instead of execute, should alleviate some of the try/catch madness
         log.trace("Polling for snapshots...");
         Snapshots snapshots;
         Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
-        Response<Snapshots> response = snapshotCall.execute();
-        if (response.isSuccess()) {
+        Response<Snapshots> response = null;
+        try {
+            response = snapshotCall.execute();
+        } catch (IOException e) {
+            log.error("Unable to query Bridge API:", e);
+            return;
+        }
+
+        if (response != null && response.isSuccess()) {
             snapshots = response.body();
         } else {
-            log.error("Unable to query Bridge API: {}", response.message());
-            log.error("{}", response.errorBody().string());
+            String message = response != null ? response.message() : "";
+            log.error("Error in query to bridge api: Bridge API {}", message);
             return;
         }
 
@@ -70,12 +78,20 @@ public class Bridge {
             Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
             Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, null);
 
-            Response<SnapshotDetails> detailsResponse = detailsCall.execute();
-            Response<SnapshotHistory> historyResponse = historyCall.execute();
-            details = detailsResponse.body();
-            history = historyResponse.body();
+            Response<SnapshotDetails> detailsResponse = null;
+            Response<SnapshotHistory> historyResponse = null;
+            try {
+                detailsResponse = detailsCall.execute();
+                historyResponse = historyCall.execute();
+            } catch (IOException e) {
+                log.error("Error getting History for snapshot {}", snapshotId, e);
+                continue;
+            }
 
-            if (history.getTotalCount() > 0) {
+            details = detailsResponse != null ? detailsResponse.body() : null;
+            history = historyResponse != null ? historyResponse.body() : null;
+
+            if (history != null && history.getTotalCount() > 0) {
                 // try to deserialize the history
                 Gson gson = new GsonBuilder().create();
                 List<BagReceipt> validReceipts = new ArrayList<>();
@@ -96,6 +112,7 @@ public class Bridge {
                         log.warn("Error deserializing some of the history", e);
                     }
                 }
+
                 manager.startReplicationTasklet(details, validReceipts, settings);
             } else {
                 // bag

@@ -32,6 +32,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.chronopolis</groupId>
+            <artifactId>bag-writer</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
@@ -51,11 +57,13 @@
             <artifactId>earth-core</artifactId>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>org.chronopolis.ingest</groupId>
             <artifactId>bagger</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        -->
 
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>

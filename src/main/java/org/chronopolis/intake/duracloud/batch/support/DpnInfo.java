@@ -24,6 +24,7 @@ public class DpnInfo implements TagFile {
     enum Tag {
         DPN_OBJECT_ID("DPN-Object-ID"),
         LOCAL_ID("Local-ID"),
+        INGEST_NODE_NAME("Ingest-Node-Name"),
         INGEST_NODE_ADDRESS("Ingest-Node-Address"),
         INGEST_NODE_CONTACT_NAME ("Ingest-Node-Contact-Name"),
         INGEST_NODE_CONTACT_EMAIL("Ingest-Node-Contact-Email"),

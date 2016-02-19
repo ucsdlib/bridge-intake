@@ -7,8 +7,6 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -100,7 +98,6 @@ public class SnapshotJobManager {
     private void startJob(String snapshotId, String depositor, String collectionName) {
         log.trace("Starting tasklet for snapshot {}", snapshotId);
         log.info("Tasklet {}", baggingTasklet == null);
-        DateTimeFormatter fmt = ISODateTimeFormat.basicDateTimeNoMillis().withZoneUTC();
         Job job = jobBuilderFactory.get("bagging-job")
                 .start(stepBuilderFactory.get("bagging-step")
                     .tasklet(baggingTasklet)

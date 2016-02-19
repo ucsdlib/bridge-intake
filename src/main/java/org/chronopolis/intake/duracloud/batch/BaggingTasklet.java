@@ -1,10 +1,15 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.hash.Hashing;
-import org.chronopolis.ingest.bagger.IngestionType;
-import org.chronopolis.ingest.pkg.ChronPackage;
-import org.chronopolis.ingest.pkg.ManifestBuilder;
-import org.chronopolis.ingest.pkg.Unit;
+import org.chronopolis.bag.core.Bag;
+import org.chronopolis.bag.core.BagInfo;
+import org.chronopolis.bag.core.BagIt;
+import org.chronopolis.bag.core.Digest;
+import org.chronopolis.bag.core.PayloadManifest;
+import org.chronopolis.bag.core.Unit;
+import org.chronopolis.bag.writer.TarPackager;
+import org.chronopolis.bag.writer.UUIDNamingSchema;
+import org.chronopolis.bag.writer.Writer;
+import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
@@ -17,10 +22,10 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import retrofit2.Call;
 
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Tasklet to handle bagging and updating of history to duracloud
@@ -57,13 +62,57 @@ public class BaggingTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        ManifestBuilder builder = new ManifestBuilder();
         BaggingHistory history = new BaggingHistory(false);
 
         Path duraBase = Paths.get(settings.getDuracloudSnapshotStage());
+        Path out = Paths.get(settings.getBagStage(), depositor);
         Path snapshotBase = duraBase.resolve(snapshotId);
+        String manifestName = settings.getDuracloudManifest();
 
+        PayloadManifest manifest = PayloadManifest.loadFromStream(
+                Files.newInputStream(snapshotBase.resolve(manifestName)),
+                snapshotBase);
+
+        // TODO: fill out with what...?
+        // TODO: EXTERNAL-IDENTIFIER: snapshot.description
+        BagInfo info = new BagInfo()
+                .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, depositor);
+
+        Writer writer = new DpnWriter()
+                .withDepositor(depositor)
+                .withBagInfo(info)
+                .withBagIt(new BagIt())
+                .withDigest(Digest.SHA_256)
+                .withPayloadManifest(manifest)
+                .withMaxSize(250, Unit.GIGABYTE)
+                .withPackager(new TarPackager(out))
+                .withNamingSchema(new UUIDNamingSchema());
+
+        List<Bag> bags = writer.write();
+        boolean valid = true;
+
+        for (Bag bag : bags) {
+            log.info("Bag {} is valid? {}; receipt={}", new Object[]{bag.getName(), bag.isValid(), bag.getReceipt()});
+            history.addBaggingData(bag.getName(), bag.getReceipt());
+            valid = valid && bag.isValid();
+        }
+
+        // Save the bag to duracloud
+        if (valid) {
+            Call<HistorySummary> historyCall = bridge.postHistory(snapshotId, history);
+            historyCall.execute();
+        } else {
+            throw new RuntimeException("Error bagging snapshot " + snapshotId);
+        }
+
+        return RepeatStatus.FINISHED;
+    }
+
+
+    private void old() {
+        /*
         // Set up the builder
+        ManifestBuilder builder = new ManifestBuilder();
         builder.setRoot(snapshotBase);
         builder.setWriteBase(Paths.get(settings.getBagStage()));
         builder.setDepositor(depositor);
@@ -103,12 +152,7 @@ public class BaggingTasklet implements Tasklet {
 
             history.addBaggingData(chronPackage.getSaveName(), receipt);
         }
-
-        // Save the bag to duracloud
-        Call<HistorySummary> historyCall = bridge.postHistory(snapshotId, history);
-        historyCall.execute();
-
-        return RepeatStatus.FINISHED;
+        */
     }
 
 }

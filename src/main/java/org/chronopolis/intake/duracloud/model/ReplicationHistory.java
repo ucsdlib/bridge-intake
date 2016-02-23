@@ -23,6 +23,16 @@ public class ReplicationHistory extends History {
         return history;
     }
 
+    @Override
+    public String getSnapshotId() {
+        return null;
+    }
+
+    @Override
+    public String getSnapshotAction() {
+        return null;
+    }
+
     public void addReplicationReceipt(ReplicationReceipt receipt) {
         history.add(receipt);
     }

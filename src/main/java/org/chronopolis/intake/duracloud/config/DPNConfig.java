@@ -3,10 +3,7 @@ package org.chronopolis.intake.duracloud.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
@@ -22,9 +19,11 @@ import org.chronopolis.intake.duracloud.DateTimeDeserializer;
 import org.chronopolis.intake.duracloud.DateTimeSerializer;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
+import org.chronopolis.intake.duracloud.model.HistorySerializer;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -34,7 +33,6 @@ import org.springframework.context.annotation.Configuration;
 import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,19 +52,28 @@ public class DPNConfig {
     @Bean
     BridgeAPI bridgeAPI(IntakeSettings settings) {
         Gson gson = new GsonBuilder()
+                .registerTypeAdapter(History.class, new HistorySerializer())
                 .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
                 .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
                 .create();
 
         OkHttpClient client = new OkHttpClient.Builder()
+                /*
+                * TODO: Configurable http trace
                 .addInterceptor(new Interceptor() {
                     @Override
                     public Response intercept(Chain chain) throws IOException {
                         Request request = chain.request();
-                        log.debug("Making request to {}", request.url());
+                        log.trace("Making request to {}", request.url());
+                        if (request.body() != null) {
+                            Buffer sink = new Buffer();
+                            request.body().writeTo(sink);
+                            log.trace("{}", sink.readUtf8());
+                        }
                         return chain.proceed(request);
                     }
                 })
+                */
                 .addInterceptor(new OkBasicInterceptor(
                         settings.getBridgeUsername(),
                         settings.getBridgePassword()))

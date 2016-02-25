@@ -16,8 +16,10 @@ public class ReplicationHistory extends History {
     private final String snapshotId;
     ReplicationReceipt history;
 
-    public ReplicationHistory(String snapshotId, boolean alternate) {
+    public ReplicationHistory(String snapshotId, String node, boolean alternate) {
         this.snapshotId = snapshotId;
+        this.history = new ReplicationReceipt();
+        history.setNode(node);
         setAlternate(alternate);
     }
 
@@ -38,15 +40,8 @@ public class ReplicationHistory extends History {
         return snapshotAction;
     }
 
-    public void addReplicationReceipt(ReplicationReceipt receipt) {
-        this.history = receipt;
-    }
-
-    public void addReplicationReceipt(String name, String node) {
-        ReplicationReceipt receipt = new ReplicationReceipt();
-        receipt.addBagId(name);
-        receipt.setNode(node);
-        addReplicationReceipt(receipt);
+    public void addReceipt(String bagId) {
+        history.addBagId(bagId);
     }
 
     public String toString() {

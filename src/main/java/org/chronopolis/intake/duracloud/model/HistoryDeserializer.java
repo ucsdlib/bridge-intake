@@ -37,6 +37,6 @@ public class HistoryDeserializer implements JsonDeserializer<History> {
             return jsonDeserializationContext.deserialize(jsonElement, typeMap.get(action));
         }
 
-        return null;
+        return new NullHistory();
     }
 }

@@ -41,8 +41,10 @@ public class ReplicationHistorySerializer implements JsonSerializer<ReplicationH
         historyArray.add(snapshotId);
         historyArray.add(bagIds);
         historyArray.add(node);
+        String history = historyArray.toString()
+                                     .replace("\"", "'");
 
-        obj.add("history", new JsonPrimitive(historyArray.toString()));
+        obj.add("history", new JsonPrimitive(history));
         obj.add("alternate", new JsonPrimitive(replicationHistory.getAlternate()));
         return obj;
     }

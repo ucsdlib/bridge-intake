@@ -49,9 +49,12 @@ public class BaggingHistorySerializer implements JsonSerializer<BaggingHistory> 
         historyArray.add(snapshotId);
         historyArray.add(bagIds);
         historyArray.add(checksums);
+        // We don't need to escape with the charsequence replace
+        String history = historyArray.toString()
+                                     .replace("\"", "'");
 
         // serialize the history
-        object.add("history", new JsonPrimitive(historyArray.toString()));
+        object.add("history", new JsonPrimitive(history));
         object.add("alternate", new JsonPrimitive(baggingHistory.getAlternate()));
         return object;
     }

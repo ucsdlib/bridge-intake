@@ -55,6 +55,7 @@ public class DPNConfig {
                 .registerTypeAdapter(History.class, new HistorySerializer())
                 .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
                 .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
+                .disableHtmlEscaping()
                 .create();
 
         OkHttpClient client = new OkHttpClient.Builder()

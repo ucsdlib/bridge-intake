@@ -97,6 +97,7 @@ public class Bridge {
                 Gson gson = new GsonBuilder()
                         .registerTypeAdapter(History.class, new HistoryDeserializer())
                         .registerTypeAdapter(BaggingHistory.class, new BaggingHistoryDeserializer())
+                        .disableHtmlEscaping()
                         .create();
 
                 List<BagReceipt> validReceipts = new ArrayList<>();

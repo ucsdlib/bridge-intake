@@ -2,11 +2,14 @@ package org.chronopolis.intake.duracloud.scheduled;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
+import org.chronopolis.intake.duracloud.model.BaggingHistory;
+import org.chronopolis.intake.duracloud.model.BaggingHistoryDeserializer;
+import org.chronopolis.intake.duracloud.model.HistoryDeserializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistoryItem;
 import org.chronopolis.intake.duracloud.remote.model.Snapshot;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
@@ -17,13 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class Bridge {
     @Autowired
     IntakeSettings settings;
 
-    @Scheduled(cron = "0 * * * * *")
+    // @Scheduled(cron = "0 * * * * *")
     public void findSnapshots() {
         // TODO: Use enqueue for calls instead of execute, should alleviate some of the try/catch madness
         log.trace("Polling for snapshots...");
@@ -93,23 +94,19 @@ public class Bridge {
 
             if (history != null && history.getTotalCount() > 0) {
                 // try to deserialize the history
-                Gson gson = new GsonBuilder().create();
+                Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(History.class, new HistoryDeserializer())
+                        .registerTypeAdapter(BaggingHistory.class, new BaggingHistoryDeserializer())
+                        .create();
+
                 List<BagReceipt> validReceipts = new ArrayList<>();
                 for (HistoryItem historyItem : history.getHistoryItems()) {
                     log.info(historyItem.getHistory());
-                    try {
-                        Type type = new TypeToken<List<BagReceipt>>() {
-                        }.getType();
-                        List<BagReceipt> bd = gson.fromJson(historyItem.getHistory(), type);
-                        for (BagReceipt receipt : bd) {
-                            log.info("{} ? {} ", receipt.isInitialized(), (receipt.isInitialized() ? receipt.getName() : "null"));
-                            if (receipt.isInitialized()) {
-                                validReceipts.add(receipt);
-                            }
 
-                        }
-                    } catch (Exception e) {
-                        log.warn("Error deserializing some of the history", e);
+                    History fromHistory = gson.fromJson(historyItem.getHistory(), History.class);
+                    if (fromHistory instanceof BaggingHistory) {
+                        BaggingHistory bHistory = (BaggingHistory) fromHistory;
+                        validReceipts.addAll(bHistory.getHistory());
                     }
                 }
 

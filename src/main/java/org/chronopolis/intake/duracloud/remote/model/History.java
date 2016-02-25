@@ -12,6 +12,8 @@ public abstract class History {
     private Boolean alternate;
 
     public abstract List getHistory();
+    public abstract String getSnapshotId();
+    public abstract String getSnapshotAction();
 
     public Boolean getAlternate() {
         return alternate;

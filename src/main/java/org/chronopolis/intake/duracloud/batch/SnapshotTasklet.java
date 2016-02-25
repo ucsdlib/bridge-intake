@@ -141,7 +141,7 @@ public class SnapshotTasklet implements Tasklet {
     }
 
     private void updateDuracloudHistory(String saveName, String receipt) {
-        BaggingHistory history = new BaggingHistory(false);
+        BaggingHistory history = new BaggingHistory(snapshotID, false);
         history.addBaggingData(saveName, receipt);
     }
 

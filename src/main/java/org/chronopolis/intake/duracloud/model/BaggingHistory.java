@@ -12,15 +12,29 @@ import java.util.List;
  */
 public class BaggingHistory extends History {
 
+    private static final String snapshotAction = "SNAPSHOT_BAGGED";
+
+    private final String snapshotId;
     List<BagReceipt> history = new ArrayList<>();
 
-    public BaggingHistory(boolean alternate) {
+    public BaggingHistory(String snapshotId, boolean alternate) {
+        this.snapshotId = snapshotId;
         setAlternate(alternate);
     }
 
     @Override
     public List<BagReceipt> getHistory() {
         return history;
+    }
+
+    @Override
+    public String getSnapshotId() {
+        return snapshotId;
+    }
+
+    @Override
+    public String getSnapshotAction() {
+        return snapshotAction;
     }
 
     public void addBaggingData(BagReceipt data) {

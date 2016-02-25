@@ -1,12 +1,15 @@
 package org.chronopolis.intake.duracloud.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * Created by shake on 11/19/15.
  */
 public class ReplicationReceipt {
 
-    private String name;
+    private List<String> bagIds = new ArrayList<>();
     private String node;
 
     public String getNode() {
@@ -18,16 +21,16 @@ public class ReplicationReceipt {
         return this;
     }
 
-    public String getName() {
-        return name;
+    public List<String> getBagIds() {
+        return bagIds;
     }
 
-    public ReplicationReceipt setName(String name) {
-        this.name = name;
+    public ReplicationReceipt addBagId(String bagId) {
+        this.bagIds.add(bagId);
         return this;
     }
 
     public String toString() {
-        return name + " -> " + node;
+        return bagIds + " -> " + node;
     }
 }

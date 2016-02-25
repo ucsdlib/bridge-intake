@@ -1,8 +1,12 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.chronopolis.earth.SimpleCallback;
+import org.chronopolis.earth.api.BalustradeBag;
+import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Node;
@@ -15,6 +19,8 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
+import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
@@ -26,8 +32,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +47,7 @@ import java.util.UUID;
  * we want to work on one bag (chunk) at a time.
  * <p/>
  * TODO: This does a lot (dpn {bag/replication}/chron). Might want to split it up.
+ * TODO: Update new replication history flow
  * Created by shake on 11/12/15.
  */
 public class ReplicationTasklet implements Runnable {
@@ -94,8 +103,18 @@ public class ReplicationTasklet implements Runnable {
     @Override
     public void run() {
         boolean close = true;
+        int requiredReplication = 3;
+
+        // Http stuff
+        BalustradeBag bags = dpn.getBagAPI();
+        BalustradeTransfers transfers = dpn.getTransfersAPI();
+        SimpleCallback<Bag> bagCallback;
+        SimpleCallback<Response<Replication>> replicationCallback;
+
+        // History stuff
         AlternateIds alternates = new AlternateIds();
-        ReplicationHistory history = new ReplicationHistory(false);
+        Map<String, ReplicationHistory> historyMap = new HashMap<>();
+
         snapshot = data.snapshotId();
         depositor = data.depositor();
 
@@ -109,25 +128,59 @@ public class ReplicationTasklet implements Runnable {
                     depositor,
                     name + ".tar");
 
-            registerDPNObject(save, receipt.getReceipt(), name);
-            Call<Response<Replication>> call = dpn.getTransfersAPI().getReplications(ImmutableMap.of("uuid", name));
-            // TODO: Rename executeResponse
-            retrofit2.Response<Response<Replication>> executeResponse = null;
-            try {
-                executeResponse = call.execute();
-            } catch (IOException e) {
-                log.error("Error communicating with dpn registry server", e);
+
+            // Get the bag and replications if they exist
+            bagCallback = new SimpleCallback<>();
+            replicationCallback = new SimpleCallback<>();
+            Call<Bag> bagCall = bags.getBag(name);
+            Call<Response<Replication>> replicationCall = transfers.getReplications(ImmutableMap.of("uuid", name));
+
+            bagCall.enqueue(bagCallback);
+
+            Optional<Bag> bagResponse = bagCallback.getResponse();
+            boolean registered = true;
+
+
+            // See if we need to create the bag (response is not 2xx so we assume so)
+            if (!bagResponse.isPresent()) {
+                close = false;
+                log.info("Creating bag for {}", name);
+                registered = registerDPNObject(save, receipt.getReceipt(), name);
             }
 
-            if (executeResponse != null && executeResponse.isSuccess()) {
-                Response<Replication> response = executeResponse.body();
+            replicationCall.enqueue(replicationCallback);
+            Optional<Response<Replication>> replicationResponse = replicationCallback.getResponse();
+
+            // Create/check our replications
+            if (registered && replicationResponse.isPresent()) {
+                Response<Replication> response = replicationResponse.get();
+
+                // NOTE: The DPN API returns ALL replications if a bag uuid does not exist
+                //       so going based of the size isn't always reliable, but should be fine
                 if (response.getCount() == 0) {
+                    close = false;
                     log.info("Creating replications for {}", name);
                     createDPNReplications(save, name);
-                    close = false;
                 } else {
-                    log.info("Checking replications for {}", name);
-                    close = close && checkDPNReplications(response.getResults(), history);
+                    // Check the status of our replications
+                    // It's easier to do it here as successful replications are returned to us
+                    // in the bag object
+                    Bag body = bagResponse.get();
+                    List<String> replicatingNodes = body.getReplicatingNodes();
+
+                    //       because of this we check to make sure the name is the same
+                    for (String node : replicatingNodes) {
+                        ReplicationHistory history = historyMap.get(node);
+                        if (history == null) {
+                            history = new ReplicationHistory(snapshot, node, false);
+                        }
+
+                        history.addReceipt(name);
+                        historyMap.put(node, history);
+                    }
+
+                    // Set our condition which we close upon
+                    close &= replicatingNodes.size() == requiredReplication;
                 }
             }
 
@@ -137,38 +190,17 @@ public class ReplicationTasklet implements Runnable {
         if (close) {
             // only post replications when ALL have completed
             // not the best scenario, but it will avoid duplication of history entries for now
+            // in the event these don't complete successfully, they should just be tried again
             log.info("Updating bridge with ReplicationHistory of snapshot {}", snapshot);
-            bridge.postHistory(snapshot, history);
-
-            log.info("Closing snapshot {}", snapshot);
-            bridge.completeSnapshot(snapshot, alternates);
-        }
-    }
-
-    /**
-     * Checks the status of the replications to see if they are stored, and if so, closes the snapshot
-     *
-     * @param replications the list of replications associated with the snapshot
-     * @param history      the replication history associated with the snapshot
-     * @return if all replications for the node are finished
-     */
-    private boolean checkDPNReplications(List<Replication> replications, ReplicationHistory history) {
-        boolean success = true;
-
-        for (Replication replication : replications) {
-            boolean stored = replication.status() == Replication.Status.STORED;
-            if (stored) {
-                log.debug("Adding ReplicationHistory for snapshot {}: {}", snapshot, history);
-                history.addReplicationReceipt(replication.getUuid(), replication.getToNode());
+            for (ReplicationHistory history : historyMap.values()) {
+                Call<HistorySummary> call = bridge.postHistory(snapshot, history);
+                call.enqueue(new SimpleCallback<HistorySummary>());
             }
 
-            // Also set the success value
-            success = stored && success;
+            log.info("Closing snapshot {}", snapshot);
+            Call<SnapshotComplete> call = bridge.completeSnapshot(snapshot, alternates);
+            call.enqueue(new SimpleCallback<SnapshotComplete>());
         }
-
-        log.info("Success for snapshot? {}", success);
-
-        return success;
     }
 
 
@@ -186,7 +218,6 @@ public class ReplicationTasklet implements Runnable {
 
 
         // 5 nodes -> page size of 5
-        // TODO: DPN Namespace
         List<String> nodes;
         retrofit2.Response<Node> response = null;
         Call<Node> call = dpn.getNodeAPI().getNode(settings.getNode());
@@ -341,9 +372,11 @@ public class ReplicationTasklet implements Runnable {
                 log.info("Success registering bag {}", bag.getUuid());
             } else {
                 log.info("Failure registering bag {}. Reason: {}", bag.getUuid(), response.message());
+                return false;
             }
         } catch (IOException e) {
             log.info("Failure communicating with server", e);
+            return false;
         }
 
         return true;

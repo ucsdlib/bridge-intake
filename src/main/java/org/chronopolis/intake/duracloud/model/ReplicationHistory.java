@@ -1,8 +1,8 @@
 package org.chronopolis.intake.duracloud.model;
 
+import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.remote.model.History;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,26 +12,36 @@ import java.util.List;
  */
 public class ReplicationHistory extends History {
 
-    List<ReplicationReceipt> history = new ArrayList<>();
+    private static final String snapshotAction = "SNAPSHOT_REPLICATED";
+    private final String snapshotId;
+    ReplicationReceipt history;
 
-    public ReplicationHistory(boolean alternate) {
+    public ReplicationHistory(String snapshotId, String node, boolean alternate) {
+        this.snapshotId = snapshotId;
+        this.history = new ReplicationReceipt();
+        history.setNode(node);
         setAlternate(alternate);
     }
 
     @Override
     public List<ReplicationReceipt> getHistory() {
-        return history;
+        // return history;
+        // this isn't really used for this class but w.e.
+        return ImmutableList.of(history);
     }
 
-    public void addReplicationReceipt(ReplicationReceipt receipt) {
-        history.add(receipt);
+    @Override
+    public String getSnapshotId() {
+        return snapshotId;
     }
 
-    public void addReplicationReceipt(String name, String node) {
-        ReplicationReceipt receipt = new ReplicationReceipt();
-        receipt.setName(name);
-        receipt.setNode(node);
-        addReplicationReceipt(receipt);
+    @Override
+    public String getSnapshotAction() {
+        return snapshotAction;
+    }
+
+    public void addReceipt(String bagId) {
+        history.addBagId(bagId);
     }
 
     public String toString() {

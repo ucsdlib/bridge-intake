@@ -62,7 +62,7 @@ public class BaggingTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        BaggingHistory history = new BaggingHistory(false);
+        BaggingHistory history = new BaggingHistory(snapshotId, false);
 
         Path duraBase = Paths.get(settings.getDuracloudSnapshotStage());
         Path out = Paths.get(settings.getBagStage(), depositor);

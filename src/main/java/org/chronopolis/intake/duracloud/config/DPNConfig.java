@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.config;
 
+import com.google.common.base.Optional;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -55,7 +56,7 @@ public class DPNConfig {
     }
 
     @Bean
-    void checkSNI(IntakeSettings settings) throws GeneralSecurityException {
+    Optional<Object> checkSNI(IntakeSettings settings) throws GeneralSecurityException {
         if (settings.getDisableSNI()) {
             System.setProperty("jsse.enableSNIExtension", "false");
             // Create a trust manager that does not validate certificate chains
@@ -80,6 +81,8 @@ public class DPNConfig {
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
+
+        return Optional.absent();
     }
 
     @Bean

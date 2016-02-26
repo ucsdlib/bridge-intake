@@ -25,7 +25,7 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${duracloud.host:test.duracloud.org}")
     private String duracloudHost;
 
-    @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge}")
+    @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge/}")
     private String bridgeEndpoint;
 
     @Value("${duracloud.bridge.username:root}")

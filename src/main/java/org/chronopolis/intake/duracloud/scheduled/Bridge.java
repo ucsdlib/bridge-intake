@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistoryDeserializer;
 import org.chronopolis.intake.duracloud.model.HistoryDeserializer;
@@ -14,6 +13,8 @@ import org.chronopolis.intake.duracloud.remote.model.HistoryItem;
 import org.chronopolis.intake.duracloud.remote.model.Snapshot;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotHistory;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotStaged;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotStagedDeserializer;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStatus;
 import org.chronopolis.intake.duracloud.remote.model.Snapshots;
 import org.slf4j.Logger;
@@ -26,8 +27,6 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Define a scheduled task which polls the Bridge server for snapshots
@@ -98,9 +97,26 @@ public class Bridge {
                 Gson gson = new GsonBuilder()
                         .registerTypeAdapter(History.class, new HistoryDeserializer())
                         .registerTypeAdapter(BaggingHistory.class, new BaggingHistoryDeserializer())
+                        .registerTypeAdapter(SnapshotStaged.class, new SnapshotStagedDeserializer())
                         .disableHtmlEscaping()
                         .create();
 
+                // The latest history item should tell us what step we're on, and of those we
+                // only really care about SNAPSHOT_STAGED and SNAPSHOT_BAGGED
+                // If we're at STAGED, then the snapshot is ready to be bagged
+                // If we're at BAGGED, then the snapshot needs to be replicated/closed
+                HistoryItem item = history.getHistoryItems().get(0);
+                log.debug("Processing line {}", item.getHistory());
+                History fromJson = gson.fromJson(item.getHistory(), History.class);
+                if (fromJson instanceof SnapshotStaged) {
+                    log.info("Bagging snapshot {}", snapshotId);
+                    manager.startSnapshotTasklet(details);
+                } else if (fromJson instanceof BaggingHistory) {
+                    BaggingHistory bHistory = (BaggingHistory) fromJson;
+                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings);
+                }
+
+                /*
                 List<BagReceipt> validReceipts = new ArrayList<>();
                 for (HistoryItem historyItem : history.getHistoryItems()) {
                     log.info(historyItem.getHistory());
@@ -112,18 +128,12 @@ public class Bridge {
                     }
                 }
 
-                manager.startReplicationTasklet(details, validReceipts, settings);
+                */
             } else {
-                // bag
-                log.info("Bagging snapshot ", snapshotId);
-                manager.startSnapshotTasklet(details);
+                log.warn("Snapshot {} has no history, ignoring", snapshotId);
             }
 
         }
-    }
-
-    // I don't think we need this - depends on when we close snapshots
-    public void updateSnapshots() {
     }
 
 }

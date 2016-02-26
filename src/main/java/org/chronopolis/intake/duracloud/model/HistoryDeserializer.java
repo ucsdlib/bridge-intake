@@ -8,6 +8,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import org.chronopolis.intake.duracloud.remote.model.History;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotStaged;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,7 @@ public class HistoryDeserializer implements JsonDeserializer<History> {
     public History deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         ImmutableMap<String, Type> typeMap = ImmutableMap.<String, Type>builder()
                 .put("SNAPSHOT_BAGGED", BaggingHistory.class)
+                .put("SNAPSHOT_STAGED", SnapshotStaged.class)
                 .build();
 
         JsonArray array = jsonElement.getAsJsonArray();
@@ -34,7 +36,12 @@ public class HistoryDeserializer implements JsonDeserializer<History> {
         if (actionObject.has("snapshot-action")) {
             String action = actionObject.getAsJsonPrimitive("snapshot-action").getAsString();
             log.info("Found snapshot-action {}", action);
-            return jsonDeserializationContext.deserialize(jsonElement, typeMap.get(action));
+
+            // If we don't have a deserializer for the action, ignore it and return a "null" history object
+            Type actionType = typeMap.get(action);
+            if (actionType != null) {
+                return jsonDeserializationContext.deserialize(jsonElement, actionType);
+            }
         }
 
         return new NullHistory();

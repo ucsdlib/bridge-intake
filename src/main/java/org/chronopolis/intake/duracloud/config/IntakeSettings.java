@@ -50,6 +50,9 @@ public class IntakeSettings extends ChronopolisSettings {
     @Value("${chron.replicate.to:ucsd}")
     private String chronReplicationNodes;
 
+    @Value("${disable.sni:true}")
+    private Boolean disableSNI;
+
     public String getDuracloudSnapshotStage() {
         return duracloudSnapshotStage;
     }
@@ -153,6 +156,15 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setChronReplicationNodes(String chronReplicationNodes) {
         this.chronReplicationNodes = chronReplicationNodes;
+        return this;
+    }
+
+    public Boolean getDisableSNI() {
+        return disableSNI;
+    }
+
+    public IntakeSettings setDisableSNI(Boolean disableSNI) {
+        this.disableSNI = disableSNI;
         return this;
     }
 }

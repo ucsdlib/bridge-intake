@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
-import org.chronopolis.common.dpn.TokenInterceptor;
 import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.earth.OkTokenInterceptor;
 import org.chronopolis.earth.api.BalustradeBag;
@@ -33,11 +32,17 @@ import org.springframework.context.annotation.Configuration;
 import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.GeneralSecurityException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration for our beans
- *
+ * <p/>
  * Created by shake on 9/30/14.
  */
 @Configuration
@@ -47,6 +52,34 @@ public class DPNConfig {
     @Bean
     ErrorLogger logger() {
         return new ErrorLogger();
+    }
+
+    @Bean
+    void checkSNI(IntakeSettings settings) throws GeneralSecurityException {
+        if (settings.getDisableSNI()) {
+            System.setProperty("jsse.enableSNIExtension", "false");
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+
+                        public void checkClientTrusted(
+                                java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(
+                                java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+                    }
+            };
+
+            // Install the all-trusting trust manager
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        }
     }
 
     @Bean
@@ -93,7 +126,6 @@ public class DPNConfig {
     @Bean
     LocalAPI localAPI(DPNSettings settings) {
         String endpoint = settings.getDPNEndpoints().get(0);
-        TokenInterceptor interceptor = new TokenInterceptor(settings.getApiKey());
 
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)

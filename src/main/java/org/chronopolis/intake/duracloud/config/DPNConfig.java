@@ -17,6 +17,7 @@ import org.chronopolis.earth.serializers.ReplicationStatusDeserializer;
 import org.chronopolis.earth.serializers.ReplicationStatusSerializer;
 import org.chronopolis.intake.duracloud.DateTimeDeserializer;
 import org.chronopolis.intake.duracloud.DateTimeSerializer;
+import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
 import org.chronopolis.intake.duracloud.model.HistorySerializer;
@@ -95,22 +96,7 @@ public class DPNConfig {
                 .create();
 
         OkHttpClient client = new OkHttpClient.Builder()
-                /*
-                * TODO: Configurable http trace
-                .addInterceptor(new Interceptor() {
-                    @Override
-                    public Response intercept(Chain chain) throws IOException {
-                        Request request = chain.request();
-                        log.trace("Making request to {}", request.url());
-                        if (request.body() != null) {
-                            Buffer sink = new Buffer();
-                            request.body().writeTo(sink);
-                            log.trace("{}", sink.readUtf8());
-                        }
-                        return chain.proceed(request);
-                    }
-                })
-                */
+                .addInterceptor(new HttpTraceInterceptor())
                 .addInterceptor(new OkBasicInterceptor(
                         settings.getBridgeUsername(),
                         settings.getBridgePassword()))
@@ -140,6 +126,7 @@ public class DPNConfig {
                 .create();
 
         OkHttpClient okClient = new OkHttpClient.Builder()
+                .addInterceptor(new HttpTraceInterceptor())
                 .addInterceptor(new OkTokenInterceptor(settings.getApiKey()))
                 .readTimeout(5, TimeUnit.HOURS)
                 .build();

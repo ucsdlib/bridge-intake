@@ -168,7 +168,7 @@ public class ReplicationTasklet implements Runnable {
                     Bag body = bagResponse.get();
                     List<String> replicatingNodes = body.getReplicatingNodes();
 
-                    //       because of this we check to make sure the name is the same
+                    // because of this we check to make sure the name is the same
                     for (String node : replicatingNodes) {
                         ReplicationHistory history = historyMap.get(node);
                         if (history == null) {
@@ -224,7 +224,7 @@ public class ReplicationTasklet implements Runnable {
         try {
             response = call.execute();
         } catch (IOException e) {
-            log.error("", e);
+            log.error("Error communicating with server", e);
         }
 
         if (response != null && response.isSuccess()) {
@@ -232,6 +232,11 @@ public class ReplicationTasklet implements Runnable {
             nodes = myNode.getReplicateTo();
         } else {
             // error communicating, don't make an attempt to create replications
+            if (response != null) {
+                log.error("Error in response: {} - {}", response.code(), response.message());
+            } else {
+                log.error("Error in response: null response");
+            }
             nodes = ImmutableList.of();
             replications = 0;
         }
@@ -248,6 +253,7 @@ public class ReplicationTasklet implements Runnable {
             }
 
             seen.add(index);
+            log.debug("Adding replication for {}", node);
             Replication repl = new Replication();
             repl.setStatus(Replication.Status.REQUESTED);
             repl.setCreatedAt(DateTime.now());
@@ -282,6 +288,7 @@ public class ReplicationTasklet implements Runnable {
                 retrofit2.Response<Replication> replResponse = replCall.execute();
                 if (replResponse.isSuccess()) {
                     ++count;
+                    // nodes.remove(index);
                 }
             } catch (IOException e) {
                 log.error("", e);

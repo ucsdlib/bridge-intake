@@ -21,6 +21,8 @@ JAVA_BIN=/usr/bin/java
 JAVA_CMD="$JAVA_BIN -jar $BRIDGE_JAR"
 PARAMS="--spring.config.location=$SPRING_CONFIG_LOCATION &"
 
+ENV="SPRING_CONFIG_LOCATION=$SPRING_CONFIG_LOCATION"
+
 . /etc/init.d/functions
 
 RETVAL=0
@@ -29,7 +31,7 @@ COUNTDOWN=1
 case "$1" in
     start)
     echo "Starting the bridge client"
-    daemon --user "$CHRON_USER" --pidfile "$BRIDGE_PID_FILE" $JAVA_CMD $PARAMS > /dev/null 2>&1
+    daemon --user "$CHRON_USER" --pidfile "$BRIDGE_PID_FILE" $ENV $JAVA_CMD $PARAMS > /dev/null 2>&1
     RETVAL=$?
 
     echo "Waiting for startup to complete..."

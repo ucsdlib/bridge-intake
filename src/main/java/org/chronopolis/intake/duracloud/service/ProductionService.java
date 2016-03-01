@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * Created by shake on 3/1/16.
  */
 @Component
-@Profile("production")
+@Profile("default")
 public class ProductionService implements ChronService {
     private final Logger log = LoggerFactory.getLogger(ProductionService.class);
 

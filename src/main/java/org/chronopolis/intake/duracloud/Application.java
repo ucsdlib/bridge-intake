@@ -14,6 +14,7 @@ import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
+import org.chronopolis.intake.duracloud.service.ChronService;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
 import org.slf4j.Logger;
@@ -33,9 +34,6 @@ import org.springframework.context.annotation.ComponentScan;
 import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 // import org.chronopolis.earth.api.LocalAPI;
@@ -48,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@ComponentScan(basePackageClasses = {DPNSettings.class, IntakeSettings.class, Bridge.class})
+@ComponentScan(basePackageClasses = {DPNSettings.class, IntakeSettings.class, Bridge.class, ChronService.class})
 public class Application implements CommandLineRunner {
     private final Logger log = LoggerFactory.getLogger(Application.class);
 
@@ -56,7 +54,7 @@ public class Application implements CommandLineRunner {
     SnapshotJobManager manager;
 
     @Autowired
-    Bridge bridge;
+    ChronService service;
 
     public static void main(String[] args) {
         SpringApplication.exit(SpringApplication.run(Application.class));
@@ -64,43 +62,8 @@ public class Application implements CommandLineRunner {
 
     @Override
     public void run(String... strings) throws Exception {
-        boolean done = false;
-        System.out.println("Enter 'q' to quit; 'p' or 'b' to poll the bridge server");
-        while (!done) {
-            String input = readLine();
-            if ("q".equalsIgnoreCase(input)) {
-                done = true;
-            } else if ("t".equalsIgnoreCase(input)) {
-                test();
-            } else if ("p".equalsIgnoreCase(input) || "b".equalsIgnoreCase(input)) {
-                try {
-                    bridge.findSnapshots();
-                } catch (Exception e) {
-                    log.error("Error calling bridge!", e);
-                }
-            }
-        }
-
+        service.run();
         // SpringApplication.exit(context);
-    }
-
-    // Test based on some static content
-    private void test() {
-        /*
-        log.info("Push chron: {} Push DPN: {}", settings.pushChronopolis(), settings.pushDPN());
-        SnapshotDetails details = new SnapshotDetails();
-        details.setSnapshotId("erik-3-erik-test-space-2014-02-21-20-17-58");
-        manager.startSnapshotTasklet(details);
-        */
-    }
-
-    private String readLine() {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            return reader.readLine();
-        } catch (IOException ex) {
-            throw new RuntimeException("Can't read from STDIN");
-        }
     }
 
     @Bean

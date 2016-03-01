@@ -4,6 +4,7 @@ import org.chronopolis.bag.core.Bag;
 import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.Digest;
+import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
 import org.chronopolis.bag.core.Unit;
 import org.chronopolis.bag.writer.TarPackager;
@@ -35,6 +36,11 @@ import java.util.List;
 public class BaggingTasklet implements Tasklet {
 
     private final Logger log = LoggerFactory.getLogger(BaggingTasklet.class);
+
+    public static final String SNAPSHOT_CONTENT_PROPERTIES = "content-properties.json";
+    public static final String SNAPSHOT_COLLECTION_PROPERTIES = ".collection-snapshot.properties";
+    public static final String SNAPSHOT_MD5 = "manifest-md5.txt";
+    public static final String SNAPSHOT_SHA = "manifest-sha256.txt";
 
     private final char DATA_BAG = 'D';
     private final String PARAM_PAGE_SIZE = "page_size";
@@ -86,7 +92,10 @@ public class BaggingTasklet implements Tasklet {
                 .withPayloadManifest(manifest)
                 .withMaxSize(250, Unit.GIGABYTE)
                 .withPackager(new TarPackager(out))
-                .withNamingSchema(new UUIDNamingSchema());
+                .withNamingSchema(new UUIDNamingSchema())
+                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)))
+                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
+                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_MD5)));
 
         List<Bag> bags = writer.write();
         boolean valid = true;

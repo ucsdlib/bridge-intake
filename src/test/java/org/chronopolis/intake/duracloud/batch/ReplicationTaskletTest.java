@@ -215,7 +215,7 @@ public class ReplicationTaskletTest {
         // bag api
         when(dpn.getBagAPI()).thenReturn(bags);
         when(ingest.stageBag(any(IngestRequest.class)))
-                .thenReturn(new CallWrapper<>(new org.chronopolis.rest.models.Bag("test", "test")));
+                .thenReturn(new CallWrapper<>(new org.chronopolis.rest.entities.Bag("test", "test")));
     }
 
     void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {

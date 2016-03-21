@@ -312,9 +312,9 @@ public class ReplicationTasklet implements Runnable {
         chronRequest.setReplicatingNodes(
                 ImmutableList.of(settings.getChronReplicationNodes()));
 
-        Call<org.chronopolis.rest.models.Bag> stageCall = chronAPI.stageBag(chronRequest);
+        Call<org.chronopolis.rest.entities.Bag> stageCall = chronAPI.stageBag(chronRequest);
         try {
-            retrofit2.Response<org.chronopolis.rest.models.Bag> response = stageCall.execute();
+            retrofit2.Response<org.chronopolis.rest.entities.Bag> response = stageCall.execute();
 
         } catch (IOException e) {
             log.error("Unable to stage bag with chronopolis", e);

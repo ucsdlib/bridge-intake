@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.mail.MailUtil;
@@ -17,6 +19,8 @@ import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.support.ZonedDateTimeDeserializer;
+import org.chronopolis.rest.support.ZonedDateTimeSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -34,6 +38,7 @@ import org.springframework.context.annotation.ComponentScan;
 import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 // import org.chronopolis.earth.api.LocalAPI;
@@ -74,6 +79,12 @@ public class Application implements CommandLineRunner {
     @Bean
     IngestAPI ingestAPI(IngestAPISettings settings) {
         String endpoint = settings.getIngestEndpoints().get(0);
+
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
+                .create();
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new OkBasicInterceptor(
                         settings.getIngestAPIUsername(),
@@ -82,7 +93,7 @@ public class Application implements CommandLineRunner {
                 .build();
 
         Retrofit adapter = new Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .baseUrl(endpoint)
                 .client(client)
                 .build();

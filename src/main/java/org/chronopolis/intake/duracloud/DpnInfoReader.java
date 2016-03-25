@@ -49,7 +49,7 @@ public class DpnInfoReader {
         }
 
         // Empty dpninfo?
-        return new DpnInfoReader(ImmutableMultimap.<Tag, String>of());
+        return new DpnInfoReader(ImmutableMultimap.of());
     }
 
     private static DpnInfoReader read(BufferedReader r) throws IOException {

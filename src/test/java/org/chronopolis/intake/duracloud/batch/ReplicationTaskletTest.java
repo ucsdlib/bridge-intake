@@ -206,10 +206,10 @@ public class ReplicationTaskletTest {
         // dpn reader stuffs
         when(factory.reader(any(Path.class), anyString())).thenReturn(reader);
         when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
-        when(reader.getRightsIds()).thenReturn(ImmutableList.<String>of());
+        when(reader.getRightsIds()).thenReturn(ImmutableList.of());
         when(reader.getVersionNumber()).thenReturn(Long.valueOf(1));
         when(reader.getIngestNodeName()).thenReturn(settings.getNode());
-        when(reader.getInterpretiveIds()).thenReturn(ImmutableList.<String>of());
+        when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
 
         // bag api
@@ -220,7 +220,7 @@ public class ReplicationTaskletTest {
 
     void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {
         when(transfers.getReplications(ImmutableMap.of("uuid", name)))
-                .thenReturn(createResponse(ImmutableList.<Replication>of(
+                .thenReturn(createResponse(ImmutableList.of(
                         createReplication(r1),
                         createReplication(r2))));
     }
@@ -253,7 +253,7 @@ public class ReplicationTaskletTest {
         // set up to return our dpn replications
         when(dpn.getTransfersAPI()).thenReturn(transfers);
         when(transfers.getReplications(anyMap()))
-                .thenReturn(createResponse(new ArrayList<Replication>()));
+                .thenReturn(createResponse(new ArrayList<>()));
 
         // result is ignored so just return an empty replication
         when(transfers.createReplication(any(Replication.class)))

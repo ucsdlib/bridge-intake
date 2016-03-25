@@ -355,7 +355,7 @@ public class ReplicationTasklet implements Runnable {
                 .setInterpretive(reader.getInterpretiveIds())
                 .setFixities(ImmutableMap.of("sha256", receipt))         // sha256 digest
                 .setFirstVersionUuid(reader.getFirstVersionUUID())       // uuid
-                .setReplicatingNodes(ImmutableList.<String>of("chron"));      // chron
+                .setReplicatingNodes(ImmutableList.of("chron"));      // chron
 
         Call<Bag> call = dpn.getBagAPI().createBag(bag);/*, new retrofit.Callback<Bag>() {
             @Override

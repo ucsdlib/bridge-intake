@@ -103,6 +103,10 @@ public class DPNConfig {
                 .readTimeout(2, TimeUnit.MINUTES)
                 .build();
 
+        String endpoint = settings.getBridgeEndpoint().endsWith("/")
+                ? settings.getBridgeEndpoint()
+                : settings.getBridgeEndpoint() + "/";
+
         Retrofit adapter = new Retrofit.Builder()
                 .baseUrl(settings.getBridgeEndpoint())
                 .addConverterFactory(GsonConverterFactory.create(gson))
@@ -115,6 +119,10 @@ public class DPNConfig {
     @Bean
     LocalAPI localAPI(DPNSettings settings) {
         String endpoint = settings.getDPNEndpoints().get(0);
+
+        if (!endpoint.endsWith("/")) {
+            endpoint = endpoint + "/";
+        }
 
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)

@@ -97,4 +97,20 @@ public class DpnInfo implements TagFile {
         return is;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DpnInfo dpnInfo = (DpnInfo) o;
+
+        return path != null ? path.equals(dpnInfo.path) : dpnInfo.path == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return path != null ? path.hashCode() : 0;
+    }
+
 }

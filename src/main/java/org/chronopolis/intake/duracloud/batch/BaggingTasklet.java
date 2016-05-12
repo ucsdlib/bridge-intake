@@ -82,6 +82,7 @@ public class BaggingTasklet implements Tasklet {
         // TODO: fill out with what...?
         // TODO: EXTERNAL-IDENTIFIER: snapshot.description
         BagInfo info = new BagInfo()
+                .includeMissingTags(true)
                 .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, depositor);
 
         Writer writer = new DpnWriter()
@@ -90,7 +91,7 @@ public class BaggingTasklet implements Tasklet {
                 .withBagIt(new BagIt())
                 .withDigest(Digest.SHA_256)
                 .withPayloadManifest(manifest)
-                .withMaxSize(250, Unit.GIGABYTE)
+                .withMaxSize(245, Unit.GIGABYTE)
                 .withPackager(new TarPackager(out))
                 .withNamingSchema(new UUIDNamingSchema())
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)))

@@ -7,6 +7,9 @@ import org.chronopolis.bag.core.Digest;
 import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
 import org.chronopolis.bag.core.Unit;
+import org.chronopolis.bag.writer.DirectoryPackager;
+import org.chronopolis.bag.writer.SimpleNamingSchema;
+import org.chronopolis.bag.writer.SimpleWriter;
 import org.chronopolis.bag.writer.TarPackager;
 import org.chronopolis.bag.writer.UUIDNamingSchema;
 import org.chronopolis.bag.writer.Writer;
@@ -86,15 +89,11 @@ public class BaggingTasklet implements Tasklet {
                 .includeMissingTags(true)
                 .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, depositor);
 
-        Writer writer = new DpnWriter()
-                .withDepositor(depositor)
-                .withBagInfo(info)
+        Writer writer = settings.pushDPN() ? buildDpnWriter(out) : buildWriter(out);
+        writer.withBagInfo(info)
                 .withBagIt(new BagIt())
                 .withDigest(Digest.SHA_256)
                 .withPayloadManifest(manifest)
-                .withMaxSize(245, Unit.GIGABYTE)
-                .withPackager(new TarPackager(out))
-                .withNamingSchema(new UUIDNamingSchema())
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
                 .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)));
@@ -117,6 +116,20 @@ public class BaggingTasklet implements Tasklet {
         }
 
         return RepeatStatus.FINISHED;
+    }
+
+    private Writer buildWriter(Path out) {
+        return new SimpleWriter()
+                .withPackager(new DirectoryPackager(out))
+                .withNamingSchema(new SimpleNamingSchema(snapshotId));
+    }
+
+    private Writer buildDpnWriter(Path out) {
+        return new DpnWriter()
+                .withDepositor(depositor)
+                .withMaxSize(245, Unit.GIGABYTE)
+                .withPackager(new TarPackager(out))
+                .withNamingSchema(new UUIDNamingSchema());
     }
 
 

@@ -52,6 +52,7 @@ public class DpnWriter extends MultipartWriter {
         b.getTags().values().stream()
                 .filter(t -> t.getPath().equals(md5))
                 .map(t -> {
+                    // Create a List<Optional<DuracloudMD5>>
                     Optional<DuracloudMD5> optional;
                     if (t instanceof DuracloudMD5) {
                         optional = Optional.of((DuracloudMD5) t);

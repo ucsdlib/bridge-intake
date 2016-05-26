@@ -41,6 +41,7 @@ public class PropertiesDataCollector implements DataCollector {
         try {
             InputStream is = Files.newInputStream(propertiesPath);
             properties.load(is);
+            is.close();
 
             data.setSnapshotId(snapshotId);
             data.setDepositor(properties.getProperty(PROPERTY_OWNER_ID, "DEPOSITOR_PLACEHOLDER"));

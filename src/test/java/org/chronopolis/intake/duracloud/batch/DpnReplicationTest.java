@@ -2,8 +2,6 @@ package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
@@ -13,30 +11,16 @@ import org.chronopolis.earth.models.Node;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
-import org.chronopolis.intake.duracloud.remote.model.History;
-import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
-import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
-import org.chronopolis.intake.duracloud.test.TestApplication;
-import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.models.IngestRequest;
 import org.joda.time.DateTime;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Call;
-import retrofit2.Callback;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -52,37 +36,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * TODO: Possibly have a upser class which holds the
+ * creators for some of our objects (bags, replications, etc)
+ *
  * Tests completed:
  * - Creation of DPN Bag
  * - Creation of DPN Replications
- * - Creation of Chronopolis Bag
- * - Updates to the bridge
- * - ReplicationHistory ONLY when all DPN replications are stored (single + multiple receipts)
- * - Closing snapshots ""
  *
  * <p/>
  * Created by shake on 12/4/15.
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestApplication.class)
-public class ReplicationTaskletTest {
-    private final Logger log = LoggerFactory.getLogger(ReplicationTaskletTest.class);
-    private final String MEMBER = "test-member";
-    private final String NAME = "test-name";
-    private final String DEPOSITOR = "test-depositor";
-    private final String SNAPSHOT_ID = "test-snapshot-id";
+public class DpnReplicationTest extends BatchTestBase {
+    private final Logger log = LoggerFactory.getLogger(DpnReplicationTest.class);
 
-    // Objects return by http apis
     Node myDpnNode;
-
-    // Startup beans
-    @SuppressWarnings("SpringJavaAutowiringInspection")
-    @Autowired IntakeSettings settings;
-
-    // Mocks for our http apis
-    @Mock BridgeAPI bridge;
-    @Mock IngestAPI ingest;
-    @Mock LocalAPI dpn;
 
     // We return these later
     @Mock BalustradeTransfers transfers;
@@ -90,20 +57,13 @@ public class ReplicationTaskletTest {
     @Mock BalustradeBag bags;
 
     // Our reader so we don't need real fs access
-    @Mock ReplicationTasklet.ReaderFactory factory;
+    @Mock DpnReplication.ReaderFactory factory;
     @Mock DpnInfoReader reader;
 
     // And our test object
-    @InjectMocks ReplicationTasklet tasklet;
-
-    BagData initializeBagData() {
-        BagData data = new BagData();
-        data.setMember(MEMBER);
-        data.setName(NAME);
-        data.setDepositor(DEPOSITOR);
-        data.setSnapshotId(SNAPSHOT_ID);
-        return data;
-    }
+    @InjectMocks
+    DpnReplication tasklet;
+    LocalAPI dpn;
 
     Node initializeNode() {
         Node node = new Node();
@@ -113,42 +73,27 @@ public class ReplicationTaskletTest {
         return node;
     }
 
-    BagReceipt bagReceipt() {
-        BagReceipt receipt = new BagReceipt();
-        receipt.setName(UUID.randomUUID().toString());
-        receipt.setReceipt(UUID.randomUUID().toString());
-        return receipt;
-    }
-
-    // @Before
-    public void before() throws Exception {
-        BagData data = initializeBagData();
-
-        List<BagReceipt> receipts = new ArrayList<>();
-        receipts.add(bagReceipt());
-
-        myDpnNode = initializeNode();
-
-        tasklet = new ReplicationTasklet(data, receipts, bridge, ingest, dpn, settings);
-        MockitoAnnotations.initMocks(this);
-    }
-
     // Helpers for our tests
 
+    // Pretty ugly, we'll want to find a better way to handle init
     List<BagReceipt> initialize(int numReceipts) {
-        BagData data = initializeBagData();
+        BagData data = data();
 
         int added = 0;
         List<BagReceipt> receipts = new ArrayList<>();
         while (added < numReceipts) {
-            receipts.add(bagReceipt());
+            receipts.add(receipt());
             added++;
         }
 
         myDpnNode = initializeNode();
-
-        tasklet = new ReplicationTasklet(data, receipts, bridge, ingest, dpn, settings);
+        dpn = new LocalAPI();
+        tasklet = new DpnReplication(data, receipts, dpn, settings);
         MockitoAnnotations.initMocks(this);
+
+        dpn.setBagAPI(bags)
+                .setTransfersAPI(transfers)
+                .setNodeAPI(nodes);
 
         return receipts;
     }
@@ -174,9 +119,9 @@ public class ReplicationTaskletTest {
         b.setUpdatedAt(DateTime.now());
         b.setSize(10L);
         b.setVersion(1L);
-        b.setInterpretive(new ArrayList<String>());
-        b.setReplicatingNodes(new ArrayList<String>());
-        b.setRights(new ArrayList<String>());
+        b.setInterpretive(new ArrayList<>());
+        b.setReplicatingNodes(new ArrayList<>());
+        b.setRights(new ArrayList<>());
         b.setFixities(ImmutableMap.of("fixity-algorithm", "fixity-value"));
         return b;
     }
@@ -211,11 +156,6 @@ public class ReplicationTaskletTest {
         when(reader.getIngestNodeName()).thenReturn(settings.getNode());
         when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
-
-        // bag api
-        when(dpn.getBagAPI()).thenReturn(bags);
-        when(ingest.stageBag(any(IngestRequest.class)))
-                .thenReturn(new CallWrapper<>(new org.chronopolis.rest.entities.Bag("test", "test")));
     }
 
     void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {
@@ -223,6 +163,11 @@ public class ReplicationTaskletTest {
                 .thenReturn(createResponse(ImmutableList.of(
                         createReplication(r1),
                         createReplication(r2))));
+    }
+
+    void readyNodeMock() {
+        // set up our returned node
+        when(nodes.getNode(anyString())).thenReturn(new CallWrapper<>(myDpnNode));
     }
 
     //
@@ -242,6 +187,7 @@ public class ReplicationTaskletTest {
     @Test
     public void testCreateBagAndReplications() throws Exception {
         List<BagReceipt> receipts = initialize(1);
+        readyNodeMock();
         readyBagMocks();
         Bag b = createBagNoReplications(receipts.get(0));
 
@@ -251,7 +197,6 @@ public class ReplicationTaskletTest {
         when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(b));
 
         // set up to return our dpn replications
-        when(dpn.getTransfersAPI()).thenReturn(transfers);
         when(transfers.getReplications(anyMap()))
                 .thenReturn(createResponse(new ArrayList<>()));
 
@@ -259,9 +204,7 @@ public class ReplicationTaskletTest {
         when(transfers.createReplication(any(Replication.class)))
                 .thenReturn(new CallWrapper<>(new Replication()));
 
-        // set up our returned node
-        when(dpn.getNodeAPI()).thenReturn(nodes);
-        when(nodes.getNode(anyString())).thenReturn(new CallWrapper<>(myDpnNode));
+
 
         // run the tasklet
         tasklet.run();
@@ -274,9 +217,7 @@ public class ReplicationTaskletTest {
         verify(reader, times(1)).getIngestNodeName();
         verify(reader, times(1)).getInterpretiveIds();
         verify(reader, times(1)).getFirstVersionUUID();
-        // verify(bags, times(1)).createBag(any(Bag.class), any(Callback.class));
         verify(transfers, times(2)).createReplication(any(Replication.class));
-        verify(ingest, times(1)).stageBag(any(IngestRequest.class));
     }
 
     /**
@@ -287,7 +228,17 @@ public class ReplicationTaskletTest {
     @Test
     public void testCheckStoredReplications() throws IOException {
         List<BagReceipt> receipts = initialize(2);
+
+        readyNodeMock();
         readyBagMocks();
+
+        System.out.println("----------------");
+        System.out.println(dpn);
+        System.out.println(dpn.getNodeAPI());
+        System.out.println("----------------");
+        log.info("hello {}", dpn.getNodeAPI());
+        log.info("hello {}", dpn.getTransfersAPI());
+        log.info("no more hello {}", dpn.getBagAPI());
 
         // Create bags with full replications
         // And prime our mock
@@ -296,30 +247,15 @@ public class ReplicationTaskletTest {
             when(bags.getBag(bag.getUuid())).thenReturn(new CallWrapper<>(bag));
         }
 
-
-        when(dpn.getTransfersAPI()).thenReturn(transfers);
-
-        // TODO: Instantiate this bag somewhere else
-        // result is ignored so just return an empty bag
-        // when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(new Bag()));
-
         for (BagReceipt receipt : receipts) {
             readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
         }
-
-        // Prepare our history
-        when(bridge.postHistory(anyString(), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
-        when(bridge.completeSnapshot(anyString(), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
         tasklet.run();
 
         // verify all our mocks
         // 2 receipts -> 2 getBag calls
-        // 3 replicating nodes -> 3 postHistory calls
-        // 1 snapshot -> 1 snapshotComplete
         verify(bags, times(2)).getBag(anyString());
-        verify(bridge, times(3)).postHistory(anyString(), any(History.class));
-        verify(bridge, times(1)).completeSnapshot(anyString(), any(AlternateIds.class));
     }
 
     /**
@@ -335,12 +271,12 @@ public class ReplicationTaskletTest {
         Bag fullyRepl = createBagFullReplications(receipts.get(0));
         Bag partialRepl = createBagPartialReplications(receipts.get(1));
 
+        readyNodeMock();
         readyBagMocks();
 
         // Prepare our mocks
         when(bags.getBag(fullyRepl.getUuid())).thenReturn(new CallWrapper<>(fullyRepl));
         when(bags.getBag(partialRepl.getUuid())).thenReturn(new CallWrapper<>(partialRepl));
-        when(dpn.getTransfersAPI()).thenReturn(transfers);
 
         // result is ignored so just return an empty bag
         when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(new Bag()));
@@ -357,66 +293,7 @@ public class ReplicationTaskletTest {
 
         tasklet.run();
 
-        // make sure we don't close the snapshot
-        verify(bridge, times(0)).postHistory(anyString(), any(History.class));
-        verify(bridge, times(0)).completeSnapshot(anyString(), any(AlternateIds.class));
-    }
-
-
-    public class CallWrapper<E> implements Call<E> {
-
-        E e;
-
-        public CallWrapper(E e) {
-            this.e = e;
-        }
-
-        @Override
-        public retrofit2.Response<E> execute() throws IOException {
-            return retrofit2.Response.success(e);
-        }
-
-        @Override
-        public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.success(e));
-        }
-
-        @Override
-        public boolean isExecuted() {
-            return false;
-        }
-
-        @Override
-        public void cancel() {
-        }
-
-        @Override
-        public boolean isCanceled() {
-            return false;
-        }
-
-        @Override
-        public Call<E> clone() {
-            return null;
-        }
-    }
-
-    public class NotFoundWrapper<E> extends CallWrapper<E> {
-
-        public NotFoundWrapper(E e) {
-            super(e);
-        }
-
-        @Override
-        public retrofit2.Response<E> execute() throws IOException {
-            return retrofit2.Response.error(404, ResponseBody.create(MediaType.parse("application/json"), ""));
-        }
-
-        @Override
-        public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
-        }
-
+        // TODO: Find mocks to verify
     }
 
 }

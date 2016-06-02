@@ -49,7 +49,7 @@ public class Bridge {
     @Autowired
     IntakeSettings settings;
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "${bridge.poll:0 * * * * *}")
     public void findSnapshots() {
         // TODO: Use enqueue for calls instead of execute, should alleviate some of the try/catch madness
         log.trace("Polling for snapshots...");

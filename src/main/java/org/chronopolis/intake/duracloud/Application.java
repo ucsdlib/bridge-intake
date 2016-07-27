@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.mail.MailUtil;
@@ -19,6 +20,8 @@ import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.entities.Bag;
+import org.chronopolis.rest.support.PageDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeSerializer;
 import org.slf4j.Logger;
@@ -35,10 +38,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.domain.PageImpl;
 import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
 
+import java.lang.reflect.Type;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 // import org.chronopolis.earth.api.LocalAPI;
@@ -80,7 +86,14 @@ public class Application implements CommandLineRunner {
     IngestAPI ingestAPI(IngestAPISettings settings) {
         String endpoint = settings.getIngestEndpoints().get(0);
 
+        Type bagPage = new TypeToken<PageImpl<Bag>>() {}.getType();
+        Type bagList = new TypeToken<List<Bag>>() {}.getType();
+        // Type replPage = new TypeToken<PageImpl<Replication>>() {}.getType();
+        //Type replList = new TypeToken<List<Replication>>() {}.getType();
+
         Gson gson = new GsonBuilder()
+                .registerTypeAdapter(bagPage, new PageDeserializer(bagList))
+                // .registerTypeAdapter(replPage, new PageDeserializer(replList))
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
                 .create();

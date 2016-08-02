@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Start a {@link SnapshotTasklet} based on the type of request that comes in
+ * Start a Tasklet based on the type of request that comes in
  *
  * Created by shake on 7/29/14.
  */
@@ -39,7 +39,6 @@ public class SnapshotJobManager {
     private final Logger log = LoggerFactory.getLogger(SnapshotJobManager.class);
 
     // Autowired from the configuration
-    private SnapshotTasklet snapshotTasklet;
     private BaggingTasklet baggingTasklet;
 
     private JobBuilderFactory jobBuilderFactory;
@@ -57,12 +56,10 @@ public class SnapshotJobManager {
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
                               APIHolder holder,
-                              SnapshotTasklet snapshotTasklet,
                               BaggingTasklet baggingTasklet,
                               DataCollector collector) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
-        this.snapshotTasklet = snapshotTasklet;
         this.baggingTasklet = baggingTasklet;
         this.jobLauncher = jobLauncher;
         this.collector = collector;

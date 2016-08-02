@@ -12,7 +12,6 @@ import org.chronopolis.common.settings.SMTPSettings;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
-import org.chronopolis.intake.duracloud.batch.SnapshotTasklet;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
@@ -129,24 +128,6 @@ public class Application implements CommandLineRunner {
         return mailUtil;
     }
 
-
-
-    @Bean
-    @JobScope
-    SnapshotTasklet snapshotTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotID,
-                                    @Value("#{jobParameters[depositor]}") String depositor,
-                                    @Value("#{jobParameters[collectionName]}") String collectionName,
-                                    IntakeSettings settings,
-                                    IngestAPI ingestAPI,
-                                    LocalAPI localAPI) {
-        return new SnapshotTasklet(snapshotID,
-                collectionName,
-                depositor,
-                settings,
-                ingestAPI,
-                localAPI);
-    }
-
     @Bean
     @JobScope
     BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
@@ -167,14 +148,12 @@ public class Application implements CommandLineRunner {
                                           StepBuilderFactory stepBuilderFactory,
                                           JobLauncher jobLauncher,
                                           APIHolder holder,
-                                          SnapshotTasklet snapshotTasklet,
                                           BaggingTasklet baggingTasklet,
                                           IntakeSettings settings) {
         return new SnapshotJobManager(jobBuilderFactory,
                 stepBuilderFactory,
                 jobLauncher,
                 holder,
-                snapshotTasklet,
                 baggingTasklet,
                 new PropertiesDataCollector(settings));
     }

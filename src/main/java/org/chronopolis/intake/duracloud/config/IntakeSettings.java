@@ -1,8 +1,13 @@
 package org.chronopolis.intake.duracloud.config;
 
+import com.google.common.collect.ImmutableList;
 import org.chronopolis.common.settings.ChronopolisSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * One day we'll migrate to configuration properties. I swear it.
@@ -12,6 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 @SuppressWarnings("UnusedDeclaration")
 public class IntakeSettings extends ChronopolisSettings {
+    private final Logger log = LoggerFactory.getLogger(IntakeSettings.class);
 
     @Value("${duracloud.stage.snapshot:/export/duracloud/staging}")
     private String duracloudSnapshotStage;
@@ -48,7 +54,7 @@ public class IntakeSettings extends ChronopolisSettings {
     private String dpnReplicationServer;
 
     @Value("${chron.replicate.to:ucsd}")
-    private String chronReplicationNodes;
+    private List<String> chronReplicationNodes;
 
     @Value("${disable.sni:true}")
     private Boolean disableSNI;
@@ -150,12 +156,12 @@ public class IntakeSettings extends ChronopolisSettings {
         return this;
     }
 
-    public String getChronReplicationNodes() {
+    public List<String> getChronReplicationNodes() {
         return chronReplicationNodes;
     }
 
     public IntakeSettings setChronReplicationNodes(String chronReplicationNodes) {
-        this.chronReplicationNodes = chronReplicationNodes;
+        this.chronReplicationNodes = ImmutableList.copyOf(chronReplicationNodes.split(","));
         return this;
     }
 

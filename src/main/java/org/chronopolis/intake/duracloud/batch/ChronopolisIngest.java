@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -59,8 +58,7 @@ public class ChronopolisIngest implements Runnable {
         chronRequest.setDepositor(depositor);
         chronRequest.setLocation(location.toString()); // This is the relative path
 
-        chronRequest.setReplicatingNodes(
-                ImmutableList.of(settings.getChronReplicationNodes()));
+        chronRequest.setReplicatingNodes(settings.getChronReplicationNodes());
 
         Call<Bag> stageCall = chron.stageBag(chronRequest);
         try {

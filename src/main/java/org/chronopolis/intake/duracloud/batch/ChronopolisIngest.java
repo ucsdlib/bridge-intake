@@ -5,7 +5,7 @@ import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.entities.Bag;
+import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +65,11 @@ public class ChronopolisIngest implements Runnable {
         Call<Bag> stageCall = chron.stageBag(chronRequest);
         try {
             retrofit2.Response<Bag> response = stageCall.execute();
+            if (response.isSuccess()) {
+                log.info("Registered bag with chronopolis. {}: {}", response.code(), response.body());
+            } else {
+                log.warn("Error registering bag. {}: {}", response.code(), response.errorBody().string());
+            }
         } catch (IOException e) {
             log.error("Unable to stage bag with chronopolis", e);
         }

@@ -20,7 +20,7 @@ import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
 import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.entities.Bag;
+import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.support.PageDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeSerializer;
@@ -102,6 +102,10 @@ public class Application implements CommandLineRunner {
                 .addInterceptor(new OkBasicInterceptor(
                         settings.getIngestAPIUsername(),
                         settings.getIngestAPIPassword()))
+                .addInterceptor(chain -> {
+                    log.info("{} {}", chain.request().method(), chain.request().url().toString());
+                    return chain.proceed(chain.request());
+                })
                 .readTimeout(5, TimeUnit.HOURS)
                 .build();
 

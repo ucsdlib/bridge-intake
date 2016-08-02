@@ -1,8 +1,9 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.entities.Bag;
+import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
+import org.chronopolis.rest.support.BagConverter;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -33,7 +34,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Test
     public void run() throws Exception {
-        when(api.stageBag(any(IngestRequest.class))).thenReturn(new CallWrapper<Bag>(createChronBag()));
+        when(api.stageBag(any(IngestRequest.class))).thenReturn(new CallWrapper<Bag>(BagConverter.toBagModel(createChronBag())));
         ingest.run();
 
         verify(api, times(2)).stageBag(any(IngestRequest.class));

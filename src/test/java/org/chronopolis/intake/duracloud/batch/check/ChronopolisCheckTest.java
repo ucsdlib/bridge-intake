@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageImpl;
 
 import java.util.Map;
 
+import static org.chronopolis.rest.support.BagConverter.toBagModel;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,7 +44,8 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     @Test
     public void testCompleteSnapshot() {
-        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>(ImmutableList.of(createChronBagFullReplications()))));
+        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
+                (ImmutableList.of(toBagModel(createChronBagFullReplications())))));
         when(bridge.postHistory(any(String.class), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
@@ -55,7 +57,8 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     @Test
     public void testIncompleteSnapshot() {
-        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>(ImmutableList.of(createChronBagPartialReplications()))));
+        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
+                (ImmutableList.of(toBagModel(createChronBagPartialReplications())))));
 
         check.run();
         verify(ingest, times(2)).getBags(any(Map.class));

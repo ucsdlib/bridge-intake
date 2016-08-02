@@ -8,6 +8,8 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.util.HashMap;
@@ -23,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by shake on 6/1/16.
  */
 public abstract class Checker implements Runnable {
+    private final Logger log = LoggerFactory.getLogger(Checker.class);
 
     private BagData data;
     private List<BagReceipt> receipts;
@@ -43,11 +46,10 @@ public abstract class Checker implements Runnable {
 
 
         // Might revisit this but for now it seems ok
-        receipts.stream()
-                .forEach(r -> {
-                    alternates.addAlternateId(r.getName());
-                    checkReceipts(r, data, accumulator, history);
-                });
+        receipts.forEach(r -> {
+            alternates.addAlternateId(r.getName());
+            checkReceipts(r, data, accumulator, history);
+        });
 
         if (accumulator.get() == receipts.size() * 3) {
             for (ReplicationHistory val: history.values()) {

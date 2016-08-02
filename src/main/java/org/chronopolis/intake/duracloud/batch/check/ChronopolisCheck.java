@@ -6,7 +6,7 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.entities.Bag;
+import org.chronopolis.rest.models.Bag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
@@ -40,7 +40,7 @@ public class ChronopolisCheck extends Checker {
         // honestly should just be <String, String>
         ImmutableMap<String, Object> params =
                 ImmutableMap.of("depositor", data.depositor(),
-                                "name", data.name());
+                                "name", receipt.getName());
         Call<PageImpl<Bag>> bags = ingest.getBags(params);
         try {
             Response<PageImpl<Bag>> execute = bags.execute();
@@ -48,16 +48,17 @@ public class ChronopolisCheck extends Checker {
             // hmmmm
             // ideally we wouldn't have an iterable bags we're looping over
             // but I suppose this is good enough for a first pass
-            execute.body().getContent()
-                    .stream()
-                    .forEach(b -> {
-                        b.getReplicatingNodes().forEach(n -> {
-                            accumulator.incrementAndGet();
-                            ReplicationHistory h = history.getOrDefault(b, new ReplicationHistory(snapshot, n, false));
-                            h.addReceipt(b.getName());
-                            history.put(n, h);
-                        });
-                    });
+            // TODO: Can throw errors if there's any error executing
+            execute.body().getContent().forEach(b -> {
+                log.info("{}", b.getName());
+                b.getReplicatingNodes().forEach(n -> {
+                    log.info("Receipt for node {}", n);
+                    accumulator.incrementAndGet();
+                    ReplicationHistory h = history.getOrDefault(b, new ReplicationHistory(snapshot, n, false));
+                    h.addReceipt(b.getName());
+                    history.put(n, h);
+                });
+            });
         } catch (IOException e) {
             log.error("", e);
         }

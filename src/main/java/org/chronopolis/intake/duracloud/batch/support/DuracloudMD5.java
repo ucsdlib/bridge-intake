@@ -9,12 +9,14 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
+ * Collapse under the weight of time
  *
  * Created by shake on 5/12/16.
  */
@@ -24,11 +26,11 @@ public class DuracloudMD5 extends OnDiskTagFile {
     private Predicate<String> predicate;
     private List<String> collection;
     private Long size;
-    private final Path path;
+    private final String path;
 
     public DuracloudMD5(Path tag) {
         super(tag);
-        this.path = tag;
+        this.path = tag.toString();
     }
 
     // TODO: Can probably combine this + update stream and discard the predicate when we're done
@@ -39,7 +41,7 @@ public class DuracloudMD5 extends OnDiskTagFile {
 
     private void updateStream() {
         try {
-            collection = Files.lines(path)
+            collection = Files.lines(Paths.get(path))
                     .filter(predicate)
                     .collect(Collectors.toList());
 

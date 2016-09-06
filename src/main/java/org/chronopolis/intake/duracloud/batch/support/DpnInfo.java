@@ -47,10 +47,10 @@ public class DpnInfo implements TagFile {
     }
 
     private Multimap<Tag, String> tags = ArrayListMultimap.create();
-    private final Path path;
+    private final String path;
 
     public DpnInfo() {
-        this.path = Paths.get("dpn-tags/dpn-info.txt");
+        this.path = "dpn-tags/dpn-info.txt";
     }
 
     public DpnInfo withInfo(Tag tag, String value) {
@@ -73,7 +73,7 @@ public class DpnInfo implements TagFile {
 
     @Override
     public Path getPath() {
-        return path;
+        return Paths.get(path);
     }
 
     @Override

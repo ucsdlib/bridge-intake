@@ -7,13 +7,13 @@ import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
+import org.chronopolis.earth.models.Digest;
 import org.chronopolis.earth.models.Node;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -24,6 +24,7 @@ import retrofit2.Call;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -98,12 +100,32 @@ public class DpnReplicationTest extends BatchTestBase {
         return receipts;
     }
 
+    /*
     Replication createReplication(Replication.Status status) {
         Replication r = new Replication();
         r.setFromNode(settings.getNode());
         r.setToNode(UUID.randomUUID().toString());
         r.setStatus(status);
         return r;
+    }
+    */
+
+    private Replication createReplication(boolean stored) {
+        Replication r = new Replication();
+        r.setFromNode(settings.getNode());
+        r.setToNode(UUID.randomUUID().toString());
+        r.setStored(stored);
+        return r;
+    }
+
+    Digest createDigest(BagReceipt receipt) {
+        Digest d = new Digest();
+        d.setNode("test-node");
+        d.setAlgorithm("fixity-algorithm");
+        d.setValue("fixity-value");
+        d.setBag(receipt.getName());
+        d.setCreatedAt(ZonedDateTime.now());
+        return d;
     }
 
     Bag createBagNoReplications(BagReceipt receipt) {
@@ -115,8 +137,8 @@ public class DpnReplicationTest extends BatchTestBase {
         b.setAdminNode("test-node");
         b.setBagType('D');
         b.setMember(MEMBER);
-        b.setCreatedAt(DateTime.now());
-        b.setUpdatedAt(DateTime.now());
+        b.setCreatedAt(ZonedDateTime.now());
+        b.setUpdatedAt(ZonedDateTime.now());
         b.setSize(10L);
         b.setVersion(1L);
         b.setInterpretive(new ArrayList<>());
@@ -158,12 +180,23 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
 
+    /*
     void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {
         when(transfers.getReplications(ImmutableMap.of("uuid", name)))
                 .thenReturn(createResponse(ImmutableList.of(
                         createReplication(r1),
                         createReplication(r2))));
     }
+    */
+
+    void readyReplicationMocks(String name, boolean stored1, boolean stored2) {
+        when(transfers.getReplications(ImmutableMap.of("bag", name)))
+                .thenReturn(createResponse(ImmutableList.of(
+                        createReplication(stored1),
+                        createReplication(stored2))));
+
+    }
+
 
     void readyNodeMock() {
         // set up our returned node
@@ -190,11 +223,13 @@ public class DpnReplicationTest extends BatchTestBase {
         readyNodeMock();
         readyBagMocks();
         Bag b = createBagNoReplications(receipts.get(0));
+        Digest d = createDigest(receipts.get(0));
 
         // result is ignored so just return an empty bag
         // TODO: Be more strict about what we pass in
-        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<Bag>(null));
+        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<>(null));
         when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(b));
+        when(bags.createDigest(eq(b.getUuid()), any(Digest.class))).thenReturn(new CallWrapper<>(d));
 
         // set up to return our dpn replications
         when(transfers.getReplications(anyMap()))
@@ -248,7 +283,8 @@ public class DpnReplicationTest extends BatchTestBase {
         }
 
         for (BagReceipt receipt : receipts) {
-            readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
+            // readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
+            readyReplicationMocks(receipt.getName(), true, true);
         }
 
         tasklet.run();
@@ -257,6 +293,8 @@ public class DpnReplicationTest extends BatchTestBase {
         // 2 receipts -> 2 getBag calls
         verify(bags, times(2)).getBag(anyString());
     }
+
+
 
     /**
      * Test where we check that not all replications have been finished
@@ -284,9 +322,9 @@ public class DpnReplicationTest extends BatchTestBase {
         for (BagReceipt receipt : receipts) {
             // We want one receipt to be complete, and one incomplete
             if (i == 0) {
-                readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
+                readyReplicationMocks(receipt.getName(), true, true);
             } else {
-                readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.CONFIRMED);
+                readyReplicationMocks(receipt.getName(), true, false);
             }
             i++;
         }

@@ -97,7 +97,7 @@ public class DpnReplication implements Runnable {
         snapshot = data.snapshotId();
         depositor = data.depositor();
 
-        /**
+        /*
          * Creating/Updating bags and replications
          * Feels a bit weird to have these all in one but that's ok for now
          *
@@ -153,7 +153,7 @@ public class DpnReplication implements Runnable {
         // Short circuit if necessary
         log.info("Checking replications for bag {}", bag.getUuid());
         SimpleCallback<Response<Replication>> rcb = new SimpleCallback<>();
-        Call<Response<Replication>> ongoing = transfers.getReplications(ImmutableMap.of("uuid", bag.getUuid()));
+        Call<Response<Replication>> ongoing = transfers.getReplications(ImmutableMap.of("bag", bag.getUuid()));
         ongoing.enqueue(rcb);
         Optional<Response<Replication>> ongoingResponse = rcb.getResponse();
         if (ongoingResponse.isPresent()) {

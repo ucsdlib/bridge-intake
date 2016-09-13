@@ -11,7 +11,6 @@ import org.chronopolis.intake.duracloud.test.TestApplication;
 import org.chronopolis.rest.entities.Bag;
 import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
-import org.joda.time.DateTime;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -20,6 +19,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -108,8 +108,8 @@ public class BatchTestBase {
         b.setAdminNode("test-node");
         b.setBagType('D');
         b.setMember(MEMBER);
-        b.setCreatedAt(DateTime.now());
-        b.setUpdatedAt(DateTime.now());
+        b.setCreatedAt(ZonedDateTime.now());
+        b.setUpdatedAt(ZonedDateTime.now());
         b.setSize(10L);
         b.setVersion(1L);
         b.setInterpretive(new ArrayList<>());

@@ -12,9 +12,6 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
-import org.chronopolis.earth.models.Replication;
-import org.chronopolis.earth.serializers.ReplicationStatusDeserializer;
-import org.chronopolis.earth.serializers.ReplicationStatusSerializer;
 import org.chronopolis.intake.duracloud.DateTimeDeserializer;
 import org.chronopolis.intake.duracloud.DateTimeSerializer;
 import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
@@ -128,8 +125,8 @@ public class DPNConfig {
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .registerTypeAdapter(DateTime.class, new DateTimeSerializer())
                 .registerTypeAdapter(DateTime.class, new DateTimeDeserializer())
-                .registerTypeAdapter(Replication.Status.class, new ReplicationStatusSerializer())
-                .registerTypeAdapter(Replication.Status.class, new ReplicationStatusDeserializer())
+                // .registerTypeAdapter(Replication.Status.class, new ReplicationStatusSerializer())
+                // .registerTypeAdapter(Replication.Status.class, new ReplicationStatusDeserializer())
                 .serializeNulls()
                 .create();
 

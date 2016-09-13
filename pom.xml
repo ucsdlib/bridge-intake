@@ -65,9 +65,11 @@
         </dependency>
         -->
 
+        <!-- TODO: Get this in sync with the rest of chron -->
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>retrofit</artifactId>
+            <version>2.1.0</version>
         </dependency>
 
         <!--

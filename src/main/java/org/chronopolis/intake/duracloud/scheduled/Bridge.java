@@ -63,7 +63,7 @@ public class Bridge {
             return;
         }
 
-        if (response != null && response.isSuccess()) {
+        if (response != null && response.isSuccessful()) {
             snapshots = response.body();
         } else {
             String message = response != null ? response.message() : "";

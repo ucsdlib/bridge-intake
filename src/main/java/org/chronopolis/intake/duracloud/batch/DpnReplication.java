@@ -191,7 +191,7 @@ public class DpnReplication implements Runnable {
             Call<Replication> replCall = transfers.createReplication(repl);
             try {
                 retrofit2.Response<Replication> replResponse = replCall.execute();
-                if (replResponse.isSuccess()) {
+                if (replResponse.isSuccessful()) {
                     ++count;
                     // nodes.remove(index);
                 }
@@ -214,7 +214,7 @@ public class DpnReplication implements Runnable {
             log.error("Error communicating with server", e);
         }
 
-        if (response != null && response.isSuccess()) {
+        if (response != null && response.isSuccessful()) {
             Node myNode = response.body();
             nodes = myNode.getReplicateTo();
         } else {
@@ -246,7 +246,7 @@ public class DpnReplication implements Runnable {
             // TODO: Figure this out
             response = retrofit2.Response.error(500, ResponseBody.create(MediaType.parse("text/plain"), "empty"));
         }
-        return response.isSuccess() ? Optional.of(response.body()) : createBag(receipt);
+        return response.isSuccessful() ? Optional.of(response.body()) : createBag(receipt);
     }
 
     // TODO: Create the bag and digest separate from one another
@@ -302,7 +302,7 @@ public class DpnReplication implements Runnable {
         try {
             retrofit2.Response<Bag> response = call.execute();
             retrofit2.Response<Digest> digest = digestCall.execute();
-            if (response.isSuccess() && digest.isSuccess()) {
+            if (response.isSuccessful() && digest.isSuccessful()) {
                 log.info("Success registering bag {}", bag.getUuid());
                 optional = Optional.of(bag);
             } else {

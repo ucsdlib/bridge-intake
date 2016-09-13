@@ -38,15 +38,17 @@ public class DpnCheck extends Checker {
         Call<Bag> call = bags.getBag(receipt.getName());
         try {
             Response<Bag> response = call.execute();
-            Bag bag = response.body();
+            if (response.isSuccessful()) {
+                Bag bag = response.body();
 
-            // Once again, might revisit this
-            bag.getReplicatingNodes().forEach(n -> {
-                accumulator.incrementAndGet();
-                ReplicationHistory h = history.getOrDefault(n, new ReplicationHistory(snapshot, n, false));
-                h.addReceipt(bag.getUuid());
-                history.put(n, h);
-            });
+                // Once again, might revisit this
+                bag.getReplicatingNodes().forEach(n -> {
+                    accumulator.incrementAndGet();
+                    ReplicationHistory h = history.getOrDefault(n, new ReplicationHistory(snapshot, n, false));
+                    h.addReceipt(bag.getUuid());
+                    history.put(n, h);
+                });
+            }
         } catch (IOException e) {
             log.error("", e);
         }

@@ -63,7 +63,7 @@ public class ChronopolisIngest implements Runnable {
         Call<Bag> stageCall = chron.stageBag(chronRequest);
         try {
             retrofit2.Response<Bag> response = stageCall.execute();
-            if (response.isSuccess()) {
+            if (response.isSuccessful()) {
                 log.info("Registered bag with chronopolis. {}: {}", response.code(), response.body());
             } else {
                 log.warn("Error registering bag. {}: {}", response.code(), response.errorBody().string());

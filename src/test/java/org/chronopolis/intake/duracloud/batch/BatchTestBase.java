@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.batch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import okhttp3.MediaType;
+import okhttp3.Request;
 import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -11,10 +12,8 @@ import org.chronopolis.intake.duracloud.test.TestApplication;
 import org.chronopolis.rest.entities.Bag;
 import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Call;
 import retrofit2.Callback;
 
@@ -33,7 +32,7 @@ import java.util.UUID;
  * Created by shake on 6/2/16.
  */
 @SuppressWarnings("ALL")
-@RunWith(SpringJUnit4ClassRunner.class)
+// @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestApplication.class)
 public class BatchTestBase {
     protected final String MEMBER = "test-member";
@@ -148,7 +147,7 @@ public class BatchTestBase {
 
         @Override
         public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.success(e));
+            callback.onResponse(this, retrofit2.Response.success(e));
         }
 
         @Override
@@ -169,6 +168,11 @@ public class BatchTestBase {
         public Call<E> clone() {
             return null;
         }
+
+        @Override
+        public Request request() {
+            return new Request.Builder().build();
+        }
     }
 
     public class NotFoundWrapper<E> extends CallWrapper<E> {
@@ -184,7 +188,7 @@ public class BatchTestBase {
 
         @Override
         public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
+            callback.onResponse(this, retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
         }
 
     }

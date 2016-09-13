@@ -15,11 +15,13 @@ import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -48,6 +50,7 @@ import static org.mockito.Mockito.when;
  * <p/>
  * Created by shake on 12/4/15.
  */
+@RunWith(SpringJUnit4ClassRunner.class)
 public class DpnReplicationTest extends BatchTestBase {
     private final Logger log = LoggerFactory.getLogger(DpnReplicationTest.class);
 
@@ -99,16 +102,6 @@ public class DpnReplicationTest extends BatchTestBase {
 
         return receipts;
     }
-
-    /*
-    Replication createReplication(Replication.Status status) {
-        Replication r = new Replication();
-        r.setFromNode(settings.getNode());
-        r.setToNode(UUID.randomUUID().toString());
-        r.setStatus(status);
-        return r;
-    }
-    */
 
     private Replication createReplication(boolean stored) {
         Replication r = new Replication();
@@ -179,15 +172,6 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
-
-    /*
-    void readyReplicationMocks(String name, Replication.Status r1, Replication.Status r2) {
-        when(transfers.getReplications(ImmutableMap.of("uuid", name)))
-                .thenReturn(createResponse(ImmutableList.of(
-                        createReplication(r1),
-                        createReplication(r2))));
-    }
-    */
 
     void readyReplicationMocks(String name, boolean stored1, boolean stored2) {
         when(transfers.getReplications(ImmutableMap.of("bag", name)))

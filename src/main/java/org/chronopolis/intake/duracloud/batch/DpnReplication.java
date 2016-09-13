@@ -21,7 +21,6 @@ import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -176,15 +175,17 @@ public class DpnReplication implements Runnable {
 
             log.debug("Adding replication for {}", node);
             Replication repl = new Replication();
-            repl.setStatus(Replication.Status.REQUESTED);
-            repl.setCreatedAt(DateTime.now());
-            repl.setUpdatedAt(DateTime.now());
+            repl.setCreatedAt(ZonedDateTime.now());
+            repl.setUpdatedAt(ZonedDateTime.now());
             repl.setReplicationId(UUID.randomUUID().toString());
             repl.setFromNode(ourNode);
             repl.setToNode(node);
             repl.setLink(node + "@" + settings.getDpnReplicationServer() + ":" + save.toString());
             repl.setProtocol(PROTOCOL);
-            repl.setUuid(bag.getUuid());
+            repl.setStored(false);
+            repl.setStoreRequested(false);
+            repl.setCancelled(false);
+            repl.setBag(bag.getUuid());
             repl.setFixityAlgorithm(ALGORITHM);
 
             Call<Replication> replCall = transfers.createReplication(repl);

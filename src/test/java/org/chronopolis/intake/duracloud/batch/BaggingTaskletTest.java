@@ -1,24 +1,26 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.chronopolis.bag.core.Bag;
-import org.chronopolis.bag.core.BagInfo;
-import org.chronopolis.bag.core.BagIt;
-import org.chronopolis.bag.core.Digest;
-import org.chronopolis.bag.core.PayloadManifest;
-import org.chronopolis.bag.core.Unit;
-import org.chronopolis.bag.writer.TarPackager;
-import org.chronopolis.bag.writer.UUIDNamingSchema;
-import org.chronopolis.bag.writer.Writer;
-import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
-import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
+import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.History;
+import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -27,46 +29,44 @@ import java.util.List;
 public class BaggingTaskletTest {
     private final Logger log = LoggerFactory.getLogger(BaggingTaskletTest.class);
 
-    // @Test
+    BridgeAPI bridge;
+    BaggingTasklet tasklet;
+    IntakeSettings settings;
+
+    @Before
+    public void setup() throws URISyntaxException {
+        // setup
+        URL resources = ClassLoader.getSystemClassLoader().getResource("");
+        Path bags = Paths.get(resources.toURI()).resolve("bags");
+        Path snapshots = Paths.get(resources.toURI()).resolve("snapshots");
+
+        settings = new IntakeSettings();
+        settings.setPushDPN(true);
+        settings.setBagStage(bags.toString());
+        settings.setDuracloudSnapshotStage(snapshots.toString());
+        settings.setDuracloudManifest("manifest-sha256.txt");
+
+        // http calls can be mocked
+        bridge = mock(BridgeAPI.class);
+    }
+
+    @Test
     public void testBagger() throws IOException {
-        Path base = Paths.get("/export/gluster/test-bags");
-        Path out = base.resolve("out");
-        // Path dirOut = out.resolve("myDPNBag");
-        // Path tag = base.resolve("in/tag-1.txt");
-        Path payload = base.resolve("in/manifest-sha256.txt");
-        PayloadManifest payloadManifest = PayloadManifest.loadFromStream(Files.newInputStream(payload), base.resolve("in"));
-        BagInfo info = new BagInfo()
-                .includeMissingTags(true)
-                .withInfo(BagInfo.Tag.INFO_CONTACT_EMAIL, "shake@umiacs.umd.edu")
-                .withInfo(BagInfo.Tag.INFO_CONTACT_EMAIL, "ekash@umiacs.umd.edu")
-                .withInfo(BagInfo.Tag.INFO_CONTACT_NAME, "shake")
-                .withInfo(BagInfo.Tag.INFO_CONTACT_PHONE, "phone")
-                .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, "umiacs");
 
-        Writer writer = new DpnWriter()
-                .withMaxSize(100, Unit.MEGABYTE)
-                .withPayloadManifest(payloadManifest)
-                .withBagIt(new BagIt())
-                .withBagInfo(info)
-                // .withNamingSchema(new SimpleNamingSchema("mpDPNBag"))
-                .withNamingSchema(new UUIDNamingSchema())
-                // .withPackager(new InPlaceDirectoryPackager(out.resolve("mpDPNBag")))
-                // .withPackager(new DirectoryPackager(out))
-                .withPackager(new TarPackager(out))
-                .withDigest(Digest.SHA_256)
-                // .withTagFile(new OnDiskTagFile(tag))
-                .withTagFile(new DuracloudMD5(base.resolve("in/manifest-md5.txt")));
+        String id = "test-snapshot";
+        String name = "test";
+        String depositor = "test-depositor";
 
+        tasklet = new BaggingTasklet(id, name, depositor, settings, bridge);
+        when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
 
-        List<Bag> write = writer.write();
-
-        for (Bag bag : write) {
-            log.info("Wrote bag {} with receipt {}", bag.getName(), bag.getReceipt());
-            if (!bag.isValid()) {
-                log.info("Bag is invalid, errors are {}", bag.getErrors());
-            }
+        try {
+            tasklet.execute(null, null);
+        } catch (Exception e) {
+            log.error("", e);
         }
 
+        verify(bridge, times(1)).postHistory(eq("test-snapshot"), any(History.class));
     }
 
 }

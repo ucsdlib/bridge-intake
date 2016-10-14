@@ -5,6 +5,7 @@ import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
+import org.chronopolis.intake.duracloud.batch.CallWrapper;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;

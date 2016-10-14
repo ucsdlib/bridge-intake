@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import retrofit2.Call;
 import retrofit2.Callback;
 
 import java.io.IOException;
@@ -132,44 +131,6 @@ public class BatchTestBase {
     }
 
     // Subclasses to wrap our http calls
-
-    public class CallWrapper<E> implements Call<E> {
-
-        E e;
-
-        public CallWrapper(E e) {
-            this.e = e;
-        }
-
-        @Override
-        public retrofit2.Response<E> execute() throws IOException {
-            return retrofit2.Response.success(e);
-        }
-
-        @Override
-        public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.success(e));
-        }
-
-        @Override
-        public boolean isExecuted() {
-            return false;
-        }
-
-        @Override
-        public void cancel() {
-        }
-
-        @Override
-        public boolean isCanceled() {
-            return false;
-        }
-
-        @Override
-        public Call<E> clone() {
-            return null;
-        }
-    }
 
     public class NotFoundWrapper<E> extends CallWrapper<E> {
 

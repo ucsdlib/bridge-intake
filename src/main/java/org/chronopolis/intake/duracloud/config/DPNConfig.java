@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -99,10 +99,6 @@ public class DPNConfig {
                         settings.getBridgePassword()))
                 .readTimeout(2, TimeUnit.MINUTES)
                 .build();
-
-        String endpoint = settings.getBridgeEndpoint().endsWith("/")
-                ? settings.getBridgeEndpoint()
-                : settings.getBridgeEndpoint() + "/";
 
         Retrofit adapter = new Retrofit.Builder()
                 .baseUrl(settings.getBridgeEndpoint())

@@ -27,6 +27,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Define a scheduled task which polls the Bridge server for snapshots
@@ -77,7 +78,7 @@ public class Bridge {
             SnapshotHistory history;
 
             Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
-            Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, null);
+            Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, new HashMap<>());
 
             Response<SnapshotDetails> detailsResponse = null;
             Response<SnapshotHistory> historyResponse = null;

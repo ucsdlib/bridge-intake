@@ -3,7 +3,6 @@ package org.chronopolis.intake.duracloud.batch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import okhttp3.MediaType;
-import okhttp3.Request;
 import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -14,7 +13,6 @@ import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import retrofit2.Call;
 import retrofit2.Callback;
 
 import java.io.IOException;

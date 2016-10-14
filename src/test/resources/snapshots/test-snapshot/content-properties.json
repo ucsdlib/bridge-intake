@@ -1,0 +1,18 @@
+[
+{
+  "test-file": {
+      "content-size": "36"
+      "content-mimetype": "text/plain"
+      "content-checksum": "2d4d32fa7824b7148ea08d695f137f45",
+      "content-modified": "2016-10-14T14:45:22"
+  }
+},
+{
+  ".collection-snapshot.properties": {
+    "content-size": "299",
+    "content-mimetype": "text/x-java-properties",
+    "content-checksum": "58ed7efd4f06ea3aa14213fa374f1be1",
+    "content-modified": "2016-10-14T13:03:15"
+  }
+}
+]

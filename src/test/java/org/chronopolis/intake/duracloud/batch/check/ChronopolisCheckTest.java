@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.batch.check;
 
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
+import org.chronopolis.intake.duracloud.batch.CallWrapper;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;

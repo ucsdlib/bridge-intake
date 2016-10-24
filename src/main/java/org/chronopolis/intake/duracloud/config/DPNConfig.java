@@ -12,8 +12,8 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
-import org.chronopolis.intake.duracloud.DateTimeDeserializer;
-import org.chronopolis.intake.duracloud.DateTimeSerializer;
+import org.chronopolis.earth.serializers.ZonedDateTimeDeserializer;
+import org.chronopolis.earth.serializers.ZonedDateTimeSerializer;
 import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
@@ -23,7 +23,6 @@ import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.rest.api.ErrorLogger;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +36,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -119,8 +119,8 @@ public class DPNConfig {
 
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .registerTypeAdapter(DateTime.class, new DateTimeSerializer())
-                .registerTypeAdapter(DateTime.class, new DateTimeDeserializer())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
                 // .registerTypeAdapter(Replication.Status.class, new ReplicationStatusSerializer())
                 // .registerTypeAdapter(Replication.Status.class, new ReplicationStatusDeserializer())
                 .serializeNulls()

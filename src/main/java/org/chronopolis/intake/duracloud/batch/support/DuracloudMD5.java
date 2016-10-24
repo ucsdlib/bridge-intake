@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Collapse under the weight of time
@@ -40,18 +41,18 @@ public class DuracloudMD5 extends OnDiskTagFile {
     }
 
     private void updateStream() {
-        try {
-            collection = Files.lines(Paths.get(path))
-                    .filter(predicate)
+        // Make sure our file gets closed
+        try (Stream<String> s = Files.lines(Paths.get(path))) {
+            collection = s.filter(predicate)
                     .collect(Collectors.toList());
-
-            size = collection.stream().reduce(0L, (l, s) -> l + (s + "\n").length(), (l, r) -> l + r);
         } catch (IOException e) {
             log.error("Error reading duracloud md5 manifest");
 
-            // TODO: RuntimeError?
+            // ...? Not sure of the best way to handle this
             throw new RuntimeException("");
         }
+
+        size = collection.stream().reduce(0L, (l, s) -> l + (s + "\n").length(), (l, r) -> l + r);
     }
 
     @Override

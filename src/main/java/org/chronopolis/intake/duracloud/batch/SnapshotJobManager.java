@@ -138,7 +138,6 @@ public class SnapshotJobManager {
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
         BagData data = collector.collectBagData(details.getSnapshotId());
-        data.setMember(details.getMemberId());
 
         Checker check;
         ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);

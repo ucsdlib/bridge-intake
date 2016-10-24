@@ -22,7 +22,7 @@ public class PropertiesDataCollector implements DataCollector {
     private final Logger log = LoggerFactory.getLogger(PropertiesDataCollector.class);
 
     private final String FILE = ".collection-snapshot.properties";
-    private final String PROPERTY_MEMBER_ID = "dpn-member-uuid";
+    private final String PROPERTY_MEMBER_ID = "member-id";
     private final String PROPERTY_OWNER_ID = "owner-id";
     private final String PROPERTY_SPACE_ID = "duracloud-space-id";
 
@@ -44,8 +44,9 @@ public class PropertiesDataCollector implements DataCollector {
             is.close();
 
             data.setSnapshotId(snapshotId);
-            data.setDepositor(properties.getProperty(PROPERTY_OWNER_ID, "DEPOSITOR_PLACEHOLDER"));
             data.setName(properties.getProperty(PROPERTY_SPACE_ID, "NAME_PLACEHOLDER"));
+            data.setMember(properties.getProperty(PROPERTY_MEMBER_ID, "MEMBER_PLACEHOLDER"));
+            data.setDepositor(properties.getProperty(PROPERTY_OWNER_ID, "DEPOSITOR_PLACEHOLDER"));
 
         } catch (IOException e) {
             log.info("Error reading from properties file {}", propertiesPath);

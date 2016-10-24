@@ -292,6 +292,7 @@ public class DpnReplication implements Runnable {
         // MessageDigest
         Digest bagDigest = new Digest();
         bagDigest.setAlgorithm("sha256");
+        bagDigest.setBag(bag.getUuid());
         bagDigest.setValue(receipt.getReceipt());
         bagDigest.setNode("chron");
         bagDigest.setCreatedAt(ZonedDateTime.now());

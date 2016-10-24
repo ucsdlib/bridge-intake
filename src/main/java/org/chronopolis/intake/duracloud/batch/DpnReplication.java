@@ -161,6 +161,7 @@ public class DpnReplication implements Runnable {
         }
 
         log.info("count: {}", count);
+        log.info("nodes: {}", nodes);
         // this can get stuck if we don't replicate to at least 2 nodes
         // ok lets create some scenarios
         // p = count < replications
@@ -169,6 +170,7 @@ public class DpnReplication implements Runnable {
         // !p && q => false (created replications and nodes to go)
         // p && !q => false (not enough replications and no nodes)
         // !p && !q => false (created replications and no nodes)
+        log.info("{} {}", (count < replications), !nodes.isEmpty());
         while (count < replications && !nodes.isEmpty()) {
             String node = nodes.remove(0);
             log.info("Creating replications for bag {} to {}", bag.getUuid(), node);
@@ -207,6 +209,7 @@ public class DpnReplication implements Runnable {
         // 5 nodes -> page size of 5
         List<String> nodes;
         retrofit2.Response<Node> response = null;
+        // TODO: dpn username
         Call<Node> call = dpn.getNodeAPI().getNode(settings.getNode());
         try {
             response = call.execute();

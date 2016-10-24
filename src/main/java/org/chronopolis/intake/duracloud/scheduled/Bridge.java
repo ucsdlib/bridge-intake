@@ -41,14 +41,21 @@ public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
-    @Autowired
+    final
     BridgeAPI bridge;
 
-    @Autowired
+    final
     SnapshotJobManager manager;
 
-    @Autowired
+    final
     IntakeSettings settings;
+
+    @Autowired
+    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge) {
+        this.settings = settings;
+        this.manager = manager;
+        this.bridge = bridge;
+    }
 
     @Scheduled(cron = "${bridge.poll:0 * * * * *}")
     public void findSnapshots() {

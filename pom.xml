@@ -7,11 +7,11 @@
     <parent>
         <groupId>org.chronopolis</groupId>
         <artifactId>chronopolis</artifactId>
-        <version>1.3.6-RELEASE</version>
+        <version>1.3.7-RELEASE</version>
     </parent>
 
     <artifactId>duracloud-backend</artifactId>
-    <version>1.3.6-RELEASE</version>
+    <version>1.3.7-RELEASE</version>
 
     <build>
         <plugins>

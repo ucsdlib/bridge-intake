@@ -137,7 +137,6 @@ public class DpnReplicationTest extends BatchTestBase {
         b.setInterpretive(new ArrayList<>());
         b.setReplicatingNodes(new ArrayList<>());
         b.setRights(new ArrayList<>());
-        b.setFixities(ImmutableMap.of("fixity-algorithm", "fixity-value"));
         return b;
     }
 

@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -112,7 +111,6 @@ public class BatchTestBase {
         b.setInterpretive(new ArrayList<>());
         b.setReplicatingNodes(new ArrayList<>());
         b.setRights(new ArrayList<>());
-        b.setFixities(ImmutableMap.of("fixity-algorithm", "fixity-value"));
         return b;
     }
 

@@ -55,8 +55,9 @@ public class DpnReplication implements Runnable {
      */
     static class ReaderFactory {
         DpnInfoReader reader(Path save, String name) throws IOException {
-            TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(save));
-            return DpnInfoReader.read(is, name);
+            try (TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(save))) {
+                return DpnInfoReader.read(is, name);
+            }
         }
     }
 
@@ -273,7 +274,6 @@ public class DpnReplication implements Runnable {
         Bag bag = new Bag();
 
         // TODO: No magic (sha256/admin node/replicating node)
-        // TODO: Create MessageDigest as well
         bag.setAdminNode("chron")
                 .setUuid(name)
                 .setBagType(DATA_BAG)
@@ -281,6 +281,7 @@ public class DpnReplication implements Runnable {
                 .setCreatedAt(ZonedDateTime.now())
                 .setUpdatedAt(ZonedDateTime.now())
                 // Size of the tarball, should be good enough
+                // could also use the size from bag-info.txt
                 .setSize(save.toFile().length())
                 .setLocalId(reader.getLocalId())
                 .setRights(reader.getRightsIds())
@@ -288,8 +289,6 @@ public class DpnReplication implements Runnable {
                 .setIngestNode(reader.getIngestNodeName())
                 .setInterpretive(reader.getInterpretiveIds())
                 .setFirstVersionUuid(reader.getFirstVersionUUID())
-                // sha256 digest from our receipt
-                // .setFixities(ImmutableMap.of("sha256", receipt.getReceipt()))
                 .setReplicatingNodes(ImmutableList.of("chron"));
 
         // MessageDigest

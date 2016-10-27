@@ -41,14 +41,9 @@ public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
-    final
-    BridgeAPI bridge;
-
-    final
-    SnapshotJobManager manager;
-
-    final
-    IntakeSettings settings;
+    final BridgeAPI bridge;
+    final SnapshotJobManager manager;
+    final IntakeSettings settings;
 
     @Autowired
     public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge) {
@@ -123,20 +118,6 @@ public class Bridge {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
                     manager.startReplicationTasklet(details, bHistory.getHistory(), settings);
                 }
-
-                /*
-                List<BagReceipt> validReceipts = new ArrayList<>();
-                for (HistoryItem historyItem : history.getHistoryItems()) {
-                    log.info(historyItem.getHistory());
-
-                    History fromHistory = gson.fromJson(historyItem.getHistory(), History.class);
-                    if (fromHistory instanceof BaggingHistory) {
-                        BaggingHistory bHistory = (BaggingHistory) fromHistory;
-                        validReceipts.addAll(bHistory.getHistory());
-                    }
-                }
-
-                */
             } else {
                 log.warn("Snapshot {} has no history, ignoring", snapshotId);
             }

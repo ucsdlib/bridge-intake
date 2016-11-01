@@ -1,13 +1,27 @@
 package org.chronopolis.intake.duracloud.config.props;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
  *
  * Created by shake on 10/31/16.
  */
+@ConfigurationProperties(value = "duracloud.bridge")
 public class Bridge {
 
+    /**
+     * Username when connecting to the bridge API
+     */
     private String username = "bridge";
-    private String password;
+
+    /**
+     * Password when connecting to the bridge API
+     */
+    private String password = "replace-me";
+
+    /**
+     * Endpoint of the bridge API
+     */
     private String endpoint = "localhost:8000";
 
     public String getUsername() {

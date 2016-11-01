@@ -1,15 +1,29 @@
 package org.chronopolis.intake.duracloud.config.props;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
  *
  * Created by shake on 10/31/16.
  */
+@ConfigurationProperties(value = "duracloud")
 public class Duracloud {
 
+    /**
+     * Directory of duracloud snapshots
+     */
     private String snapshots = "/dc/snapshots";
+
+    /**
+     * Directory of duracloud restores
+     */
     private String restores = "/dc/restore";
+
+    /**
+     * Default manifest name to use
+     */
     private String manifest = "manifest-sha256.txt";
-    private String host = "localhost";
+
     private Bridge bridge;
 
     public String getSnapshots() {
@@ -38,17 +52,6 @@ public class Duracloud {
         this.manifest = manifest;
         return this;
     }
-
-    /*
-    public String getHost() {
-        return host;
-    }
-
-    public Duracloud setHost(String host) {
-        this.host = host;
-        return this;
-    }
-    */
 
     public Bridge getBridge() {
         return bridge;

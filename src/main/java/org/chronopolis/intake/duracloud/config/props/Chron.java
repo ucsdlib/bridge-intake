@@ -1,19 +1,46 @@
 package org.chronopolis.intake.duracloud.config.props;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import java.util.List;
 
 /**
  *
  * Created by shake on 10/31/16.
  */
+@ConfigurationProperties(prefix = "chron")
 public class Chron {
 
     private Ingest ingest;
+
+    /**
+     * Name of the local chronopolis user
+     */
     private String node;
+
+    /**
+     * Location of the bag staging directory
+     */
     private String bags = "/staging/bags";
+
+    /**
+     * Location of the token staging directory
+     */
     private String tokens = "/staging/tokens";
+
+    /**
+     * Location of the restoration staging directory
+     */
     private String restoration = "/staging/restoration";
+
+    /**
+     * Location of the preservation storage
+     */
     private String preservation = "/data/preservation";
+
+    /**
+     * List of nodes to replicate to
+     */
     private List<String> replicatingTo;
 
     public String getNode() {

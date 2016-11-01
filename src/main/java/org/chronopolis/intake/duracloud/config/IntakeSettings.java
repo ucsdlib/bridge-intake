@@ -21,12 +21,30 @@ public class IntakeSettings {
     Chron chron;
     Duracloud duracloud;
 
+    /**
+     * Boolean used to push snapshots to DPN
+     */
     private Boolean pushDPN = true;
+
+    /**
+     * Boolean used to push snapshots to Chronopolis
+     */
     private Boolean pushChronopolis = true;
+
+    /**
+     * Boolean to configure SNI for https connections
+     */
     private Boolean disableSNI = false;
 
     // should these be encapsulated by a dpn class?
+    /**
+     * String of the member uuid we are dealing with (deprecated)
+     */
     private String memberUUID;
+
+    /**
+     * String value representing the server used for dpn replicating nodes
+     */
     private String dpnReplicationServer;
 
     public Boolean pushChronopolis() {

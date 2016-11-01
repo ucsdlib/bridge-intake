@@ -18,6 +18,7 @@ import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
@@ -141,7 +142,8 @@ public class DpnReplication implements Runnable {
     }
 
     private Bag createReplication(Bag bag, List<String> permutation) {
-        Path save = Paths.get(settings.getBagStage(), depositor, bag.getUuid() + ".tar");
+        Chron chron = settings.getChron();
+        Path save = Paths.get(chron.getBags(), depositor, bag.getUuid() + ".tar");
         String ourNode = dpn.getNode();
         int replications = 2;
         int count = 0;
@@ -207,11 +209,12 @@ public class DpnReplication implements Runnable {
     }
 
     private List<String> loadNode() {
+        Chron chron = settings.getChron();
         // 5 nodes -> page size of 5
         List<String> nodes;
         retrofit2.Response<Node> response = null;
         // TODO: dpn username
-        Call<Node> call = dpn.getNodeAPI().getNode(settings.getNode());
+        Call<Node> call = dpn.getNodeAPI().getNode(chron.getNode());
         try {
             response = call.execute();
         } catch (IOException e) {
@@ -257,8 +260,9 @@ public class DpnReplication implements Runnable {
     private Optional<Bag> createBag(BagReceipt receipt) {
         log.info("Creating bag for receipt {}", receipt.getName());
 
+        Chron chron = settings.getChron();
         String name = receipt.getName();
-        Path save = Paths.get(settings.getBagStage(), depositor, name + ".tar");
+        Path save = Paths.get(chron.getBags(), depositor, name + ".tar");
 
         Optional<Bag> optional = Optional.empty();
 

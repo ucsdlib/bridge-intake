@@ -1,6 +1,8 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Chron;
+import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
@@ -42,9 +44,13 @@ public class BaggingTaskletTest {
 
         settings = new IntakeSettings();
         settings.setPushDPN(true);
-        settings.setBagStage(bags.toString());
-        settings.setDuracloudSnapshotStage(snapshots.toString());
-        settings.setDuracloudManifest("manifest-sha256.txt");
+        Chron chron = new Chron();
+        Duracloud dc = new Duracloud();
+        chron.setBags(bags.toString());
+        dc.setSnapshots(snapshots.toString());
+        dc.setManifest("manifest-sha256.txt");
+        settings.setChron(chron);
+        settings.setDuracloud(dc);
 
         // http calls can be mocked
         bridge = mock(BridgeAPI.class);

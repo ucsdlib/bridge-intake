@@ -50,7 +50,7 @@ public class Cleaner {
 
     @Scheduled(cron = "0 0 0 * * *")
     public void cleanDpn() {
-        String bagStage = settings.getBagStage();
+        String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
         try {
             Files.walk(bags)
@@ -88,7 +88,7 @@ public class Cleaner {
 
     @Scheduled(cron = "0 0 0 * * *")
     public void cleanChron() {
-        String bagStage = settings.getBagStage();
+        String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
 
         try {

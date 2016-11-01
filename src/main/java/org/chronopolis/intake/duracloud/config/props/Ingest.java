@@ -2,20 +2,20 @@ package org.chronopolis.intake.duracloud.config.props;
 
 /**
  *
- * Created by shake on 10/31/16.
+ * Created by shake on 11/1/16.
  */
-public class Bridge {
+public class Ingest {
 
-    private String username = "bridge";
-    private String password;
-    private String endpoint = "localhost:8000";
+    private String username = "admin";
+    private String password = "admin";
+    private String endpoint = "http://localhost:8080/";
 
     public String getUsername() {
         return username;
     }
 
-    public Bridge setUsername(String user) {
-        this.username = user;
+    public Ingest setUsername(String username) {
+        this.username = username;
         return this;
     }
 
@@ -23,7 +23,7 @@ public class Bridge {
         return password;
     }
 
-    public Bridge setPassword(String password) {
+    public Ingest setPassword(String password) {
         this.password = password;
         return this;
     }
@@ -32,7 +32,7 @@ public class Bridge {
         return endpoint;
     }
 
-    public Bridge setEndpoint(String endpoint) {
+    public Ingest setEndpoint(String endpoint) {
         this.endpoint = endpoint;
         return this;
     }

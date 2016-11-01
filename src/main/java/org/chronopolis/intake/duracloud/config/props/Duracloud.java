@@ -1,14 +1,15 @@
 package org.chronopolis.intake.duracloud.config.props;
 
 /**
+ *
  * Created by shake on 10/31/16.
  */
 public class Duracloud {
 
-    private String snapshots;
-    private String restores;
-    private String manifest;
-    private String host;
+    private String snapshots = "/dc/snapshots";
+    private String restores = "/dc/restore";
+    private String manifest = "manifest-sha256.txt";
+    private String host = "localhost";
     private Bridge bridge;
 
     public String getSnapshots() {
@@ -38,6 +39,7 @@ public class Duracloud {
         return this;
     }
 
+    /*
     public String getHost() {
         return host;
     }
@@ -46,6 +48,7 @@ public class Duracloud {
         this.host = host;
         return this;
     }
+    */
 
     public Bridge getBridge() {
         return bridge;

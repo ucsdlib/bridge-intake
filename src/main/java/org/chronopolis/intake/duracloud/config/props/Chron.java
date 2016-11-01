@@ -8,11 +8,12 @@ import java.util.List;
  */
 public class Chron {
 
+    private Ingest ingest;
     private String node;
-    private String bags;
-    private String tokens;
-    private String restoration;
-    private String preservation;
+    private String bags = "/staging/bags";
+    private String tokens = "/staging/tokens";
+    private String restoration = "/staging/restoration";
+    private String preservation = "/data/preservation";
     private List<String> replicatingTo;
 
     public String getNode() {
@@ -66,6 +67,15 @@ public class Chron {
 
     public Chron setReplicatingTo(List<String> replicatingTo) {
         this.replicatingTo = replicatingTo;
+        return this;
+    }
+
+    public Ingest getIngest() {
+        return ingest;
+    }
+
+    public Chron setIngest(Ingest ingest) {
+        this.ingest = ingest;
         return this;
     }
 }

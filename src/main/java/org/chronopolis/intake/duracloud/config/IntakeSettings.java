@@ -1,97 +1,33 @@
 package org.chronopolis.intake.duracloud.config;
 
-import com.google.common.collect.ImmutableList;
-import org.chronopolis.common.settings.ChronopolisSettings;
+import org.chronopolis.intake.duracloud.config.props.Chron;
+import org.chronopolis.intake.duracloud.config.props.DPN;
+import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * One day we'll migrate to configuration properties. I swear it.
  *
  * Created by shake on 8/1/14.
  */
-@Component
+@ConfigurationProperties
 @SuppressWarnings("UnusedDeclaration")
-public class IntakeSettings extends ChronopolisSettings {
+public class IntakeSettings {
     private final Logger log = LoggerFactory.getLogger(IntakeSettings.class);
 
-    @Value("${duracloud.stage.snapshot:/export/duracloud/staging}")
-    private String duracloudSnapshotStage;
+    DPN dpn;
+    Chron chron;
+    Duracloud duracloud;
 
-    @Value("${duracloud.stage.restore:/export/duracloud/restore}")
-    private String duracloudRestoreStage;
+    private Boolean pushDPN = true;
+    private Boolean pushChronopolis = true;
+    private Boolean disableSNI = false;
 
-    @Value("${duracloud.manifest:manifest-sha256.txt}")
-    private String duracloudManifest;
-
-    @Value("${duracloud.host:test.duracloud.org}")
-    private String duracloudHost;
-
-    @Value("${duracloud.bridge.endpoint:http://localhost:8080/bridge/}")
-    private String bridgeEndpoint;
-
-    @Value("${duracloud.bridge.username:root}")
-    private String bridgeUsername;
-
-    @Value("${duracloud.bridge.password:password}")
-    private String bridgePassword;
-
-    @Value("${push.chronopolis:true}")
-    private Boolean pushChronopolis;
-
-    @Value("${push.dpn:true}")
-    private Boolean pushDPN;
-
-    // Move these to the DPNSettings?
-    @Value("${dpn.member.uuid:bad-uuid}")
+    // should these be encapsulated by a dpn class?
     private String memberUUID;
-
-    @Value("${dpn.replication.server:localhost}")
     private String dpnReplicationServer;
-
-    @Value("${chron.replicate.to:ucsd}")
-    private List<String> chronReplicationNodes;
-
-    @Value("${disable.sni:true}")
-    private Boolean disableSNI;
-
-    public String getDuracloudSnapshotStage() {
-        return duracloudSnapshotStage;
-    }
-
-    public void setDuracloudSnapshotStage(final String duracloudSnapshotStage) {
-        // TODO: Change to Paths.get(stage)?
-        this.duracloudSnapshotStage = duracloudSnapshotStage;
-    }
-
-    public String getDuracloudRestoreStage() {
-        return duracloudRestoreStage;
-    }
-
-    public void setDuracloudRestoreStage(final String duracloudRestoreStage) {
-        this.duracloudRestoreStage = duracloudRestoreStage;
-    }
-
-    public String getDuracloudManifest() {
-        return duracloudManifest;
-    }
-
-    public void setDuracloudManifest(final String duracloudManifest) {
-        this.duracloudManifest = duracloudManifest;
-    }
-
-    public String getBridgeEndpoint() {
-        return bridgeEndpoint;
-    }
-
-    public IntakeSettings setBridgeEndpoint(String bridgeEndpoint) {
-        this.bridgeEndpoint = bridgeEndpoint;
-        return this;
-    }
 
     public Boolean pushChronopolis() {
         return pushChronopolis;
@@ -108,33 +44,6 @@ public class IntakeSettings extends ChronopolisSettings {
 
     public IntakeSettings setPushDPN(Boolean pushDPN) {
         this.pushDPN = pushDPN;
-        return this;
-    }
-
-    public String getBridgeUsername() {
-        return bridgeUsername;
-    }
-
-    public IntakeSettings setBridgeUsername(String bridgeUsername) {
-        this.bridgeUsername = bridgeUsername;
-        return this;
-    }
-
-    public String getBridgePassword() {
-        return bridgePassword;
-    }
-
-    public IntakeSettings setBridgePassword(String bridgePassword) {
-        this.bridgePassword = bridgePassword;
-        return this;
-    }
-
-    public String getDuracloudHost() {
-        return duracloudHost;
-    }
-
-    public IntakeSettings setDuracloudHost(String duracloudHost) {
-        this.duracloudHost = duracloudHost;
         return this;
     }
 
@@ -156,21 +65,39 @@ public class IntakeSettings extends ChronopolisSettings {
         return this;
     }
 
-    public List<String> getChronReplicationNodes() {
-        return chronReplicationNodes;
-    }
-
-    public IntakeSettings setChronReplicationNodes(String chronReplicationNodes) {
-        this.chronReplicationNodes = ImmutableList.copyOf(chronReplicationNodes.split(","));
-        return this;
-    }
-
     public Boolean getDisableSNI() {
         return disableSNI;
     }
 
     public IntakeSettings setDisableSNI(Boolean disableSNI) {
         this.disableSNI = disableSNI;
+        return this;
+    }
+
+    public Chron getChron() {
+        return chron;
+    }
+
+    public IntakeSettings setChron(Chron chron) {
+        this.chron = chron;
+        return this;
+    }
+
+    public Duracloud getDuracloud() {
+        return duracloud;
+    }
+
+    public IntakeSettings setDuracloud(Duracloud duracloud) {
+        this.duracloud = duracloud;
+        return this;
+    }
+
+    public DPN getDpn() {
+        return dpn;
+    }
+
+    public IntakeSettings setDpn(DPN dpn) {
+        this.dpn = dpn;
         return this;
     }
 }

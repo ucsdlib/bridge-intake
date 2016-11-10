@@ -28,7 +28,7 @@ duracloud:
 
 spring.profiles.active: develop
 
-disableSNI: true
+disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu
 pushDPN: false
 pushChronopolis: false

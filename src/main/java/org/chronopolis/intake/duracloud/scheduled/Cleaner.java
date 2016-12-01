@@ -1,6 +1,9 @@
 package org.chronopolis.intake.duracloud.scheduled;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
@@ -19,20 +22,25 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.stream.Stream;
 
 /**
  * Class to handle scheduled checks of the staging area and determining
  * what to clean up
- *
+ * <p>
  * Created by shake on 10/27/16.
  */
 @Component
 @EnableScheduling
 public class Cleaner {
     private final String TAR_TYPE = "application/x-tar";
+    private final String SNAPSHOT_FILE = ".collection-snapshot.properties";
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
     final BridgeAPI bridge;
@@ -52,16 +60,17 @@ public class Cleaner {
     public void cleanDpn() {
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
-        try {
-            Files.walk(bags)
-                 .filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
-                 .filter(p -> p.toString().endsWith(".tar")) // should check the mime type instead but that throws an exception :/
-                 .forEach(this::dpn);
+        try (Stream<Path> files = Files.walk(bags)) {
+            files.filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
+                    .filter(p -> p.toString().endsWith(".tar")) // should check the mime type instead but that throws an exception :/
+                    .filter(this::isSerializedSnapshot)
+                    .forEach(this::dpn);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error walking bag stage", e);
         }
     }
 
+    @VisibleForTesting
     void dpn(Path tarchive) {
         Path name = tarchive.getFileName();
         Path parent = tarchive.getParent().getFileName();
@@ -77,7 +86,9 @@ public class Cleaner {
                 Bag body = response.body();
                 if (body.getReplicatingNodes().size() == 3) {
                     log.info("REMOVING {} at {}", uuid, tarchive);
-                    Files.delete(tarchive);
+                    if (!settings.isCleanDryRun()) {
+                        Files.delete(tarchive);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -91,10 +102,10 @@ public class Cleaner {
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
 
-        try {
-            Files.walk(bags)
-                    .filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
+        try (Stream<Path> files = Files.walk(bags)) {
+            files.filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
                     .filter(p -> Files.isDirectory(p))
+                    .filter(this::isSnapshot)
                     .forEach(this::chron);
         } catch (IOException e) {
             log.warn("Error walking bag stage", e);
@@ -102,7 +113,8 @@ public class Cleaner {
 
     }
 
-    private void chron(Path path) {
+    @VisibleForTesting
+    void chron(Path path) {
         Path name = path.getFileName();
         Path parent = path.getParent().getFileName();
 
@@ -121,16 +133,74 @@ public class Cleaner {
                     org.chronopolis.rest.models.Bag bag = body.getContent().get(0);
                     if (bag.getStatus() == BagStatus.PRESERVED) {
                         log.info("REMOVING {} at {}", name, path);
-                        Files.delete(path);
+                        if (!settings.isCleanDryRun()) {
+                            Files.deleteIfExists(path);
+                        }
                     }
                 }
-
-
             }
-
         } catch (IOException e) {
             log.warn("Error communicating with ingest", e);
         }
+    }
+
+    @VisibleForTesting
+    void cleanDirectory(Path path) {
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                    Files.delete(path);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+                    Files.delete(path);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            log.error("Error removing directory {}", path, e);
+        }
+    }
+
+    /**
+     * Test if a directory is from a snapshot
+     *
+     * @param root the root of the bag
+     * @return true if the bag was made from a snapshot, false otherwise
+     */
+    @VisibleForTesting
+    boolean isSnapshot(Path root) {
+        return Files.exists(root.resolve(SNAPSHOT_FILE));
+    }
+
+    /**
+     * Test is a tarball is a serialized bag which was created
+     * from a snapshot
+     *
+     * @param tarball the tarball to check
+     * @return true if the bag was made from a snapshot and is a tarball, false otherwise
+     */
+    @VisibleForTesting
+    boolean isSerializedSnapshot(Path tarball) {
+        boolean hasSnapshotFile = false;
+        try {
+            String bag = tarball.getFileName().toString();
+            String tarEntry = bag.substring(0, bag.lastIndexOf(".")) + "/" + SNAPSHOT_FILE;
+
+            TarArchiveInputStream is = new TarArchiveInputStream(Files.newInputStream(tarball));
+            TarArchiveEntry entry;
+            // Loop while there are entries and we haven't encountered SNAPSHOT_FILE
+            while ((entry = is.getNextTarEntry()) != null && !hasSnapshotFile) {
+                hasSnapshotFile = entry.getName().equals(tarEntry);
+            }
+        } catch (IOException e) {
+            log.error("Error opening tarball", e);
+        }
+
+        return hasSnapshotFile;
     }
 
 }

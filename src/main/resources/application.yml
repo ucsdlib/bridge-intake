@@ -32,6 +32,7 @@ disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu
 pushDPN: false
 pushChronopolis: false
+cleanDryRun: false
 
 bridge:
   poll: 0 0 0 * * *

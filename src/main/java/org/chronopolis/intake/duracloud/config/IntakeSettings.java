@@ -22,6 +22,11 @@ public class IntakeSettings {
     Duracloud duracloud;
 
     /**
+     * Boolean used if we want to dry run cleans
+     */
+    private Boolean cleanDryRun = false;
+
+    /**
      * Boolean used to push snapshots to DPN
      */
     private Boolean pushDPN = true;
@@ -116,6 +121,15 @@ public class IntakeSettings {
 
     public IntakeSettings setDpn(DPN dpn) {
         this.dpn = dpn;
+        return this;
+    }
+
+    public Boolean isCleanDryRun() {
+        return cleanDryRun;
+    }
+
+    public IntakeSettings setCleanDryRun(Boolean cleanDryRun) {
+        this.cleanDryRun = cleanDryRun;
         return this;
     }
 }

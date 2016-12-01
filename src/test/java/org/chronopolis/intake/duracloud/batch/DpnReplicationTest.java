@@ -72,7 +72,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
     Node initializeNode() {
         Node node = new Node();
-        node.setName(settings.getNode());
+        node.setName(settings.getChron().getNode());
         node.setReplicateTo(ImmutableList.of(UUID.randomUUID().toString(),
                 UUID.randomUUID().toString()));
         return node;
@@ -105,7 +105,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
     private Replication createReplication(boolean stored) {
         Replication r = new Replication();
-        r.setFromNode(settings.getNode());
+        r.setFromNode(settings.getChron().getNode());
         r.setToNode(UUID.randomUUID().toString());
         r.setStored(stored);
         return r;
@@ -167,7 +167,7 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
         when(reader.getRightsIds()).thenReturn(ImmutableList.of());
         when(reader.getVersionNumber()).thenReturn(Long.valueOf(1));
-        when(reader.getIngestNodeName()).thenReturn(settings.getNode());
+        when(reader.getIngestNodeName()).thenReturn(settings.getChron().getNode());
         when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
@@ -249,14 +249,6 @@ public class DpnReplicationTest extends BatchTestBase {
 
         readyNodeMock();
         readyBagMocks();
-
-        System.out.println("----------------");
-        System.out.println(dpn);
-        System.out.println(dpn.getNodeAPI());
-        System.out.println("----------------");
-        log.info("hello {}", dpn.getNodeAPI());
-        log.info("hello {}", dpn.getTransfersAPI());
-        log.info("no more hello {}", dpn.getBagAPI());
 
         // Create bags with full replications
         // And prime our mock

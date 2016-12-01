@@ -1,0 +1,42 @@
+# General chron configuration
+chron:
+  node: chron
+  bags: /export/bags
+  tokens: /export/tokens
+  preservation: /data/preservation
+  restoration: /export/restore
+  ingest:
+    endpoint: http://localhost:8081/
+    username: ingest-admin
+    password: replace-me
+  replicatingTo:
+    - ucsd
+    - umiacs
+
+dpn:
+  endpoint: http://localhost:3000/
+  username: chron
+  api-key: replace-me
+
+duracloud:
+  snapshots: /export/snapshots/
+  restores: /export/restore/
+  bridge: 
+    username: bridge
+    password: replace-me
+    endpoint: http://localhost:8080/
+
+spring.profiles.active: develop
+
+disableSNI: false
+dpnReplicationServer: dpn-staging.ucsd.edu
+pushDPN: false
+pushChronopolis: false
+cleanDryRun: false
+
+bridge:
+  poll: 0 0 0 * * *
+
+logging.level:
+  org.chronopolis: debug
+  org.chronopolis.intake.duracloud.config: trace

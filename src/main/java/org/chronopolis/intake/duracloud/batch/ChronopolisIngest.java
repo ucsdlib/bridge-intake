@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.IngestAPI;
@@ -47,10 +48,11 @@ public class ChronopolisIngest implements Runnable {
     }
 
     private BagReceipt chronopolis(BagReceipt receipt) {
+        Chron chronSettings = settings.getChron();
         String depositor = data.depositor();
 
         log.info("Notifying chronopolis about bag {}", receipt.getName());
-        Path location = Paths.get(settings.getBagStage(), depositor, receipt.getName() + ".tar");
+        Path location = Paths.get(chronSettings.getBags(), depositor, receipt.getName() + ".tar");
 
         IngestRequest chronRequest = new IngestRequest();
         chronRequest.setRequiredReplications(1);
@@ -58,7 +60,7 @@ public class ChronopolisIngest implements Runnable {
         chronRequest.setDepositor(depositor);
         chronRequest.setLocation(location.toString()); // This is the relative path
 
-        chronRequest.setReplicatingNodes(settings.getChronReplicationNodes());
+        chronRequest.setReplicatingNodes(chronSettings.getReplicatingTo());
 
         Call<Bag> stageCall = chron.stageBag(chronRequest);
         try {

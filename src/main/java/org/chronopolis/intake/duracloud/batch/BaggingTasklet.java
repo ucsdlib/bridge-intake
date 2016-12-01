@@ -16,6 +16,8 @@ import org.chronopolis.bag.writer.Writer;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Chron;
+import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
@@ -72,12 +74,14 @@ public class BaggingTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+        Chron opolis = settings.getChron();
+        Duracloud dc = settings.getDuracloud();
         BaggingHistory history = new BaggingHistory(snapshotId, false);
 
-        Path duraBase = Paths.get(settings.getDuracloudSnapshotStage());
-        Path out = Paths.get(settings.getBagStage(), depositor);
+        Path duraBase = Paths.get(dc.getSnapshots());
+        Path out = Paths.get(opolis.getBags(), depositor);
         Path snapshotBase = duraBase.resolve(snapshotId);
-        String manifestName = settings.getDuracloudManifest();
+        String manifestName = dc.getManifest();
 
         PayloadManifest manifest = PayloadManifest.loadFromStream(
                 Files.newInputStream(snapshotBase.resolve(manifestName)),

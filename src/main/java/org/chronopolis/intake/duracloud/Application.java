@@ -5,15 +5,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
-import org.chronopolis.common.mail.MailUtil;
-import org.chronopolis.common.settings.DPNSettings;
-import org.chronopolis.common.settings.IngestAPISettings;
-import org.chronopolis.common.settings.SMTPSettings;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
+import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Ingest;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
@@ -35,6 +33,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.PageImpl;
@@ -56,7 +55,8 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@ComponentScan(basePackageClasses = {DPNSettings.class, IntakeSettings.class, Bridge.class, ChronService.class})
+@EnableConfigurationProperties(IntakeSettings.class)
+@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
 public class Application implements CommandLineRunner {
     private final Logger log = LoggerFactory.getLogger(Application.class);
 
@@ -73,7 +73,6 @@ public class Application implements CommandLineRunner {
     @Override
     public void run(String... strings) throws Exception {
         service.run();
-        // SpringApplication.exit(context);
     }
 
     @Bean
@@ -82,25 +81,23 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    IngestAPI ingestAPI(IngestAPISettings settings) {
-        String endpoint = settings.getIngestEndpoints().get(0);
+    IngestAPI ingestAPI(IntakeSettings settings) {
+        Ingest ingest = settings.getChron().getIngest();
+        String endpoint = ingest.getEndpoint();
 
         Type bagPage = new TypeToken<PageImpl<Bag>>() {}.getType();
         Type bagList = new TypeToken<List<Bag>>() {}.getType();
-        // Type replPage = new TypeToken<PageImpl<Replication>>() {}.getType();
-        //Type replList = new TypeToken<List<Replication>>() {}.getType();
 
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(bagPage, new PageDeserializer(bagList))
-                // .registerTypeAdapter(replPage, new PageDeserializer(replList))
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
                 .create();
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new OkBasicInterceptor(
-                        settings.getIngestAPIUsername(),
-                        settings.getIngestAPIPassword()))
+                        ingest.getUsername(),
+                        ingest.getPassword()))
                 .addInterceptor(chain -> {
                     log.info("{} {}", chain.request().method(), chain.request().url().toString());
                     return chain.proceed(chain.request());
@@ -116,16 +113,6 @@ public class Application implements CommandLineRunner {
 
         return adapter.create(IngestAPI.class);
 
-    }
-
-    @Bean
-    MailUtil mailUtil(SMTPSettings smtpSettings) {
-        MailUtil mailUtil = new MailUtil();
-        mailUtil.setSmtpFrom(smtpSettings.getFrom());
-        mailUtil.setSmtpTo("shake@umiacs.umd.edu");
-        mailUtil.setSmtpHost(smtpSettings.getHost());
-        mailUtil.setSmtpSend(smtpSettings.getSend());
-        return mailUtil;
     }
 
     @Bean

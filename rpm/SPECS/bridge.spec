@@ -15,7 +15,7 @@ Version: %{ver}
 Release: %{build_date}%{?dist}
 Source: bridge-client.jar
 Source1: bridge-client.sh
-Source2: application.properties
+Source2: application.yml
 Summary: Duracloud Bridge Client
 License: UMD
 URL: https://gitlab.umiacs.umd.edu/chronopolis
@@ -39,7 +39,7 @@ rm -rf "%{buildroot}"
 %__install -d "%{buildroot}/etc/chronopolis"
 
 %__install -D -m0755 "%{SOURCE1}" "%{buildroot}/etc/init.d/%{service}"
-%__install -D -m0600 "%{SOURCE2}" "%{buildroot}%{_confdir}/application.properties"
+%__install -D -m0600 "%{SOURCE2}" "%{buildroot}%{_confdir}/application.yml"
 
 
 %files
@@ -47,7 +47,7 @@ rm -rf "%{buildroot}"
 %defattr(-,root,root)
 # conf
 %dir %{_confdir}
-%config %attr(0644,-,-) %{_confdir}/application.properties
+%config %attr(0644,-,-) %{_confdir}/application.yml
 # jar
 %dir %attr(0755,chronopolis,chronopolis) %{_prefix}
 %{_prefix}/%{service}.jar

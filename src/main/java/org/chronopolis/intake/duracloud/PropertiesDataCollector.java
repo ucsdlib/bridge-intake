@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud;
 
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,9 @@ public class PropertiesDataCollector implements DataCollector {
     @Override
     public BagData collectBagData(String snapshotId) {
         BagData data = new BagData();
+        Duracloud dc = settings.getDuracloud();
         Properties properties = new Properties();
-        Path propertiesPath = Paths.get(settings.getDuracloudSnapshotStage(), snapshotId, FILE);
+        Path propertiesPath = Paths.get(dc.getSnapshots(), snapshotId, FILE);
         try {
             InputStream is = Files.newInputStream(propertiesPath);
             properties.load(is);

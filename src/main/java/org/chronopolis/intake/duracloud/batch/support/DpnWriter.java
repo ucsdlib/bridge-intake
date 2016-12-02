@@ -4,6 +4,8 @@ import org.chronopolis.bag.core.Bag;
 import org.chronopolis.bag.core.TagFile;
 import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +17,7 @@ import java.util.List;
  * Created by shake on 2/19/16.
  */
 public class DpnWriter extends SimpleBagWriter {
+    private final Logger log = LoggerFactory.getLogger(DpnWriter.class);
 
     private final String depositor;
     private final String snapshotId;
@@ -37,6 +40,7 @@ public class DpnWriter extends SimpleBagWriter {
     private void updateMd5s(Bag b) {
         // This is kind of obnoxious, it would be nice to extend bag
         // so that we can simply get the value after
+        log.debug("Updating md5 manifest for {}", b.getName());
         Path md5 = Paths.get("manifest-md5.txt");
         TagFile dura = b.getTags().get(md5);
         if (dura != null && dura instanceof DuracloudMD5) {
@@ -57,6 +61,7 @@ public class DpnWriter extends SimpleBagWriter {
     }
 
     private TagFile createDpnInfo(Bag b) {
+        log.debug("Adding dpn-info for {}", b.getName());
         DpnInfo dpnInfo = new DpnInfo();
 
         // ex: chron://ucsd/some-ucsd-dpn-snapshot/0

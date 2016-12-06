@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.bag.SimpleNamingSchema;
 import org.chronopolis.bag.UUIDNamingSchema;
-import org.chronopolis.bag.core.Bag;
 import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
@@ -20,6 +19,7 @@ import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
@@ -102,7 +102,7 @@ public class BaggingTasklet implements Tasklet {
                 .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)));
-        bagger = updatePartitioner(bagger, settings.pushDPN());
+        bagger = configurePartitioner(bagger, settings.pushDPN());
 
         BaggingResult partition = bagger.partition();
         if (partition.isSuccess()) {
@@ -125,15 +125,14 @@ public class BaggingTasklet implements Tasklet {
      */
     private void updateBridge(List<WriteResult> results) throws IOException {
         BaggingHistory history = new BaggingHistory(snapshotId, false);
-        boolean success = results.stream()
-                .peek(r -> {
-                    if (r.isSuccess()) {
-                        Bag b = r.getBag();
-                        history.addBaggingData(b.getName(), b.getReceipt());
-                    }
-                })
-                .allMatch(WriteResult::isSuccess);
-        if (success) {
+        // we could filter -> map -> consume instead
+        results.stream().filter(WriteResult::isSuccess)
+                .map(w -> new BagReceipt()
+                        .setName(w.getBag().getName())
+                        .setReceipt(w.getReceipt()))
+                .forEach(history::addBaggingData);
+
+        if (results.size() == history.getHistory().size()) {
             Call<HistorySummary> hc = bridge.postHistory(snapshotId, history);
             hc.execute();
         } else {
@@ -150,9 +149,9 @@ public class BaggingTasklet implements Tasklet {
      * @param dpn    boolean flag indicating if we're dpn bound
      * @return The updated Bagger
      */
-    private Bagger updatePartitioner(Bagger bagger, boolean dpn) {
+    private Bagger configurePartitioner(Bagger bagger, boolean dpn) {
         if (dpn) {
-            bagger.withMaxSize(250, Unit.GIGABYTE)
+            bagger.withMaxSize(1, Unit.MEGABYTE)
                   .withNamingSchema(new UUIDNamingSchema());
         } else {
             bagger.withNamingSchema(new SimpleNamingSchema(snapshotId));

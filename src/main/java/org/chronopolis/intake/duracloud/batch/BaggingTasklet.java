@@ -151,7 +151,7 @@ public class BaggingTasklet implements Tasklet {
      */
     private Bagger configurePartitioner(Bagger bagger, boolean dpn) {
         if (dpn) {
-            bagger.withMaxSize(1, Unit.MEGABYTE)
+            bagger.withMaxSize(245, Unit.GIGABYTE)
                   .withNamingSchema(new UUIDNamingSchema());
         } else {
             bagger.withNamingSchema(new SimpleNamingSchema(snapshotId));

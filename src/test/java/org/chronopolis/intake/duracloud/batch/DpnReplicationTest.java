@@ -167,7 +167,7 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
         when(reader.getRightsIds()).thenReturn(ImmutableList.of());
         when(reader.getVersionNumber()).thenReturn(Long.valueOf(1));
-        when(reader.getIngestNodeName()).thenReturn(settings.getChron().getNode());
+        // when(reader.getIngestNodeName()).thenReturn(settings.getChron().getNode());
         when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
@@ -232,7 +232,7 @@ public class DpnReplicationTest extends BatchTestBase {
         verify(reader, times(1)).getLocalId();
         verify(reader, times(1)).getRightsIds();
         verify(reader, times(1)).getVersionNumber();
-        verify(reader, times(1)).getIngestNodeName();
+        // verify(reader, times(1)).getIngestNodeName();
         verify(reader, times(1)).getInterpretiveIds();
         verify(reader, times(1)).getFirstVersionUUID();
         verify(transfers, times(2)).createReplication(any(Replication.class));

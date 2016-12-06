@@ -163,8 +163,7 @@ public class DpnReplication implements Runnable {
             count += ongoingResponse.get().getCount();
         }
 
-        log.info("count: {}", count);
-        log.info("nodes: {}", nodes);
+        log.debug("current replications {}", count);
         // this can get stuck if we don't replicate to at least 2 nodes
         // ok lets create some scenarios
         // p = count < replications
@@ -173,7 +172,6 @@ public class DpnReplication implements Runnable {
         // !p && q => false (created replications and nodes to go)
         // p && !q => false (not enough replications and no nodes)
         // !p && !q => false (created replications and no nodes)
-        log.info("{} {}", (count < replications), !nodes.isEmpty());
         while (count < replications && !nodes.isEmpty()) {
             String node = nodes.remove(0);
             log.info("Creating replications for bag {} to {}", bag.getUuid(), node);
@@ -243,7 +241,7 @@ public class DpnReplication implements Runnable {
     // 2a: Attempt to create bag - return of(Bag) on success, empty() on fail
     // 3: Bag exists (200) - of(bag)
     private Optional<Bag> getBag(BagReceipt receipt) {
-        log.info("Seeing if bag is already registered for receipt {}", receipt.getName());
+        log.debug("Seeing if bag is already registered for receipt {}", receipt.getName());
         BalustradeBag bags = dpn.getBagAPI();
         Call<Bag> bagCall = bags.getBag(receipt.getName());
         retrofit2.Response<Bag> response = null;
@@ -278,6 +276,9 @@ public class DpnReplication implements Runnable {
         Bag bag = new Bag();
 
         // TODO: No magic (sha256/admin node/replicating node)
+        //       Also the ingest node name is a bit iffy at the moment
+        //       as we used to pull from the reader but now store the
+        //       full chronopolis name there. For now we can use the setting.
         bag.setAdminNode("chron")
                 .setUuid(name)
                 .setBagType(DATA_BAG)
@@ -290,7 +291,8 @@ public class DpnReplication implements Runnable {
                 .setLocalId(reader.getLocalId())
                 .setRights(reader.getRightsIds())
                 .setVersion(reader.getVersionNumber())
-                .setIngestNode(reader.getIngestNodeName())
+                // .setIngestNode(reader.getIngestNodeName())
+                .setIngestNode(settings.getDpn().getUsername())
                 .setInterpretive(reader.getInterpretiveIds())
                 .setFirstVersionUuid(reader.getFirstVersionUUID())
                 .setReplicatingNodes(ImmutableList.of("chron"));
@@ -313,7 +315,9 @@ public class DpnReplication implements Runnable {
                 log.info("Success registering bag {}", bag.getUuid());
                 optional = Optional.of(bag);
             } else {
-                log.info("Failure registering bag {}. Reason: {}", bag.getUuid(), response.message());
+                log.info("Failure registering bag {} - {}: {}", new Object[]{bag.getUuid(),
+                        response.message(),
+                        response.errorBody().string()});
             }
         } catch (IOException e) {
             log.info("Failure communicating with server", e);

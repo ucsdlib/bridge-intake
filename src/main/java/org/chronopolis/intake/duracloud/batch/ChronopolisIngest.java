@@ -53,14 +53,15 @@ public class ChronopolisIngest implements Runnable {
 
         log.info("Notifying chronopolis about bag {}", receipt.getName());
         Path location = Paths.get(chronSettings.getBags(), depositor, receipt.getName() + ".tar");
+        List<String> replicatingNodes = chronSettings.getReplicatingTo();
 
         IngestRequest chronRequest = new IngestRequest();
-        chronRequest.setRequiredReplications(1);
+        chronRequest.setRequiredReplications(replicatingNodes.size());
         chronRequest.setName(receipt.getName());
         chronRequest.setDepositor(depositor);
         chronRequest.setLocation(location.toString()); // This is the relative path
 
-        chronRequest.setReplicatingNodes(chronSettings.getReplicatingTo());
+        chronRequest.setReplicatingNodes(replicatingNodes);
 
         Call<Bag> stageCall = chron.stageBag(chronRequest);
         try {

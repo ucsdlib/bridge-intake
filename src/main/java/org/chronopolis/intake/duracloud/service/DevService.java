@@ -64,6 +64,7 @@ public class DevService implements ChronService {
 
     private void testClean() {
         cleaner.cleanDpn();
+        cleaner.cleanChron();
     }
 
     // Test based on some static content

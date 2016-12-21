@@ -44,7 +44,9 @@ public class ChronopolisIngest implements Runnable {
 
     @Override
     public void run() {
-        receipts.forEach(this::chronopolis);
+        if (settings.pushChronopolis()) {
+            receipts.forEach(this::chronopolis);
+        }
     }
 
     private BagReceipt chronopolis(BagReceipt receipt) {

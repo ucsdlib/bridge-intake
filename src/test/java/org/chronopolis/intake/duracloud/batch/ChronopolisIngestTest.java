@@ -30,6 +30,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Before
     public void setup() {
+        settings.setPushChronopolis(true);
         MockitoAnnotations.initMocks(this);
 
         ingest = new ChronopolisIngest(data(), receipts(), api, settings);

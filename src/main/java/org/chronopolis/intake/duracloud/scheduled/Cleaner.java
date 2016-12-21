@@ -60,14 +60,18 @@ public class Cleaner {
     public void cleanDpn() {
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
-        try (Stream<Path> files = Files.walk(bags)) {
-            files.filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
-                    .filter(p -> p.toString().endsWith(".tar")) // should check the mime type instead but that throws an exception :/
-                    .filter(this::isSerializedSnapshot)
+        try (Stream<Path> files = Files.find(bags, 2, this::matchTar)) {
+            files.filter(this::isSerializedSnapshot)
                     .forEach(this::dpn);
         } catch (IOException e) {
             log.error("Error walking bag stage", e);
         }
+    }
+
+    private boolean matchTar(Path path, BasicFileAttributes attr) {
+        // should check the mime type instead of ends with
+        log.trace("testing {}", path);
+        return !attr.isDirectory() && path.toString().endsWith(".tar");
     }
 
     @VisibleForTesting
@@ -102,10 +106,9 @@ public class Cleaner {
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
 
-        try (Stream<Path> files = Files.walk(bags)) {
-            files.filter(p -> (p.getNameCount() - bags.getNameCount()) == 2)
-                    .filter(p -> Files.isDirectory(p))
-                    .filter(this::isSnapshot)
+        try (Stream<Path> files =
+                     Files.find(bags, 2, (p, a) -> a.isDirectory())) {
+            files.filter(this::isSnapshot)
                     .forEach(this::chron);
         } catch (IOException e) {
             log.warn("Error walking bag stage", e);

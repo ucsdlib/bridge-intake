@@ -52,7 +52,7 @@ public class Bridge {
         this.bridge = bridge;
     }
 
-    @Scheduled(cron = "${bridge.poll:0 * * * * *}")
+    @Scheduled(cron = "${bridge.poll:0 0 0 * * *}")
     public void findSnapshots() {
         // TODO: Use enqueue for calls instead of execute, should alleviate some of the try/catch madness
         log.trace("Polling for snapshots...");

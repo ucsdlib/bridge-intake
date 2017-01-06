@@ -77,11 +77,11 @@ public class BaggingTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        Chron opolis = settings.getChron();
+        Chron chron = settings.getChron();
         Duracloud dc = settings.getDuracloud();
 
         Path duraBase = Paths.get(dc.getSnapshots());
-        Path out = Paths.get(opolis.getBags(), depositor);
+        Path out = Paths.get(chron.getBags(), depositor);
         Path snapshotBase = duraBase.resolve(snapshotId);
         String manifestName = dc.getManifest();
 

@@ -2,7 +2,10 @@ package org.chronopolis.intake.duracloud.batch.support;
 
 import org.chronopolis.bag.core.Bag;
 import org.chronopolis.bag.core.TagFile;
+import org.chronopolis.bag.packager.Packager;
+import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.SimpleBagWriter;
+import org.chronopolis.bag.writer.WriteJob;
 import org.chronopolis.bag.writer.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Extension of the MultipartWriter that adds a DpnInfo file into Bags
@@ -21,6 +25,8 @@ public class DpnWriter extends SimpleBagWriter {
 
     private final String depositor;
     private final String snapshotId;
+    private boolean validate;
+    private Packager packager;
 
     public DpnWriter(String depositor, String snapshotId) {
         super();
@@ -30,11 +36,29 @@ public class DpnWriter extends SimpleBagWriter {
     }
 
     @Override
+    public BagWriter validate(boolean validate) {
+        this.validate = validate;
+        return this;
+    }
+
+    @Override
+    public BagWriter withPackager(Packager packager) {
+        this.packager = packager;
+        return this;
+    }
+
+    @Override
     public List<WriteResult> write(List<Bag> bags) {
-        bags.stream()
+        return bags.stream()
             .peek(this::updateMd5s)
-            .forEach(b -> b.addTag(createDpnInfo(b)));
-        return super.write(bags);
+            .peek(b -> b.addTag(createDpnInfo(b)))
+            .map(this::fromBag)
+            .collect(Collectors.toList());
+    }
+
+    private WriteResult fromBag(Bag bag) {
+        WriteJob job = new TarWriteJob(bag, validate, packager);
+        return job.get();
     }
 
     private void updateMd5s(Bag b) {

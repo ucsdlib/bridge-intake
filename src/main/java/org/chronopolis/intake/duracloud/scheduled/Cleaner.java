@@ -43,10 +43,10 @@ public class Cleaner {
     private final String SNAPSHOT_FILE = ".collection-snapshot.properties";
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
-    final BridgeAPI bridge;
-    final IngestAPI ingest;
-    final BalustradeBag registry;
-    final IntakeSettings settings;
+    private final BridgeAPI bridge;
+    private final IngestAPI ingest;
+    private final BalustradeBag registry;
+    private final IntakeSettings settings;
 
     @Autowired
     public Cleaner(BridgeAPI bridge, IngestAPI ingest, LocalAPI dpn, IntakeSettings settings) {
@@ -56,7 +56,7 @@ public class Cleaner {
         this.settings = settings;
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "${bridge.clean:0 0 0 * * *}")
     public void cleanDpn() {
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);

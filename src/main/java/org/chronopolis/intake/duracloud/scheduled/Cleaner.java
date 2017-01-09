@@ -137,7 +137,7 @@ public class Cleaner {
                     if (bag.getStatus() == BagStatus.PRESERVED) {
                         log.info("REMOVING {} at {}", name, path);
                         if (!settings.isCleanDryRun()) {
-                            Files.deleteIfExists(path);
+                            cleanDirectory(path);
                         }
                     }
                 }

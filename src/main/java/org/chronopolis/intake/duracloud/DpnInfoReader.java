@@ -31,7 +31,6 @@ public class DpnInfoReader {
     }
 
     public static DpnInfoReader read(Path bag) throws IOException {
-        String line;
         Path info = bag.resolve(DPN_INFO);
         BufferedReader reader = Files.newBufferedReader(info, Charset.defaultCharset());
         return read(reader);
@@ -40,11 +39,12 @@ public class DpnInfoReader {
     public static DpnInfoReader read(TarArchiveInputStream is, String root) throws IOException {
         String dpnInfo = root + "/" + DPN_INFO;
 
-        TarArchiveEntry entry = null;
+        TarArchiveEntry entry;
         while ((entry = is.getNextTarEntry()) != null) {
             if (entry.getName().equals(dpnInfo)) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                return read(reader);
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                    return read(reader);
+                }
             }
         }
 
@@ -52,9 +52,10 @@ public class DpnInfoReader {
         return new DpnInfoReader(ImmutableMultimap.of());
     }
 
+    // TODO: autoclose/close br
     private static DpnInfoReader read(BufferedReader r) throws IOException {
         ImmutableMultimap.Builder<Tag, String> builder = ImmutableMultimap.builder();
-        String line = null;
+        String line;
         Tag t = Tag.UNKNOWN; // init as unknown just in case
         while ((line = r.readLine()) != null) {
             String[] split = line.split(":\\s", 2);

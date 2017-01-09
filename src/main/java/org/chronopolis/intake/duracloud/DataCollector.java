@@ -2,6 +2,8 @@ package org.chronopolis.intake.duracloud;
 
 import org.chronopolis.intake.duracloud.model.BagData;
 
+import java.io.IOException;
+
 /**
  * Interface to abstract away from how we get the {@link BagData}, this way
  * we can insert a class which implements this and assume it gives us back
@@ -12,6 +14,6 @@ import org.chronopolis.intake.duracloud.model.BagData;
  */
 public interface DataCollector {
 
-    BagData collectBagData(String snapshotId);
+    BagData collectBagData(String snapshotId) throws IOException;
 
 }

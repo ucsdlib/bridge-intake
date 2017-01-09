@@ -1,23 +1,19 @@
 package org.chronopolis.intake.duracloud.config;
 
-import com.google.common.base.Optional;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.dpn.OkTokenInterceptor;
-import org.chronopolis.common.settings.DPNSettings;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
-import org.chronopolis.earth.models.Replication;
-import org.chronopolis.earth.serializers.ReplicationStatusDeserializer;
-import org.chronopolis.earth.serializers.ReplicationStatusSerializer;
-import org.chronopolis.intake.duracloud.DateTimeDeserializer;
-import org.chronopolis.intake.duracloud.DateTimeSerializer;
+import org.chronopolis.earth.serializers.ZonedDateTimeDeserializer;
+import org.chronopolis.earth.serializers.ZonedDateTimeSerializer;
 import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
+import org.chronopolis.intake.duracloud.config.props.Bridge;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
 import org.chronopolis.intake.duracloud.model.HistorySerializer;
@@ -26,20 +22,22 @@ import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.rest.api.ErrorLogger;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit2.GsonConverterFactory;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,37 +55,39 @@ public class DPNConfig {
     }
 
     @Bean
-    Optional<Object> checkSNI(IntakeSettings settings) throws GeneralSecurityException {
+    Optional<String> checkSNI(IntakeSettings settings) throws GeneralSecurityException {
         if (settings.getDisableSNI()) {
+            log.info("Disabling SNI");
             System.setProperty("jsse.enableSNIExtension", "false");
             // Create a trust manager that does not validate certificate chains
             TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
 
                         public void checkClientTrusted(
-                                java.security.cert.X509Certificate[] certs, String authType) {
+                                X509Certificate[] certs, String authType) {
                         }
 
                         public void checkServerTrusted(
-                                java.security.cert.X509Certificate[] certs, String authType) {
+                                X509Certificate[] certs, String authType) {
                         }
                     }
             };
 
             // Install the all-trusting trust manager
             SSLContext sc = SSLContext.getInstance("SSL");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            sc.init(null, trustAllCerts, new SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
 
-        return Optional.absent();
+        return Optional.of("checked");
     }
 
     @Bean
     BridgeAPI bridgeAPI(IntakeSettings settings) {
+        Bridge bridge = settings.getDuracloud().getBridge();
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(History.class, new HistorySerializer())
                 .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
@@ -98,17 +98,13 @@ public class DPNConfig {
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new HttpTraceInterceptor())
                 .addInterceptor(new OkBasicInterceptor(
-                        settings.getBridgeUsername(),
-                        settings.getBridgePassword()))
+                        bridge.getUsername(),
+                        bridge.getPassword()))
                 .readTimeout(2, TimeUnit.MINUTES)
                 .build();
 
-        String endpoint = settings.getBridgeEndpoint().endsWith("/")
-                ? settings.getBridgeEndpoint()
-                : settings.getBridgeEndpoint() + "/";
-
         Retrofit adapter = new Retrofit.Builder()
-                .baseUrl(settings.getBridgeEndpoint())
+                .baseUrl(bridge.getEndpoint())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(client)
                 .build();
@@ -117,8 +113,8 @@ public class DPNConfig {
     }
 
     @Bean
-    LocalAPI localAPI(DPNSettings settings) {
-        String endpoint = settings.getDPNEndpoints().get(0);
+    LocalAPI localAPI(IntakeSettings settings) {
+        String endpoint = settings.getDpn().getEndpoint();
 
         if (!endpoint.endsWith("/")) {
             endpoint = endpoint + "/";
@@ -126,16 +122,14 @@ public class DPNConfig {
 
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .registerTypeAdapter(DateTime.class, new DateTimeSerializer())
-                .registerTypeAdapter(DateTime.class, new DateTimeDeserializer())
-                .registerTypeAdapter(Replication.Status.class, new ReplicationStatusSerializer())
-                .registerTypeAdapter(Replication.Status.class, new ReplicationStatusDeserializer())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
                 .serializeNulls()
                 .create();
 
         OkHttpClient okClient = new OkHttpClient.Builder()
                 .addInterceptor(new HttpTraceInterceptor())
-                .addInterceptor(new OkTokenInterceptor(settings.getApiKey()))
+                .addInterceptor(new OkTokenInterceptor(settings.getDpn().getApiKey()))
                 .readTimeout(5, TimeUnit.HOURS)
                 .build();
 

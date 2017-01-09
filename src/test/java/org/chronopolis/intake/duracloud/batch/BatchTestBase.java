@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -11,14 +10,12 @@ import org.chronopolis.intake.duracloud.test.TestApplication;
 import org.chronopolis.rest.entities.Bag;
 import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
-import org.joda.time.DateTime;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Callback;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +29,7 @@ import java.util.UUID;
  * Created by shake on 6/2/16.
  */
 @SuppressWarnings("ALL")
-@RunWith(SpringJUnit4ClassRunner.class)
+// @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestApplication.class)
 public class BatchTestBase {
     protected final String MEMBER = "test-member";
@@ -107,14 +104,13 @@ public class BatchTestBase {
         b.setAdminNode("test-node");
         b.setBagType('D');
         b.setMember(MEMBER);
-        b.setCreatedAt(DateTime.now());
-        b.setUpdatedAt(DateTime.now());
+        b.setCreatedAt(ZonedDateTime.now());
+        b.setUpdatedAt(ZonedDateTime.now());
         b.setSize(10L);
         b.setVersion(1L);
         b.setInterpretive(new ArrayList<>());
         b.setReplicatingNodes(new ArrayList<>());
         b.setRights(new ArrayList<>());
-        b.setFixities(ImmutableMap.of("fixity-algorithm", "fixity-value"));
         return b;
     }
 
@@ -145,7 +141,7 @@ public class BatchTestBase {
 
         @Override
         public void enqueue(Callback<E> callback) {
-            callback.onResponse(retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
+            callback.onResponse(this, retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
         }
 
     }

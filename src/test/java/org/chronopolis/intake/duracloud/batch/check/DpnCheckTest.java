@@ -3,7 +3,10 @@ package org.chronopolis.intake.duracloud.batch.check;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
+import org.chronopolis.earth.api.Events;
 import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.earth.models.Ingest;
+import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.CallWrapper;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
@@ -17,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +34,7 @@ import static org.mockito.Mockito.when;
 public class DpnCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
+    @Mock Events events;
     @Mock BridgeAPI bridge;
     @Mock BalustradeTransfers transfers;
     @Mock BalustradeNode nodes;
@@ -49,6 +54,7 @@ public class DpnCheckTest extends BatchTestBase {
         dpn.setTransfersAPI(transfers);
         dpn.setNodeAPI(nodes);
         dpn.setBagAPI(bags);
+        dpn.setEventsAPI(events);
 
         check = new DpnCheck(data(), receipts(), bridge, dpn);
     }
@@ -56,6 +62,8 @@ public class DpnCheckTest extends BatchTestBase {
     @Test
     public void testCompleteSnapshot() {
         when(bags.getBag(any(String.class))).thenReturn(new CallWrapper<>(createBagFullReplications()));
+        when(events.getIngests(anyMap())).thenReturn(new CallWrapper(new Response<>()));
+        when(events.createIngest(any(Ingest.class))).thenReturn(new CallWrapper<>(new Ingest()));
         when(bridge.postHistory(any(String.class), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 

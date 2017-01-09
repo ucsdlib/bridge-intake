@@ -19,12 +19,15 @@ import java.util.stream.Stream;
 /**
  * Collapse under the weight of time
  *
+ * TODO: This isn't serializable which can mess with the BagWriter
+ *       we'll want to get that in check
+ *
  * Created by shake on 5/12/16.
  */
 public class DuracloudMD5 extends OnDiskTagFile {
     private final Logger log = LoggerFactory.getLogger(DuracloudMD5.class);
 
-    private Predicate<String> predicate;
+    private transient Predicate<String> predicate;
     private List<String> collection;
     private Long size;
     private final String path;

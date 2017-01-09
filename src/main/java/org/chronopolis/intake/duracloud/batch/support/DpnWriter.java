@@ -1,67 +1,75 @@
 package org.chronopolis.intake.duracloud.batch.support;
 
 import org.chronopolis.bag.core.Bag;
-import org.chronopolis.bag.writer.MultipartWriter;
-import org.chronopolis.bag.writer.Writer;
+import org.chronopolis.bag.core.TagFile;
+import org.chronopolis.bag.packager.Packager;
+import org.chronopolis.bag.writer.BagWriter;
+import org.chronopolis.bag.writer.SimpleBagWriter;
+import org.chronopolis.bag.writer.WriteJob;
+import org.chronopolis.bag.writer.WriteResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Extension of the MultipartWriter that adds a DpnInfo file into Bags
  *
  * Created by shake on 2/19/16.
  */
-public class DpnWriter extends MultipartWriter {
+public class DpnWriter extends SimpleBagWriter {
+    private final Logger log = LoggerFactory.getLogger(DpnWriter.class);
 
-    private String depositor;
+    private final String depositor;
+    private final String snapshotId;
+    private boolean validate;
+    private Packager packager;
 
-    public DpnWriter() {
+    public DpnWriter(String depositor, String snapshotId) {
         super();
+
+        this.depositor = depositor;
+        this.snapshotId = snapshotId;
     }
 
     @Override
-    public List<Bag> write() {
-        // preprocess and bags from super
-        preprocess();
-        int idx = 0;
-        int total = bags.size();
-        for (Bag bag : bags) {
-            bag.setGroupTotal(total);
-            bag.prepareForWrite();
+    public BagWriter validate(boolean validate) {
+        this.validate = validate;
+        return this;
+    }
 
-            // We need the name to be set prior to creating the dpn-info
-            String name = namingSchema.getName(idx);
-            bag.setName(name);
+    @Override
+    public BagWriter withPackager(Packager packager) {
+        this.packager = packager;
+        return this;
+    }
 
-            // Create the dpn info + update the bags md5 manifest
-            addDpnInfo(bag);
-            updateMd5s(bag);
+    @Override
+    public List<WriteResult> write(List<Bag> bags) {
+        return bags.stream()
+            .peek(this::updateMd5s)
+            .peek(b -> b.addTag(createDpnInfo(b)))
+            .map(this::fromBag)
+            .collect(Collectors.toList());
+    }
 
-            writeBag(bag);
-            idx++;
-        }
-
-        return bags;
+    private WriteResult fromBag(Bag bag) {
+        WriteJob job = new TarWriteJob(bag, validate, packager);
+        return job.get();
     }
 
     private void updateMd5s(Bag b) {
+        // This is kind of obnoxious, it would be nice to extend bag
+        // so that we can simply get the value after
+        log.debug("Updating md5 manifest for {}", b.getName());
         Path md5 = Paths.get("manifest-md5.txt");
-        b.getTags().values().stream()
-                .filter(t -> t.getPath().equals(md5))
-                .map(t -> {
-                    // Create a List<Optional<DuracloudMD5>>
-                    Optional<DuracloudMD5> optional;
-                    if (t instanceof DuracloudMD5) {
-                        optional = Optional.of((DuracloudMD5) t);
-                    } else {
-                        optional = Optional.empty();
-                    }
-                    return optional;
-                })
-                .forEach(o -> o.ifPresent(m -> ifPresent(b, m)));
+        TagFile dura = b.getTags().get(md5);
+        if (dura != null && dura instanceof DuracloudMD5) {
+            ifPresent(b, (DuracloudMD5) dura);
+        }
     }
 
     private void ifPresent(Bag b, DuracloudMD5 md5) {
@@ -76,14 +84,17 @@ public class DpnWriter extends MultipartWriter {
        });
     }
 
-    private void addDpnInfo(Bag b) {
+    private TagFile createDpnInfo(Bag b) {
+        log.debug("Adding dpn-info for {}", b.getName());
         DpnInfo dpnInfo = new DpnInfo();
 
-        String local = "chron://" + depositor + "/" + b.getName();
+        // ex: chron://ucsd/some-ucsd-dpn-snapshot/0
+        String local = "chron://" + depositor + "/" + snapshotId + "/" + b.getNumber();
         dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_NAME, "Sibyl Schaefer")
                .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "sschaefer@uscd.edu")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_ADDRESS, "ucsd")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_NAME, "chron")
+               .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "chronopolis-support-l@mailman.ucsd.edu")
+               .withInfo(DpnInfo.Tag.INGEST_NODE_ADDRESS, "University of California, San Diego, 9500 Gilman Dr, La Jolla, CA 92093")
+               .withInfo(DpnInfo.Tag.INGEST_NODE_NAME, "Chronopolis")
                .withInfo(DpnInfo.Tag.DPN_OBJECT_ID, b.getName())
                .withInfo(DpnInfo.Tag.FIRST_VERSION_OBJECT_ID, b.getName())
                .withInfo(DpnInfo.Tag.VERSION_NUMBER, String.valueOf(1))
@@ -92,12 +103,6 @@ public class DpnWriter extends MultipartWriter {
                // Empty entries for the inter/rights for now
                .withInfo(DpnInfo.Tag.RIGHTS_OBJECT_ID, "")
                .withInfo(DpnInfo.Tag.INTERPRETIVE_OBJECT_ID, "");
-
-        b.addTag(dpnInfo);
-    }
-
-    public Writer withDepositor(String depositor) {
-        this.depositor = depositor;
-        return this;
+        return dpnInfo;
     }
 }

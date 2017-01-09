@@ -27,6 +27,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Define a scheduled task which polls the Bridge server for snapshots
@@ -40,16 +41,18 @@ public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
-    @Autowired
-    BridgeAPI bridge;
+    final BridgeAPI bridge;
+    final SnapshotJobManager manager;
+    final IntakeSettings settings;
 
     @Autowired
-    SnapshotJobManager manager;
+    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge) {
+        this.settings = settings;
+        this.manager = manager;
+        this.bridge = bridge;
+    }
 
-    @Autowired
-    IntakeSettings settings;
-
-    @Scheduled(cron = "${bridge.poll:0 * * * * *}")
+    @Scheduled(cron = "${bridge.poll:0 0 0 * * *}")
     public void findSnapshots() {
         // TODO: Use enqueue for calls instead of execute, should alleviate some of the try/catch madness
         log.trace("Polling for snapshots...");
@@ -63,7 +66,7 @@ public class Bridge {
             return;
         }
 
-        if (response != null && response.isSuccess()) {
+        if (response != null && response.isSuccessful()) {
             snapshots = response.body();
         } else {
             String message = response != null ? response.message() : "";
@@ -77,7 +80,7 @@ public class Bridge {
             SnapshotHistory history;
 
             Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
-            Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, null);
+            Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, new HashMap<>());
 
             Response<SnapshotDetails> detailsResponse = null;
             Response<SnapshotHistory> historyResponse = null;
@@ -115,20 +118,6 @@ public class Bridge {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
                     manager.startReplicationTasklet(details, bHistory.getHistory(), settings);
                 }
-
-                /*
-                List<BagReceipt> validReceipts = new ArrayList<>();
-                for (HistoryItem historyItem : history.getHistoryItems()) {
-                    log.info(historyItem.getHistory());
-
-                    History fromHistory = gson.fromJson(historyItem.getHistory(), History.class);
-                    if (fromHistory instanceof BaggingHistory) {
-                        BaggingHistory bHistory = (BaggingHistory) fromHistory;
-                        validReceipts.addAll(bHistory.getHistory());
-                    }
-                }
-
-                */
             } else {
                 log.warn("Snapshot {} has no history, ignoring", snapshotId);
             }

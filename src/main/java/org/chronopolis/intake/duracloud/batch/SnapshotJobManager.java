@@ -24,6 +24,7 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -88,11 +89,15 @@ public class SnapshotJobManager {
     }
 
     public void startSnapshotTasklet(SnapshotDetails details) {
-        BagData data = collector.collectBagData(details.getSnapshotId());
-
-        startJob(data.snapshotId(),
-                data.depositor(),
-                data.name());
+        BagData data = null;
+        try {
+            data = collector.collectBagData(details.getSnapshotId());
+            startJob(data.snapshotId(),
+                    data.depositor(),
+                    data.name());
+        } catch (IOException e) {
+            log.error("Error reading from properties file for snapshot {}", details.getSnapshotId());
+        }
     }
 
     private void startJob(String snapshotId, String depositor, String collectionName) {
@@ -128,17 +133,22 @@ public class SnapshotJobManager {
      * We do it here just for consistency, even though it's not
      * part of the batch stuff
      *
-     * @param details
-     * @param receipts
-     * @param settings
+     * @param details the details of the snapshot
+     * @param receipts the bag receipts for the snapshot
+     * @param settings the settings for our intake service
      */
     public void startReplicationTasklet(SnapshotDetails details, List<BagReceipt> receipts, IntakeSettings settings) {
         // If we're pushing to dpn, let's make the differences here
         // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
-        BagData data = collector.collectBagData(details.getSnapshotId());
-        data.setMember(details.getMemberId());
+        BagData data = null;
+        try {
+            data = collector.collectBagData(details.getSnapshotId());
+        } catch (IOException e) {
+            log.error("Error reading from properties file for snapshot {}", details.getSnapshotId());
+            return;
+        }
 
         Checker check;
         ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);

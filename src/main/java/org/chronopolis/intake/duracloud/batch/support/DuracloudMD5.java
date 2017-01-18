@@ -55,7 +55,7 @@ public class DuracloudMD5 extends OnDiskTagFile {
             throw new RuntimeException("");
         }
 
-        size = collection.stream().reduce(0L, (l, s) -> l + (s + "\n").length(), (l, r) -> l + r);
+        size = collection.stream().reduce(0L, (l, s) -> l + (s + "\n").getBytes().length, (l, r) -> l + r);
     }
 
     @Override

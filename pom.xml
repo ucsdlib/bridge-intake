@@ -29,6 +29,33 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+        <repository>
+            <url>https://scm.umiacs.umd.edu/adapt/repository/maven-releases/</url>
+            <id>adapt-releases</id>
+            <name>Adapt Releases</name>
+        </repository>
+        <snapshotRepository>
+            <url>https://scm.umiacs.umd.edu/adapt/repository/maven-snapshots/</url>
+            <id>adapt-snapshots</id>
+            <name>Adapt Snapshots</name>
+        </snapshotRepository>
+    </distributionManagement>
+
+
+    <repositories>
+        <repository>
+            <url>https://scm.umiacs.umd.edu/adapt/repository/maven-releases/</url>
+            <id>adapt-releases</id>
+            <name>Adapt Releases</name>
+        </repository>
+        <repository>
+            <url>https://scm.umiacs.umd.edu/adapt/repository/maven-snapshots/</url>
+            <id>adapt-snapshots</id>
+            <name>Adapt Snapshots</name>
+        </repository>
+    </repositories>
+
 
     <dependencies>
         <dependency>

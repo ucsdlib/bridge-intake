@@ -74,6 +74,9 @@ deploy:jdk8:
 
 # Create the rpm for the build and upload it to our artifact server
 rpm:
+  before_script:
+    - apt-get update -y 
+    - apt-get install -y rpm
   stage: deploy
   only:
     - master
@@ -81,5 +84,5 @@ rpm:
   script:
     - 'cd rpm'
     - './build.sh'
-    - 'for f in `find RPMS -type f`; do curl -X POST -H "Authorization: token $BULD_TOKEN" --data-binary @$f $SERVER/adaptvm03.umiacs.umd.edu:4567/artifacts/bridge-intake/$CI_BUILD_REF_NAME/$CI_BUILD_REF/$(basename $f); done'
+    - 'for f in `find RPMS -type f`; do curl -X POST -H "Authorization: token $BUILD_TOKEN" --data-binary @$f $SERVER/artifacts/bridge-intake/$CI_BUILD_REF_NAME/$(echo $CI_BUILD_REF | cut -c -7)/$(basename $f); done'
   image: maven:3.3.9-jdk-8

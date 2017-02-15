@@ -70,24 +70,16 @@ deploy:jdk8:
   only:
     - master
   # Archive up the built documentation site.
-  artifacts:
-    paths:
-    - target/staging
   image: maven:3.3.9-jdk-8
 
-
-pages:
-  image: busybox:latest
-  stage: deploy
-  script:
-    # Because Maven appends the artifactId automatically to the staging path if you did define a parent pom,
-    # you might need to use `mv target/staging/YOUR_ARTIFACT_ID public` instead.
-    - mv target/staging public
-  dependencies:
-    - deploy:jdk8
-  artifacts:
-    paths:
-    - public
+# Create the rpm for the build and upload it to our artifact server
+rpm:
+  stage: package
   only:
     - master
-
+    - develop
+  script:
+    - 'cd rpm'
+    - './build.sh'
+    - 'for f in `find RPMS -type f`; do curl -X POST -H "Authorization: token $BULD_TOKEN" --data-binary @$f $SERVER/adaptvm03.umiacs.umd.edu:4567/artifacts/bridge-intake/$CI_BUILD_REF_NAME/$CI_BUILD_REF/$(basename $f); done'
+  image: maven:3.3.9-jdk-8

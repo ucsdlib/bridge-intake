@@ -84,5 +84,5 @@ rpm:
   script:
     - 'cd rpm'
     - './build.sh'
-    - 'for f in `find RPMS -type f`; do curl -X POST -H "Authorization: token $BUILD_TOKEN" --data-binary @$f $SERVER/artifacts/bridge-intake/$CI_BUILD_REF_NAME/$(cut -c -7 $CI_BUILD_REF)/$(basename $f); done'
+    - 'for f in `find RPMS -type f`; do curl -X POST -H "Authorization: token $BUILD_TOKEN" --data-binary @$f $SERVER/artifacts/bridge-intake/$CI_BUILD_REF_NAME/$(echo $CI_BUILD_REF | cut -c -7)/$(basename $f); done'
   image: maven:3.3.9-jdk-8

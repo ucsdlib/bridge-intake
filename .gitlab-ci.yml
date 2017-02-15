@@ -74,7 +74,7 @@ deploy:jdk8:
 
 # Create the rpm for the build and upload it to our artifact server
 rpm:
-  stage: package
+  stage: deploy
   only:
     - master
     - develop

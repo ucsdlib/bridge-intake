@@ -21,6 +21,11 @@ public class IntakeSettings {
     Chron chron;
     Duracloud duracloud;
 
+   /**
+     * Boolean used to enable cleaner
+     */
+    private Boolean cleanerEnabled = false;
+
     /**
      * Boolean used if we want to dry run cleans
      */
@@ -132,4 +137,14 @@ public class IntakeSettings {
         this.cleanDryRun = cleanDryRun;
         return this;
     }
+
+    public Boolean isCleanerEnabled() {
+        return cleanerEnabled;
+    }
+
+    public IntakeSettings setCleanerEnabled(Boolean cleanerEnabled) {
+        this.cleanerEnabled = cleanerEnabled;
+        return this;
+    }
+
 }

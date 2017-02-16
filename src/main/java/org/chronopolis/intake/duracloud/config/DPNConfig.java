@@ -9,6 +9,7 @@ import org.chronopolis.common.dpn.OkTokenInterceptor;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
+import org.chronopolis.earth.api.Events;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.serializers.ZonedDateTimeDeserializer;
 import org.chronopolis.earth.serializers.ZonedDateTimeSerializer;
@@ -140,6 +141,7 @@ public class DPNConfig {
                 .build();
 
         return new LocalAPI().setNode("chron")
+                .setEventsAPI(adapter.create(Events.class))
                 .setBagAPI(adapter.create(BalustradeBag.class))
                 .setNodeAPI(adapter.create(BalustradeNode.class))
                 .setTransfersAPI(adapter.create(BalustradeTransfers.class));

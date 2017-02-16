@@ -1,6 +1,20 @@
 package org.chronopolis.intake.duracloud.service;
 
+import org.chronopolis.bag.UUIDNamingSchema;
+import org.chronopolis.bag.core.Bag;
+import org.chronopolis.bag.core.BagInfo;
+import org.chronopolis.bag.core.BagIt;
+import org.chronopolis.bag.core.OnDiskTagFile;
+import org.chronopolis.bag.core.PayloadManifest;
+import org.chronopolis.bag.core.Unit;
+import org.chronopolis.bag.packager.TarPackager;
+import org.chronopolis.bag.partitioner.Bagger;
+import org.chronopolis.bag.partitioner.BaggingResult;
+import org.chronopolis.bag.writer.BagWriter;
+import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
+import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
+import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.scheduled.Cleaner;
@@ -13,6 +27,16 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_COLLECTION_PROPERTIES;
+import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_CONTENT_PROPERTIES;
+import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_MD5;
 
 /**
  *
@@ -70,6 +94,47 @@ public class DevService implements ChronService {
     // Test based on some static content
     private void testBag() {
         System.out.println("Enter snapshot id for snapshot to bag");
+        Path snapshotBase = Paths.get("/export/gluster/test-bags/tufts_1106_ms208-mobius_2017-01-10-15-55-24");
+        String manifestName = "manifest-sha256.txt";
+
+        PayloadManifest manifest = null;
+        try {
+            manifest = PayloadManifest.loadFromStream(
+                    Files.newInputStream(snapshotBase.resolve(manifestName)),
+                    snapshotBase);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // TODO: fill out with what...?
+        // TODO: EXTERNAL-IDENTIFIER: snapshot.description
+        BagInfo info = new BagInfo()
+                .includeMissingTags(true)
+                .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, "tufts");
+
+        Bagger bagger = new Bagger()
+                .withBagInfo(info)
+                .withBagit(new BagIt())
+                .withPayloadManifest(manifest)
+                .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
+                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
+                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)));
+        bagger = bagger
+                .withMaxSize(240, Unit.GIGABYTE)
+                .withNamingSchema(new UUIDNamingSchema());
+
+        BaggingResult partition = bagger.partition();
+
+        BagWriter writer = new DpnWriter("tufts", "tufts_1106_ms208-mobius_2017-01-10-15-55-24")
+                .withPackager(new TarPackager(Paths.get("/export/gluster/test-bags/tufts-test")));
+        partition.getBags().forEach(b -> {
+                    log.info("{} -> ({} Files, {} Size)", new Object[]{b.getName(), b.getManifest().getFiles().size(), b.getManifest().getSize()});
+                });
+        List<WriteResult> results = writer.write(partition.getBags());
+        results.forEach(this::printInfo);
+
+        log.info("{}", Charset.defaultCharset());
+
         /*
         SnapshotDetails details = new SnapshotDetails();
         details.setSnapshotId(snapshotId);
@@ -79,6 +144,21 @@ public class DevService implements ChronService {
             log.warn("Error testing", e);
         }
         */
+    }
+
+    private void printInfo(WriteResult writeResult) {
+        Bag bag = writeResult.getBag();
+        bag.getManifest().getFiles().values().forEach(f -> {
+            String line = f.getDigest().toString() + " " + f.getFile().toString() + "\n";
+            ByteBuffer encode = Charset.forName("UTF-8").encode(line);
+            ByteBuffer encodedf = Charset.defaultCharset().encode(line);
+            log.info("{} -> L={} B={} E-UTF8={} E-DC={}", new Object[]{f.getFile().toString(),
+                    line.length(),
+                    line.getBytes(Charset.forName("UTF-8")).length,
+                    encode.limit(),
+                    encodedf.limit()}
+                    );
+        });
     }
 
     private void testDpn() {

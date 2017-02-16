@@ -76,7 +76,10 @@ public class DpnCheck extends Checker {
      * @throws IOException if there is a problem communicating with the dpn server
      */
     private void createIngestRecord(Bag bag) throws IOException {
+        log.info("{} creating ingest record", bag.getUuid());
+
         // short circuit if we already have an ingest record
+        // todo: might be able to get rid of this and just catch the 409
         Call<Response<Ingest>> get = events.getIngests(ImmutableMap.of("bag", bag.getUuid()));
         retrofit2.Response<Response<Ingest>> execute = get.execute();
         if (execute.isSuccessful() && execute.body().getCount() > 0) {

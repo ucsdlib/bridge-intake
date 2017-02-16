@@ -58,7 +58,6 @@ public class BaggingTaskletTest {
 
     @Test
     public void testBagger() throws IOException {
-
         String id = "test-snapshot";
         String name = "test";
         String depositor = "test-depositor";
@@ -75,4 +74,20 @@ public class BaggingTaskletTest {
         verify(bridge, times(1)).postHistory(eq("test-snapshot"), any(History.class));
     }
 
+    @Test
+    public void testEmptyBagger() throws IOException {
+        String id = "empty-snapshot";
+        String name = "test";
+        String depositor = "test-depositor";
+
+        tasklet = new BaggingTasklet(id, name, depositor, settings, bridge);
+
+        try {
+            tasklet.execute(null, null);
+        } catch (Exception e) {
+            log.error("", e);
+        }
+
+        verify(bridge, times(0)).postHistory(eq("test-snapshot"), any(History.class));
+    }
 }

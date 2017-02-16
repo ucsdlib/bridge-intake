@@ -85,10 +85,29 @@ public class BaggingTasklet implements Tasklet {
         Path snapshotBase = duraBase.resolve(snapshotId);
         String manifestName = dc.getManifest();
 
+        // Create the manifest to be used later on
         PayloadManifest manifest = PayloadManifest.loadFromStream(
                 Files.newInputStream(snapshotBase.resolve(manifestName)),
                 snapshotBase);
 
+        if (!manifest.getFiles().isEmpty()) {
+            prepareBags(snapshotBase, out, manifest);
+        } else {
+            log.warn("{} - snapshot is empty!", snapshotId);
+        }
+
+        return RepeatStatus.FINISHED;
+    }
+
+    /**
+     * Prepare and write bags for a snapshot
+     *
+     * @param snapshotBase The base directory of the snapshot
+     * @param out The output directory to write to
+     * @param manifest The PayloadManifest of all files in the snapshot
+     * @throws IOException If there's an error writing or communicating with the bridge
+     */
+    private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) throws IOException {
         // TODO: fill out with what...?
         // TODO: EXTERNAL-IDENTIFIER: snapshot.description
         BagInfo info = new BagInfo()
@@ -111,10 +130,8 @@ public class BaggingTasklet implements Tasklet {
             updateBridge(results);
         } else {
             // do some logging of the failed bags
-            log.error("Unable to partition bags for {}! {} Invalid Files", snapshotId, partition.getRejected());
+            log.error("{} - unable to partition bags! {} Invalid Files", snapshotId, partition.getRejected());
         }
-
-        return RepeatStatus.FINISHED;
     }
 
     /**

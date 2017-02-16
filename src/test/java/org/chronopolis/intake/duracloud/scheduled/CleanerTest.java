@@ -43,6 +43,7 @@ public class CleanerTest {
 
         tmp = Files.createTempDirectory("cleanertest");
         settings = new IntakeSettings();
+        settings.setCleanerEnabled(true);
         cleaner = new Cleaner(bridge, ingest, localAPI, settings);
 
         URL resources = ClassLoader.getSystemClassLoader().getResource("");

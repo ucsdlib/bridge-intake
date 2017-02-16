@@ -22,7 +22,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,7 +51,6 @@ public class SnapshotJobManager {
     // Instantiated per manager
     private ExecutorService executor;
 
-    @Autowired
     public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
@@ -66,7 +64,7 @@ public class SnapshotJobManager {
         this.collector = collector;
         this.holder = holder;
 
-        this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        this.executor = new ThreadPoolExecutor(8, 8, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
     }
 
     @Deprecated

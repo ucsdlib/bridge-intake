@@ -58,6 +58,11 @@ public class Cleaner {
 
     @Scheduled(cron = "${bridge.clean:0 0 0 * * *}")
     public void cleanDpn() {
+        // Just short circuit here since the cleaner should really be a separate service
+        if (!settings.isCleanerEnabled()) {
+            return;
+        }
+
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
         try (Stream<Path> files = Files.find(bags, 2, this::matchTar)) {
@@ -103,6 +108,10 @@ public class Cleaner {
 
     @Scheduled(cron = "0 0 0 * * *")
     public void cleanChron() {
+        if (!settings.isCleanerEnabled()) {
+            return;
+        }
+
         String bagStage = settings.getChron().getBags();
         Path bags = Paths.get(bagStage);
 

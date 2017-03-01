@@ -17,7 +17,7 @@ public class Smtp {
     /*
      * Address to send notification mail to
      */
-    private String to = "shake@umiacs.umd.edu";
+    private String to = "chronopolis-support-l@ucsd.edu";
 
     public String getFrom() {
         return from;

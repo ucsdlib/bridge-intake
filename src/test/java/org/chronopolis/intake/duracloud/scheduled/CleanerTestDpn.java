@@ -8,7 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by shake on 12/1/16.
  */
-@SpringApplicationConfiguration(classes = TestApplication.class)
+@SpringBootTest(classes = TestApplication.class)
 public class CleanerTestDpn extends CleanerTest {
 
     private final Logger log = LoggerFactory.getLogger(CleanerTestDpn.class);

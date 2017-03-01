@@ -41,9 +41,9 @@ public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
-    final BridgeAPI bridge;
-    final SnapshotJobManager manager;
-    final IntakeSettings settings;
+    private final BridgeAPI bridge;
+    private final SnapshotJobManager manager;
+    private final IntakeSettings settings;
 
     @Autowired
     public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge) {

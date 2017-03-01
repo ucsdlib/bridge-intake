@@ -11,7 +11,7 @@ import org.chronopolis.rest.entities.Bag;
 import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import retrofit2.Callback;
 
 import java.io.IOException;
@@ -30,7 +30,8 @@ import java.util.UUID;
  */
 @SuppressWarnings("ALL")
 // @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestApplication.class)
+// @Configuration(classes = TestApplication.class)
+@SpringBootTest(classes = TestApplication.class)
 public class BatchTestBase {
     protected final String MEMBER = "test-member";
     protected final String NAME = "test-name";

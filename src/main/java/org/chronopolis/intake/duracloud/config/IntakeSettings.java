@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.config;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.DPN;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.config.props.Smtp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -17,9 +18,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class IntakeSettings {
     private final Logger log = LoggerFactory.getLogger(IntakeSettings.class);
 
-    DPN dpn;
-    Chron chron;
-    Duracloud duracloud;
+    private DPN dpn;
+    private Chron chron;
+    private Duracloud duracloud;
+    private Smtp smtp;
 
    /**
      * Boolean used to enable cleaner
@@ -147,4 +149,12 @@ public class IntakeSettings {
         return this;
     }
 
+    public Smtp getSmtp() {
+        return smtp;
+    }
+
+    public IntakeSettings setSmtp(Smtp smtp) {
+        this.smtp = smtp;
+        return this;
+    }
 }

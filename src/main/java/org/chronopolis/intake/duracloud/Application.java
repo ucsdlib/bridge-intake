@@ -12,6 +12,8 @@ import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Ingest;
+import org.chronopolis.intake.duracloud.notify.MailNotifier;
+import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
@@ -116,13 +118,19 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
+    Notifier notifier(IntakeSettings settings) {
+        return new MailNotifier(settings.getSmtp());
+    }
+
+    @Bean
     @JobScope
     BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
                                   @Value("#{jobParameters[depositor]}") String depositor,
                                   @Value("#{jobParameters[collectionName]}") String collectionName,
                                   IntakeSettings settings,
-                                  BridgeAPI bridge) {
-        return new BaggingTasklet(snapshotId, collectionName, depositor, settings, bridge);
+                                  BridgeAPI bridge,
+                                  Notifier notifier) {
+        return new BaggingTasklet(snapshotId, depositor, settings, bridge, notifier);
     }
 
     @Bean

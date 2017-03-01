@@ -54,23 +54,23 @@ import static org.mockito.Mockito.when;
 public class DpnReplicationTest extends BatchTestBase {
     private final Logger log = LoggerFactory.getLogger(DpnReplicationTest.class);
 
-    Node myDpnNode;
+    private Node myDpnNode;
 
     // We return these later
-    @Mock BalustradeTransfers transfers;
-    @Mock BalustradeNode nodes;
-    @Mock BalustradeBag bags;
+    @Mock private BalustradeTransfers transfers;
+    @Mock private BalustradeNode nodes;
+    @Mock private BalustradeBag bags;
 
     // Our reader so we don't need real fs access
-    @Mock DpnReplication.ReaderFactory factory;
-    @Mock DpnInfoReader reader;
+    @Mock private DpnReplication.ReaderFactory factory;
+    @Mock private DpnInfoReader reader;
 
     // And our test object
     @InjectMocks
-    DpnReplication tasklet;
-    LocalAPI dpn;
+    private DpnReplication tasklet;
+    private LocalAPI dpn;
 
-    Node initializeNode() {
+    private Node initializeNode() {
         Node node = new Node();
         node.setName(settings.getChron().getNode());
         node.setReplicateTo(ImmutableList.of(UUID.randomUUID().toString(),
@@ -81,7 +81,7 @@ public class DpnReplicationTest extends BatchTestBase {
     // Helpers for our tests
 
     // Pretty ugly, we'll want to find a better way to handle init
-    List<BagReceipt> initialize(int numReceipts) {
+    private List<BagReceipt> initialize(int numReceipts) {
         BagData data = data();
 
         int added = 0;
@@ -111,7 +111,7 @@ public class DpnReplicationTest extends BatchTestBase {
         return r;
     }
 
-    Digest createDigest(BagReceipt receipt) {
+    private Digest createDigest(BagReceipt receipt) {
         Digest d = new Digest();
         d.setNode("test-node");
         d.setAlgorithm("fixity-algorithm");
@@ -121,7 +121,7 @@ public class DpnReplicationTest extends BatchTestBase {
         return d;
     }
 
-    Bag createBagNoReplications(BagReceipt receipt) {
+    private Bag createBagNoReplications(BagReceipt receipt) {
         Bag b = new Bag();
         b.setUuid(receipt.getName());
         b.setLocalId("local-id");
@@ -140,19 +140,19 @@ public class DpnReplicationTest extends BatchTestBase {
         return b;
     }
 
-    Bag createBagFullReplications(BagReceipt receipt) {
+    private Bag createBagFullReplications(BagReceipt receipt) {
         Bag b = createBagNoReplications(receipt);
         b.setReplicatingNodes(ImmutableList.of("test-repl-1", "test-repl-2", "test-repl-3"));
         return b;
     }
 
-    Bag createBagPartialReplications(BagReceipt receipt) {
+    private Bag createBagPartialReplications(BagReceipt receipt) {
         Bag b = createBagNoReplications(receipt);
         b.setReplicatingNodes(ImmutableList.of("test-repl-1"));
         return b;
     }
 
-    Call<Response<Replication>> createResponse(List<Replication> results) {
+    private Call<Response<Replication>> createResponse(List<Replication> results) {
         Response<Replication> r = new Response<>();
         r.setResults(results);
         r.setCount(results.size());
@@ -161,7 +161,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
     // setting up responses for our mock objects
 
-    void readyBagMocks() throws IOException {
+    private void readyBagMocks() throws IOException {
         // dpn reader stuffs
         when(factory.reader(any(Path.class), anyString())).thenReturn(reader);
         when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
@@ -172,7 +172,7 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
 
-    void readyReplicationMocks(String name, boolean stored1, boolean stored2) {
+    private void readyReplicationMocks(String name, boolean stored1, boolean stored2) {
         when(transfers.getReplications(ImmutableMap.of("bag", name)))
                 .thenReturn(createResponse(ImmutableList.of(
                         createReplication(stored1),
@@ -181,7 +181,7 @@ public class DpnReplicationTest extends BatchTestBase {
     }
 
 
-    void readyNodeMock() {
+    private void readyNodeMock() {
         // set up our returned node
         when(nodes.getNode(anyString())).thenReturn(new CallWrapper<>(myDpnNode));
     }

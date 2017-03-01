@@ -21,6 +21,7 @@ import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
+import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.slf4j.Logger;
@@ -55,24 +56,25 @@ public class BaggingTasklet implements Tasklet {
     private final String PARAM_PAGE_SIZE = "page_size";
     private final String PROTOCOL = "rsync";
     private final String ALGORITHM = "sha256";
+    private final String TITLE = "Unable to create bag for %s";
 
     private String snapshotId;
-    private String collectionName;
     private String depositor;
     private IntakeSettings settings;
 
     private BridgeAPI bridge;
+    private Notifier notifier;
 
     public BaggingTasklet(String snapshotId,
-                          String collectionName,
                           String depositor,
                           IntakeSettings settings,
-                          BridgeAPI bridge) {
+                          BridgeAPI bridge,
+                          Notifier notifier) {
         this.snapshotId = snapshotId;
-        this.collectionName = collectionName;
         this.depositor = depositor;
         this.settings = settings;
         this.bridge = bridge;
+        this.notifier = notifier;
     }
 
     @Override
@@ -94,6 +96,8 @@ public class BaggingTasklet implements Tasklet {
             prepareBags(snapshotBase, out, manifest);
         } else {
             log.warn("{} - snapshot is empty!", snapshotId);
+
+            notifier.notify(String.format(TITLE, snapshotId), "Snapshot contains no files and is unable to be bagged");
         }
 
         return RepeatStatus.FINISHED;
@@ -131,6 +135,8 @@ public class BaggingTasklet implements Tasklet {
         } else {
             // do some logging of the failed bags
             log.error("{} - unable to partition bags! {} Invalid Files", snapshotId, partition.getRejected());
+            String message = "Snapshot was not able to be partitioned." + partition.getRejected().size() + " Rejected Files";
+            notifier.notify(String.format(TITLE, snapshotId), message);
         }
     }
 
@@ -154,6 +160,11 @@ public class BaggingTasklet implements Tasklet {
             hc.execute();
         } else {
             log.error("Error writing bags for {}", snapshotId);
+            String message = "Unable to write bags for snapshot, "
+                    + history.getHistory().size()
+                    + " out of " + results.size()
+                    + " succeeded";
+            notifier.notify(String.format(TITLE, snapshotId), message);
         }
     }
 

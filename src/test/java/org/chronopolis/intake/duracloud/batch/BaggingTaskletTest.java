@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.batch;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
@@ -31,9 +32,10 @@ import static org.mockito.Mockito.when;
 public class BaggingTaskletTest {
     private final Logger log = LoggerFactory.getLogger(BaggingTaskletTest.class);
 
-    BridgeAPI bridge;
-    BaggingTasklet tasklet;
-    IntakeSettings settings;
+    private BridgeAPI bridge;
+    private Notifier notifier;
+    private BaggingTasklet tasklet;
+    private IntakeSettings settings;
 
     @Before
     public void setup() throws URISyntaxException {
@@ -54,6 +56,7 @@ public class BaggingTaskletTest {
 
         // http calls can be mocked
         bridge = mock(BridgeAPI.class);
+        notifier = mock(Notifier.class);
     }
 
     @Test
@@ -62,7 +65,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, name, depositor, settings, bridge);
+        tasklet = new BaggingTasklet(id, depositor, settings, bridge, notifier);
         when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
@@ -80,7 +83,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, name, depositor, settings, bridge);
+        tasklet = new BaggingTasklet(id, depositor, settings, bridge, notifier);
 
         try {
             tasklet.execute(null, null);

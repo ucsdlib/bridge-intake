@@ -8,7 +8,6 @@ import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Digest;
-import org.chronopolis.earth.models.Node;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
@@ -40,21 +39,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * TODO: Possibly have a upser class which holds the
+ * TODO: Possibly have a super class which holds the
  * creators for some of our objects (bags, replications, etc)
  *
  * Tests completed:
  * - Creation of DPN Bag
  * - Creation of DPN Replications
  *
- * <p/>
+ * Tests to do:
+ * - No bag present -> no replications created
+ * - Bag present, repls -> no additional creation
+ * - Bag present, no repls -> create repls
+ *
  * Created by shake on 12/4/15.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DpnReplicationTest extends BatchTestBase {
     private final Logger log = LoggerFactory.getLogger(DpnReplicationTest.class);
-
-    private Node myDpnNode;
 
     // We return these later
     @Mock private BalustradeTransfers transfers;
@@ -70,19 +71,12 @@ public class DpnReplicationTest extends BatchTestBase {
     private DpnReplication tasklet;
     private LocalAPI dpn;
 
-    private Node initializeNode() {
-        Node node = new Node();
-        node.setName(settings.getChron().getNode());
-        node.setReplicateTo(ImmutableList.of(UUID.randomUUID().toString(),
-                UUID.randomUUID().toString()));
-        return node;
-    }
-
     // Helpers for our tests
 
     // Pretty ugly, we'll want to find a better way to handle init
     private List<BagReceipt> initialize(int numReceipts) {
-        List<String> replicatingNodes = new ArrayList<>();
+        List<String> replicatingNodes = ImmutableList.of(UUID.randomUUID().toString(),
+                UUID.randomUUID().toString());
         BagData data = data();
 
         int added = 0;
@@ -92,7 +86,6 @@ public class DpnReplicationTest extends BatchTestBase {
             added++;
         }
 
-        myDpnNode = initializeNode();
         dpn = new LocalAPI();
         tasklet = new DpnReplication(data, receipts, replicatingNodes, dpn, settings);
         MockitoAnnotations.initMocks(this);
@@ -173,19 +166,13 @@ public class DpnReplicationTest extends BatchTestBase {
         when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
 
-    private void readyReplicationMocks(String name, boolean stored1, boolean stored2) {
+    private void readyReplicationMocks(String name, boolean stored) {
         when(transfers.getReplications(ImmutableMap.of("bag", name)))
                 .thenReturn(createResponse(ImmutableList.of(
-                        createReplication(stored1),
-                        createReplication(stored2))));
-
+                        createReplication(true),
+                        createReplication(stored))));
     }
 
-
-    private void readyNodeMock() {
-        // set up our returned node
-        when(nodes.getNode(anyString())).thenReturn(new CallWrapper<>(myDpnNode));
-    }
 
     //
     // Tests
@@ -199,12 +186,11 @@ public class DpnReplicationTest extends BatchTestBase {
      * 3. POST bag -> 201
      * 4.
      *
-     * @throws Exception
+     * @throws Exception Not actually thrown bc we use the ReaderFactory to inject a mock
      */
     @Test
     public void testCreateBagAndReplications() throws Exception {
         List<BagReceipt> receipts = initialize(1);
-        readyNodeMock();
         readyBagMocks();
         Bag b = createBagNoReplications(receipts.get(0));
         Digest d = createDigest(receipts.get(0));
@@ -229,6 +215,7 @@ public class DpnReplicationTest extends BatchTestBase {
         tasklet.run();
 
         // TODO: We can verify against all mocks, not sure if we need that though
+        //       we probably should though to ensure no calls are made that we don't expect
         // verify that these were actually called
         verify(reader, times(1)).getLocalId();
         verify(reader, times(1)).getRightsIds();
@@ -237,77 +224,6 @@ public class DpnReplicationTest extends BatchTestBase {
         verify(reader, times(1)).getInterpretiveIds();
         verify(reader, times(1)).getFirstVersionUUID();
         verify(transfers, times(2)).createReplication(any(Replication.class));
-    }
-
-    /**
-     * Test where we check that all replications have been stored
-     *
-     * @throws IOException
-     */
-    @Test
-    public void testCheckStoredReplications() throws IOException {
-        List<BagReceipt> receipts = initialize(2);
-
-        readyNodeMock();
-        readyBagMocks();
-
-        // Create bags with full replications
-        // And prime our mock
-        for (BagReceipt receipt : receipts) {
-            Bag bag = createBagFullReplications(receipt);
-            when(bags.getBag(bag.getUuid())).thenReturn(new CallWrapper<>(bag));
-        }
-
-        for (BagReceipt receipt : receipts) {
-            // readyReplicationMocks(receipt.getName(), Replication.Status.STORED, Replication.Status.STORED);
-            readyReplicationMocks(receipt.getName(), true, true);
-        }
-
-        tasklet.run();
-
-        // verify all our mocks
-        // 2 receipts -> 2 getBag calls
-        verify(bags, times(2)).getBag(anyString());
-    }
-
-
-
-    /**
-     * Test where we check that not all replications have been finished
-     *
-     * @throws IOException
-     */
-    @Test
-    public void testPartiallyStoredReplications() throws IOException {
-        List<BagReceipt> receipts = initialize(2);
-
-        // Create two bags, one fully replicated, one partially
-        Bag fullyRepl = createBagFullReplications(receipts.get(0));
-        Bag partialRepl = createBagPartialReplications(receipts.get(1));
-
-        readyNodeMock();
-        readyBagMocks();
-
-        // Prepare our mocks
-        when(bags.getBag(fullyRepl.getUuid())).thenReturn(new CallWrapper<>(fullyRepl));
-        when(bags.getBag(partialRepl.getUuid())).thenReturn(new CallWrapper<>(partialRepl));
-
-        // result is ignored so just return an empty bag
-        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(new Bag()));
-        int i = 0;
-        for (BagReceipt receipt : receipts) {
-            // We want one receipt to be complete, and one incomplete
-            if (i == 0) {
-                readyReplicationMocks(receipt.getName(), true, true);
-            } else {
-                readyReplicationMocks(receipt.getName(), true, false);
-            }
-            i++;
-        }
-
-        tasklet.run();
-
-        // TODO: Find mocks to verify
     }
 
 }

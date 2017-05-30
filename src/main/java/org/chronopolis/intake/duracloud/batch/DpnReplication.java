@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -13,7 +12,6 @@ import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Digest;
-import org.chronopolis.earth.models.Node;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
@@ -35,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -69,13 +66,14 @@ public class DpnReplication implements Runnable {
     private final String PROTOCOL = "rsync";
     private final String ALGORITHM = "sha256";
 
-    ReaderFactory readerFactory;
-    IntakeSettings settings;
-    String snapshot;
-    String depositor;
+    private ReaderFactory readerFactory;
+    private IntakeSettings settings;
+    private String snapshot;
+    private String depositor;
 
-    BagData data;
-    List<BagReceipt> receipts;
+    private BagData data;
+    private List<String> nodes;
+    private List<BagReceipt> receipts;
 
     // Services to talk with both Chronopolis and DPN
     private LocalAPI dpn;
@@ -85,10 +83,11 @@ public class DpnReplication implements Runnable {
 
     public DpnReplication(BagData data,
                           List<BagReceipt> receipts,
-                          LocalAPI dpn,
+                          List<String> replicatingNodes, LocalAPI dpn,
                           IntakeSettings settings) {
         this.data = data;
         this.receipts = receipts;
+        this.nodes = replicatingNodes;
         this.dpn = dpn;
         this.settings = settings;
         this.readerFactory = new ReaderFactory();
@@ -117,12 +116,6 @@ public class DpnReplication implements Runnable {
          *
          */
 
-        // Replicating nodes
-        Random ran = new Random();
-        List<String> nodes = loadNode();
-        List<List<String>> permutations = ImmutableList.copyOf(Collections2.permutations(nodes));
-        int pSize = permutations.size();
-
         Map<String, ReplicationHistory> historyMap = new HashMap<>();
         AtomicInteger accumulator = new AtomicInteger(0);
 
@@ -132,7 +125,7 @@ public class DpnReplication implements Runnable {
                 .map(this::getBag) // get our bag (1) or create (1b)
                 .filter(Optional::isPresent) // annoying but w.e.
                 .map(Optional::get)
-                .map(b -> createReplication(b, permutations.get(ran.nextInt(pSize)))) // create replications (2 + 2a)
+                .map(b -> createReplication(b, nodes)) // create replications (2 + 2a)
                 .forEach(b -> b.getReplicatingNodes().forEach(n -> { // update history (3)
                     ReplicationHistory history = historyMap.getOrDefault(n, new ReplicationHistory(snapshot, n, false));
                     history.addReceipt(b.getUuid());
@@ -204,35 +197,6 @@ public class DpnReplication implements Runnable {
         }
 
         return bag;
-    }
-
-    private List<String> loadNode() {
-        Chron chron = settings.getChron();
-        // 5 nodes -> page size of 5
-        List<String> nodes;
-        retrofit2.Response<Node> response = null;
-        // TODO: dpn username
-        Call<Node> call = dpn.getNodeAPI().getNode(chron.getNode());
-        try {
-            response = call.execute();
-        } catch (IOException e) {
-            log.error("Error communicating with server", e);
-        }
-
-        if (response != null && response.isSuccessful()) {
-            Node myNode = response.body();
-            nodes = myNode.getReplicateTo();
-        } else {
-            // error communicating, don't make an attempt to create replications
-            if (response != null) {
-                log.error("Error in response: {} - {}", response.code(), response.message());
-            } else {
-                log.error("Error in response: null response");
-            }
-            nodes = ImmutableList.of();
-        }
-
-        return nodes;
     }
 
     // There are 3 cases, therefore 3 things can happen:

@@ -82,6 +82,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
     // Pretty ugly, we'll want to find a better way to handle init
     private List<BagReceipt> initialize(int numReceipts) {
+        List<String> replicatingNodes = new ArrayList<>();
         BagData data = data();
 
         int added = 0;
@@ -93,7 +94,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
         myDpnNode = initializeNode();
         dpn = new LocalAPI();
-        tasklet = new DpnReplication(data, receipts, dpn, settings);
+        tasklet = new DpnReplication(data, receipts, replicatingNodes, dpn, settings);
         MockitoAnnotations.initMocks(this);
 
         dpn.setBagAPI(bags)

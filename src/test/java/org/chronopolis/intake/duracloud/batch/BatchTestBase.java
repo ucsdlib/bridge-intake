@@ -2,6 +2,8 @@ package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
 import okhttp3.MediaType;
+import okhttp3.Protocol;
+import okhttp3.Request;
 import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -13,6 +15,7 @@ import org.chronopolis.rest.entities.Node;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import retrofit2.Callback;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -26,11 +29,11 @@ import java.util.UUID;
  * Has basic methods to create test data and holds
  * our mocked interfaces
  *
+ * Todo: don't really need spring for these...
+ *
  * Created by shake on 6/2/16.
  */
 @SuppressWarnings("ALL")
-// @RunWith(SpringJUnit4ClassRunner.class)
-// @Configuration(classes = TestApplication.class)
 @SpringBootTest(classes = TestApplication.class)
 public class BatchTestBase {
     protected final String MEMBER = "test-member";
@@ -146,4 +149,46 @@ public class BatchTestBase {
         }
 
     }
+
+    public class BadRequestWrapper<E> extends CallWrapper<E> {
+
+        public BadRequestWrapper(E e) {
+            super(e);
+        }
+
+        @Override
+        public retrofit2.Response<E> execute() throws IOException {
+            Response<E> error = Response.<E>error(ResponseBody.create(MediaType.parse("text/plain"), "Test Bad Request"), new okhttp3.Response.Builder() //
+                    .code(400)
+                    .protocol(Protocol.HTTP_1_1)
+                    .request(new Request.Builder().url("http://localhost/").build())
+                    .build());
+            return error;
+        }
+
+        @Override
+        public void enqueue(Callback<E> callback) {
+            callback.onResponse(this, retrofit2.Response.<E>error(400, ResponseBody.create(MediaType.parse("application/json"), "{message: 'Test Bad Request'}")));
+        }
+
+    }
+
+    public class ExceptingWrapper<E> extends CallWrapper<E> {
+
+        public ExceptingWrapper() {
+            super(null);
+        }
+
+        @Override
+        public retrofit2.Response<E> execute() throws IOException {
+            throw new IOException("test ioexception");
+        }
+
+        @Override
+        public void enqueue(Callback<E> callback) {
+            callback.onFailure(this, new IOException("test ioexception"));
+        }
+
+    }
+
 }

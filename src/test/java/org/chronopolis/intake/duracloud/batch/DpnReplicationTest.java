@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
@@ -11,6 +10,7 @@ import org.chronopolis.earth.models.Digest;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
+import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.junit.Test;
@@ -29,6 +29,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
@@ -43,13 +45,15 @@ import static org.mockito.Mockito.when;
  * creators for some of our objects (bags, replications, etc)
  *
  * Tests completed:
- * - Creation of DPN Bag
- * - Creation of DPN Replications
+ * - No Bag, -> create bag + replications
+ * - Exception getting bag -> no creation
+ * - Bag present, no repls -> create repls
+ * - Reader fail -> no creation
  *
  * Tests to do:
- * - No bag present -> no replications created
+ * - Bag create fail -> no creation of replications
  * - Bag present, repls -> no additional creation
- * - Bag present, no repls -> create repls
+ * - Bag present, single repl -> create additional
  *
  * Created by shake on 12/4/15.
  */
@@ -69,25 +73,24 @@ public class DpnReplicationTest extends BatchTestBase {
     // And our test object
     @InjectMocks
     private DpnReplication tasklet;
+
     private LocalAPI dpn;
+    private List<Weight> weights;
 
     // Helpers for our tests
 
     // Pretty ugly, we'll want to find a better way to handle init
     private List<BagReceipt> initialize(int numReceipts) {
-        List<String> replicatingNodes = ImmutableList.of(UUID.randomUUID().toString(),
-                UUID.randomUUID().toString());
+        weights = ImmutableList.of(new Weight(UUID.randomUUID().toString(), "snapshot"),
+                new Weight(UUID.randomUUID().toString(), "snapshot"));
         BagData data = data();
 
-        int added = 0;
-        List<BagReceipt> receipts = new ArrayList<>();
-        while (added < numReceipts) {
-            receipts.add(receipt());
-            added++;
-        }
+        List<BagReceipt> receipts = IntStream.range(0, numReceipts)
+                .mapToObj(i -> receipt())
+                .collect(Collectors.toList());
 
         dpn = new LocalAPI();
-        tasklet = new DpnReplication(data, receipts, replicatingNodes, dpn, settings);
+        tasklet = new DpnReplication(data, receipts, weights, dpn, settings);
         MockitoAnnotations.initMocks(this);
 
         dpn.setBagAPI(bags)
@@ -97,12 +100,191 @@ public class DpnReplicationTest extends BatchTestBase {
         return receipts;
     }
 
-    private Replication createReplication(boolean stored) {
+    ///
+    // Tests
+    ///
+
+    /**
+     * Test an exception communicating when trying to get the bag. No operations
+     * should be done after.
+     */
+    @Test
+    public void bagException() {
+        initialize(1);
+        when(bags.getBag(anyString())).thenReturn(new ExceptingWrapper<>());
+
+        tasklet.run();
+        verify(bags, times(1)).getBag(anyString());
+        verify(bags, times(0)).createBag(any(Bag.class));
+        verify(bags, times(0)).createDigest(anyString(), any(Digest.class));
+        verify(transfers, times(0)).getReplications(anyMap());
+        verify(transfers, times(0)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test to create replications for an existing bag
+     */
+    @Test
+    public void bagExistsCreateReplications() {
+        initialize(1);
+        Bag b = createBagNoReplications(receipt());
+
+        when(bags.getBag(anyString())).thenReturn(new CallWrapper<>(b));
+        when(transfers.getReplications(anyMap()))
+                .thenReturn(createResponse(new ArrayList<>()));
+        when(transfers.createReplication(any(Replication.class)))
+                .thenReturn(new CallWrapper<>(new Replication()));
+
+        tasklet.run();
+
+        verify(bags, times(1)).getBag(anyString());
+        verify(bags, times(0)).createBag(any(Bag.class));
+        verify(transfers, times(1)).getReplications(anyMap());
+        verify(transfers, times(2)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test where we check that both replications and bags were created
+     * HTTP Calls look like:
+     * 1. GET bag -> 404
+     * 2. POST bag -> 201
+     * 3. GET replications -> 200, no content
+     * 4. POST replication -> 201 (x2)
+     *
+     * @throws Exception Not actually thrown bc we use the ReaderFactory to inject a mock
+     */
+    @Test
+    public void createBagAndReplications() throws Exception {
+        List<BagReceipt> receipts = initialize(1);
+        readyBagMocks();
+        Bag b = createBagNoReplications(receipts.get(0));
+        Digest d = createDigest(receipts.get(0));
+
+        // result is ignored so just return an empty bag
+        // TODO: Be more strict about what we pass in
+        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<>(null));
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(b));
+        when(bags.createDigest(eq(b.getUuid()), any(Digest.class))).thenReturn(new CallWrapper<>(d));
+
+        // set up to return our dpn replications
+        when(transfers.getReplications(anyMap()))
+                .thenReturn(createResponse(new ArrayList<>()));
+
+        // result is ignored so just return an empty replication
+        when(transfers.createReplication(any(Replication.class)))
+                .thenReturn(new CallWrapper<>(new Replication()));
+
+        // run the tasklet
+        tasklet.run();
+
+        // verify that these were actually called
+        verify(reader, times(1)).getLocalId();
+        verify(reader, times(1)).getRightsIds();
+        verify(reader, times(1)).getVersionNumber();
+        // verify(reader, times(1)).getIngestNodeName();
+        verify(reader, times(1)).getInterpretiveIds();
+        verify(reader, times(1)).getFirstVersionUUID();
+        verify(transfers, times(2)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test a failure in registering the Bag and Digest; Ensure no replication creation after
+     * @throws IOException from readyBagMocks - static method can throw it
+     */
+    @Test
+    public void bagCreateFail() throws IOException {
+        List<BagReceipt> receipts = initialize(1);
+        readyBagMocks();
+        Bag b = createBagNoReplications(receipts.get(0));
+        Digest d = createDigest(receipts.get(0));
+
+        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<>(null));
+        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(b));
+        when(bags.createDigest(eq(b.getUuid()), any(Digest.class))).thenReturn(new BadRequestWrapper<>(d));
+
+        // run the tasklet
+        tasklet.run();
+
+        // verify that these were actually called
+        verify(reader, times(1)).getLocalId();
+        verify(reader, times(1)).getRightsIds();
+        verify(reader, times(1)).getVersionNumber();
+        // verify(reader, times(1)).getIngestNodeName();
+        verify(reader, times(1)).getInterpretiveIds();
+        verify(reader, times(1)).getFirstVersionUUID();
+        verify(transfers, times(0)).getReplications(anyMap());
+        verify(transfers, times(0)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test a failure in the DpnInfo reader. No bag/creation should be done after.
+     */
+    @Test
+    public void readerException() throws IOException {
+        initialize(1);
+        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<>(null));
+        when(factory.reader(any(Path.class), anyString())).thenThrow(new IOException("test-reader-exception"));
+
+        tasklet.run();
+
+        verify(bags, times(1)).getBag(anyString());
+        verify(factory, times(1)).reader(any(Path.class), anyString());
+        verify(reader, times(0)).getLocalId();
+        verify(reader, times(0)).getRightsIds();
+        verify(reader, times(0)).getVersionNumber();
+        verify(reader, times(0)).getInterpretiveIds();
+        verify(reader, times(0)).getFirstVersionUUID();
+        verify(bags, times(0)).createBag(any(Bag.class));
+        verify(transfers, times(0)).getReplications(anyMap());
+        verify(transfers, times(0)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test that a single replication is created when a previous run failed to
+     * create both
+     */
+    @Test
+    public void singleReplicationCreate() {
+        initialize(1);
+        Bag b = createBagNoReplications(receipt());
+        Weight weight = weights.get(0);
+
+        when(bags.getBag(anyString())).thenReturn(new CallWrapper<>(b));
+        when(transfers.getReplications(anyMap()))
+                .thenReturn(createResponse(ImmutableList.of(createReplication(weight.getNode()))));
+        when(transfers.createReplication(any(Replication.class)))
+                .thenReturn(new CallWrapper<>(new Replication()));
+
+        tasklet.run();
+
+        verify(bags, times(1)).getBag(anyString());
+        verify(bags, times(0)).createBag(any(Bag.class));
+        verify(transfers, times(1)).getReplications(anyMap());
+        verify(transfers, times(1)).createReplication(any(Replication.class));
+    }
+
+
+    ///
+    // Helpers
+    ///
+
+    private Replication createReplication(String to) {
+        // Fill out the rest of the replication?
         Replication r = new Replication();
         r.setFromNode(settings.getChron().getNode());
-        r.setToNode(UUID.randomUUID().toString());
-        r.setStored(stored);
+        r.setToNode(to);
         return r;
+    }
+
+    private void readyBagMocks() throws IOException {
+        // dpn reader stuffs
+        when(factory.reader(any(Path.class), anyString())).thenReturn(reader);
+        when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
+        when(reader.getRightsIds()).thenReturn(ImmutableList.of());
+        when(reader.getVersionNumber()).thenReturn(Long.valueOf(1));
+        // when(reader.getIngestNodeName()).thenReturn(settings.getChron().getNode());
+        when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
+        when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
     }
 
     private Digest createDigest(BagReceipt receipt) {
@@ -134,96 +316,11 @@ public class DpnReplicationTest extends BatchTestBase {
         return b;
     }
 
-    private Bag createBagFullReplications(BagReceipt receipt) {
-        Bag b = createBagNoReplications(receipt);
-        b.setReplicatingNodes(ImmutableList.of("test-repl-1", "test-repl-2", "test-repl-3"));
-        return b;
-    }
-
-    private Bag createBagPartialReplications(BagReceipt receipt) {
-        Bag b = createBagNoReplications(receipt);
-        b.setReplicatingNodes(ImmutableList.of("test-repl-1"));
-        return b;
-    }
-
     private Call<Response<Replication>> createResponse(List<Replication> results) {
         Response<Replication> r = new Response<>();
         r.setResults(results);
         r.setCount(results.size());
         return new CallWrapper<>(r);
-    }
-
-    // setting up responses for our mock objects
-
-    private void readyBagMocks() throws IOException {
-        // dpn reader stuffs
-        when(factory.reader(any(Path.class), anyString())).thenReturn(reader);
-        when(reader.getLocalId()).thenReturn(SNAPSHOT_ID);
-        when(reader.getRightsIds()).thenReturn(ImmutableList.of());
-        when(reader.getVersionNumber()).thenReturn(Long.valueOf(1));
-        // when(reader.getIngestNodeName()).thenReturn(settings.getChron().getNode());
-        when(reader.getInterpretiveIds()).thenReturn(ImmutableList.of());
-        when(reader.getFirstVersionUUID()).thenReturn(UUID.randomUUID().toString());
-    }
-
-    private void readyReplicationMocks(String name, boolean stored) {
-        when(transfers.getReplications(ImmutableMap.of("bag", name)))
-                .thenReturn(createResponse(ImmutableList.of(
-                        createReplication(true),
-                        createReplication(stored))));
-    }
-
-
-    //
-    // Tests
-    //
-
-    /**
-     * Test where we check that both replications and bags were created
-     * HTTP Calls look like:
-     * 1. GET bag -> 404
-     * 2. GET replications -> 404
-     * 3. POST bag -> 201
-     * 4.
-     *
-     * @throws Exception Not actually thrown bc we use the ReaderFactory to inject a mock
-     */
-    @Test
-    public void testCreateBagAndReplications() throws Exception {
-        List<BagReceipt> receipts = initialize(1);
-        readyBagMocks();
-        Bag b = createBagNoReplications(receipts.get(0));
-        Digest d = createDigest(receipts.get(0));
-
-        // result is ignored so just return an empty bag
-        // TODO: Be more strict about what we pass in
-        when(bags.getBag(any(String.class))).thenReturn(new NotFoundWrapper<>(null));
-        when(bags.createBag(any(Bag.class))).thenReturn(new CallWrapper<>(b));
-        when(bags.createDigest(eq(b.getUuid()), any(Digest.class))).thenReturn(new CallWrapper<>(d));
-
-        // set up to return our dpn replications
-        when(transfers.getReplications(anyMap()))
-                .thenReturn(createResponse(new ArrayList<>()));
-
-        // result is ignored so just return an empty replication
-        when(transfers.createReplication(any(Replication.class)))
-                .thenReturn(new CallWrapper<>(new Replication()));
-
-
-
-        // run the tasklet
-        tasklet.run();
-
-        // TODO: We can verify against all mocks, not sure if we need that though
-        //       we probably should though to ensure no calls are made that we don't expect
-        // verify that these were actually called
-        verify(reader, times(1)).getLocalId();
-        verify(reader, times(1)).getRightsIds();
-        verify(reader, times(1)).getVersionNumber();
-        // verify(reader, times(1)).getIngestNodeName();
-        verify(reader, times(1)).getInterpretiveIds();
-        verify(reader, times(1)).getFirstVersionUUID();
-        verify(transfers, times(2)).createReplication(any(Replication.class));
     }
 
 }

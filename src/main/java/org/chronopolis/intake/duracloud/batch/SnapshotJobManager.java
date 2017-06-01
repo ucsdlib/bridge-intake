@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Node;
@@ -9,6 +8,7 @@ import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
 import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
+import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -31,11 +31,14 @@ import retrofit2.Call;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.reverseOrder;
 
 /**
  * Start a Tasklet based on the type of request that comes in
@@ -160,7 +163,12 @@ public class SnapshotJobManager {
 
         if (settings.pushDPN()) {
             List<String> replicatingNodes = loadNode(settings);
-            DpnReplication replication = new DpnReplication(data, receipts, replicatingNodes, holder.dpn, settings);
+            List<Weight> weights = replicatingNodes.stream()
+                    .map(node -> new Weight(node, details.getSnapshotId()))
+                    .sorted(comparing(w -> w.getCode().asLong(), reverseOrder()))
+                    .collect(Collectors.toList());
+
+            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings);
             replication.run();
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);
@@ -202,11 +210,7 @@ public class SnapshotJobManager {
             nodes = ImmutableList.of();
         }
 
-        // Replicating nodes
-        Random ran = new Random();
-        List<List<String>> permutations = ImmutableList.copyOf(Collections2.permutations(nodes));
-        int pSize = permutations.size();
-        return permutations.get(ran.nextInt(pSize));
+        return nodes;
     }
 
 }

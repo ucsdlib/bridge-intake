@@ -1,5 +1,8 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import com.google.common.collect.ImmutableList;
+import org.chronopolis.intake.duracloud.model.BagData;
+import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
@@ -11,7 +14,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.mockito.Matchers.any;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,22 +33,51 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Mock IngestAPI api;
 
-    ChronopolisIngest ingest;
+    private BagData data;
+    private String prefix = "test-";
 
     @Before
     public void setup() {
         settings.setPushChronopolis(true);
         MockitoAnnotations.initMocks(this);
-
-        ingest = new ChronopolisIngest(data(), receipts(), api, settings);
+        data = data();
     }
 
     @Test
-    public void run() throws Exception {
-        when(api.stageBag(any(IngestRequest.class))).thenReturn(new CallWrapper<Bag>(BagConverter.toBagModel(createChronBag())));
-        ingest.run();
+    public void withoutPrefix() throws Exception {
+        BagReceipt receipt = receipt();
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings);
 
-        verify(api, times(2)).stageBag(any(IngestRequest.class));
+        IngestRequest request = request(receipt, data.depositor());
+        when(api.stageBag(eq(request))).thenReturn(new CallWrapper<Bag>(BagConverter.toBagModel(createChronBag())));
+        ingest.run();
+        verify(api, times(1)).stageBag(eq(request));
+    }
+
+    @Test
+    public void withPrefix() throws Exception {
+        BagReceipt receipt = receipt();
+        settings.getChron().setPrefix(prefix);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings);
+
+        IngestRequest request = request(receipt, prefix + data.depositor());
+        when(api.stageBag(eq(request))).thenReturn(new CallWrapper<>(BagConverter.toBagModel(createChronBag())));
+        ingest.run();
+        verify(api, times(1)).stageBag(eq(request));
+
+        settings.getChron().setPrefix("");
+    }
+
+    private IngestRequest request(BagReceipt receipt, String depostior) {
+        Path location = Paths.get(settings.getChron().getBags(), data.depositor(), receipt.getName() + ".tar");
+        List<String> nodes = settings.getChron().getReplicatingTo();
+        IngestRequest request = new IngestRequest();
+        request.setDepositor(depostior);
+        request.setName(receipt.getName());
+        request.setLocation(location.toString());
+        request.setReplicatingNodes(nodes);
+        request.setRequiredReplications(nodes.size());
+        return request;
     }
 
 }

@@ -2,7 +2,7 @@ package org.chronopolis.intake.duracloud.scheduled;
 
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.earth.models.Bag;
-import org.chronopolis.intake.duracloud.batch.CallWrapper;
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.test.TestApplication;
 import org.junit.Assert;
 import org.junit.Test;

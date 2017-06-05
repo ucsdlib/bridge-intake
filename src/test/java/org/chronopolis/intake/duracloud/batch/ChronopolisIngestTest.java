@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;

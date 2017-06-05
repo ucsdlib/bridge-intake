@@ -8,7 +8,7 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
-import org.chronopolis.intake.duracloud.batch.CallWrapper;
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;

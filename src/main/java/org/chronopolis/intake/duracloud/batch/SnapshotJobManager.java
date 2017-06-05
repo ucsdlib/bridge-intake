@@ -1,8 +1,5 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import com.google.common.collect.ImmutableList;
-import org.chronopolis.earth.api.LocalAPI;
-import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
@@ -10,7 +7,6 @@ import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
@@ -27,7 +23,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
-import retrofit2.Call;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,10 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static java.util.Comparator.comparing;
-import static java.util.Comparator.reverseOrder;
 
 /**
  * Start a Tasklet based on the type of request that comes in
@@ -162,11 +153,9 @@ public class SnapshotJobManager {
         ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);
 
         if (settings.pushDPN()) {
-            List<String> replicatingNodes = loadNode(settings);
-            List<Weight> weights = replicatingNodes.stream()
-                    .map(node -> new Weight(node, details.getSnapshotId()))
-                    .sorted(comparing(w -> w.getCode().asLong(), reverseOrder()))
-                    .collect(Collectors.toList());
+            // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
+            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
+            List<Weight> weights = weighter.get();
 
             DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings);
             replication.run();
@@ -180,37 +169,6 @@ public class SnapshotJobManager {
         // TODO: If ingest fails, we probably won't want to run the check
         ingest.run();
         check.run();
-    }
-
-
-    private List<String> loadNode(IntakeSettings settings) {
-        LocalAPI dpn = holder.dpn;
-        Chron chron = settings.getChron();
-        // 5 nodes -> page size of 5
-        List<String> nodes;
-        retrofit2.Response<Node> response = null;
-        // TODO: dpn username
-        Call<Node> call = dpn.getNodeAPI().getNode(chron.getNode());
-        try {
-            response = call.execute();
-        } catch (IOException e) {
-            log.error("Error communicating with server", e);
-        }
-
-        if (response != null && response.isSuccessful()) {
-            Node myNode = response.body();
-            nodes = myNode.getReplicateTo();
-        } else {
-            // error communicating, don't make an attempt to create replications
-            if (response != null) {
-                log.error("Error in response: {} - {}", response.code(), response.message());
-            } else {
-                log.error("Error in response: null response");
-            }
-            nodes = ImmutableList.of();
-        }
-
-        return nodes;
     }
 
 }

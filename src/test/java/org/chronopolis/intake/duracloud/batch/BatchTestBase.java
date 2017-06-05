@@ -1,8 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -12,9 +10,7 @@ import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import retrofit2.Callback;
 
-import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,11 +22,11 @@ import java.util.UUID;
  * Has basic methods to create test data and holds
  * our mocked interfaces
  *
+ * Todo: don't really need spring for these...
+ *
  * Created by shake on 6/2/16.
  */
 @SuppressWarnings("ALL")
-// @RunWith(SpringJUnit4ClassRunner.class)
-// @Configuration(classes = TestApplication.class)
 @SpringBootTest(classes = TestApplication.class)
 public class BatchTestBase {
     protected final String MEMBER = "test-member";
@@ -129,21 +125,4 @@ public class BatchTestBase {
 
     // Subclasses to wrap our http calls
 
-    public class NotFoundWrapper<E> extends CallWrapper<E> {
-
-        public NotFoundWrapper(E e) {
-            super(e);
-        }
-
-        @Override
-        public retrofit2.Response<E> execute() throws IOException {
-            return retrofit2.Response.error(404, ResponseBody.create(MediaType.parse("application/json"), ""));
-        }
-
-        @Override
-        public void enqueue(Callback<E> callback) {
-            callback.onResponse(this, retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
-        }
-
-    }
 }

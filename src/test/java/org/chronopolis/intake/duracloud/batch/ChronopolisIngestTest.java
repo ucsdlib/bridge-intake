@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;

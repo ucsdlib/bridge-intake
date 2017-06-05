@@ -5,6 +5,7 @@ import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
 import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
+import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -152,7 +153,11 @@ public class SnapshotJobManager {
         ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);
 
         if (settings.pushDPN()) {
-            DpnReplication replication = new DpnReplication(data, receipts, holder.dpn, settings);
+            // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
+            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
+            List<Weight> weights = weighter.get();
+
+            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings);
             replication.run();
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);

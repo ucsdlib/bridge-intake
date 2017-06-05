@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.support;
 
 import okhttp3.Request;
 import retrofit2.Call;
@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class CallWrapper<E> implements Call<E> {
 
-    E e;
+    private E e;
 
     public CallWrapper(E e) {
         this.e = e;

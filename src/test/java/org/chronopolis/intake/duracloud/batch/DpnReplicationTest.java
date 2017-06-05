@@ -22,8 +22,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import retrofit2.Call;
 
@@ -49,21 +47,18 @@ import static org.mockito.Mockito.when;
  * creators for some of our objects (bags, replications, etc)
  *
  * Tests completed:
- * - No Bag, -> create bag + replications
  * - Exception getting bag -> no creation
  * - Bag present, no repls -> create repls
- * - Reader fail -> no creation
- *
- * Tests to do:
+ * - Bag and repls present -> no actions
+ * - No Bag, -> create bag + replications
  * - Bag create fail -> no creation of replications
- * - Bag present, repls -> no additional creation
+ * - Reader fail -> no creation
  * - Bag present, single repl -> create additional
  *
  * Created by shake on 12/4/15.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DpnReplicationTest extends BatchTestBase {
-    private final Logger log = LoggerFactory.getLogger(DpnReplicationTest.class);
 
     // We return these later
     @Mock private BalustradeTransfers transfers;
@@ -145,6 +140,34 @@ public class DpnReplicationTest extends BatchTestBase {
         verify(bags, times(0)).createBag(any(Bag.class));
         verify(transfers, times(1)).getReplications(anyMap());
         verify(transfers, times(2)).createReplication(any(Replication.class));
+    }
+
+    /**
+     * Test that no action is taken when a bag and replications exist
+     */
+    @Test
+    public void bagAndReplicationsExist() {
+        initialize(1);
+        Bag b = createBagNoReplications(receipt());
+
+        // Our replications
+        Weight one = weights.get(0);
+        Weight two = weights.get(1);
+        ImmutableList<Replication> replications =
+                ImmutableList.of(createReplication(one.getNode()), createReplication(two.getNode()));
+
+        // Mock setups
+        when(bags.getBag(anyString())).thenReturn(new CallWrapper<>(b));
+        when(transfers.getReplications(anyMap()))
+                .thenReturn(createResponse(replications));
+
+        tasklet.run();
+
+        // validations
+        verify(bags, times(1)).getBag(anyString());
+        verify(bags, times(0)).createBag(any(Bag.class));
+        verify(transfers, times(1)).getReplications(anyMap());
+        verify(transfers, times(0)).createReplication(any(Replication.class));
     }
 
     /**

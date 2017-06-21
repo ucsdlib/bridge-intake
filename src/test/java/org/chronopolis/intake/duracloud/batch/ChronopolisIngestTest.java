@@ -46,10 +46,11 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Test
     public void withoutPrefix() throws Exception {
+        settings.setPushDPN(true);
         BagReceipt receipt = receipt();
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings);
 
-        IngestRequest request = request(receipt, data.depositor());
+        IngestRequest request = request(receipt, data.depositor(), ".tar");
         when(api.stageBag(eq(request))).thenReturn(new CallWrapper<Bag>(BagConverter.toBagModel(createChronBag())));
         ingest.run();
         verify(api, times(1)).stageBag(eq(request));
@@ -57,11 +58,12 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Test
     public void withPrefix() throws Exception {
+        settings.setPushDPN(false);
         BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings);
 
-        IngestRequest request = request(receipt, prefix + data.depositor());
+        IngestRequest request = request(receipt, prefix + data.depositor(), null);
         when(api.stageBag(eq(request))).thenReturn(new CallWrapper<>(BagConverter.toBagModel(createChronBag())));
         ingest.run();
         verify(api, times(1)).stageBag(eq(request));
@@ -69,8 +71,9 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.getChron().setPrefix("");
     }
 
-    private IngestRequest request(BagReceipt receipt, String depostior) {
-        Path location = Paths.get(settings.getChron().getBags(), data.depositor(), receipt.getName() + ".tar");
+    private IngestRequest request(BagReceipt receipt, String depostior, String fileType) {
+        String bag = fileType == null ? receipt.getName() : receipt.getName() + fileType;
+        Path location = Paths.get(settings.getChron().getBags(), data.depositor(), bag);
         List<String> nodes = settings.getChron().getReplicatingTo();
         IngestRequest request = new IngestRequest();
         request.setDepositor(depostior);

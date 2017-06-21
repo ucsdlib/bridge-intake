@@ -54,9 +54,11 @@ public class ChronopolisIngest implements Runnable {
         Chron chronSettings = settings.getChron();
         String prefix = chronSettings.getPrefix();
         String depositor = Strings.isNullOrEmpty(prefix) ? data.depositor() : prefix + data.depositor();
+        // I'm sure there's a better way to handle this... but for now this should be ok
+        String bag = settings.pushDPN() ? receipt.getName() + ".tar" : receipt.getName();
 
         log.info("Notifying chronopolis about bag {}", receipt.getName());
-        Path location = Paths.get(chronSettings.getBags(), data.depositor(), receipt.getName() + ".tar");
+        Path location = Paths.get(chronSettings.getBags(), data.depositor(), bag);
         List<String> replicatingNodes = chronSettings.getReplicatingTo();
 
         IngestRequest chronRequest = new IngestRequest();

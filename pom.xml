@@ -15,7 +15,7 @@
     <version>1.5.0-RELEASE</version>
 
     <properties>
-        <chron.version>1.5.0-SNAPSHOT</chron.version>
+        <chron.version>1.5.0-RELEASE</chron.version>
     </properties>
 
     <build>

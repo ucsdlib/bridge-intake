@@ -5,6 +5,7 @@ import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
 import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
+import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -87,7 +88,7 @@ public class SnapshotJobManager {
     }
 
     public void startSnapshotTasklet(SnapshotDetails details) {
-        BagData data = null;
+        BagData data;
         try {
             data = collector.collectBagData(details.getSnapshotId());
             startJob(data.snapshotId(),
@@ -140,7 +141,7 @@ public class SnapshotJobManager {
         // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
-        BagData data = null;
+        BagData data;
         try {
             data = collector.collectBagData(details.getSnapshotId());
         } catch (IOException e) {
@@ -152,7 +153,11 @@ public class SnapshotJobManager {
         ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);
 
         if (settings.pushDPN()) {
-            DpnReplication replication = new DpnReplication(data, receipts, holder.dpn, settings);
+            // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
+            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
+            List<Weight> weights = weighter.get();
+
+            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings);
             replication.run();
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);

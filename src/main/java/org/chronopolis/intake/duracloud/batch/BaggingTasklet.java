@@ -52,10 +52,6 @@ public class BaggingTasklet implements Tasklet {
     public static final String SNAPSHOT_MD5 = "manifest-md5.txt";
     public static final String SNAPSHOT_SHA = "manifest-sha256.txt";
 
-    private final char DATA_BAG = 'D';
-    private final String PARAM_PAGE_SIZE = "page_size";
-    private final String PROTOCOL = "rsync";
-    private final String ALGORITHM = "sha256";
     private final String TITLE = "Unable to create bag for %s";
 
     private String snapshotId;
@@ -92,12 +88,11 @@ public class BaggingTasklet implements Tasklet {
                 Files.newInputStream(snapshotBase.resolve(manifestName)),
                 snapshotBase);
 
-        if (!manifest.getFiles().isEmpty()) {
-            prepareBags(snapshotBase, out, manifest);
-        } else {
+        if (manifest.getFiles().isEmpty()) {
             log.warn("{} - snapshot is empty!", snapshotId);
-
             notifier.notify(String.format(TITLE, snapshotId), "Snapshot contains no files and is unable to be bagged");
+        } else {
+            prepareBags(snapshotBase, out, manifest);
         }
 
         return RepeatStatus.FINISHED;

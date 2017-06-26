@@ -29,6 +29,11 @@ public class Chron {
     private String tokens = "/staging/tokens";
 
     /**
+     * Prefix to use when pushing to chronopolis
+     */
+    private String prefix = "";
+
+    /**
      * Location of the restoration staging directory
      */
     private String restoration = "/staging/restoration";
@@ -103,6 +108,15 @@ public class Chron {
 
     public Chron setIngest(Ingest ingest) {
         this.ingest = ingest;
+        return this;
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public Chron setPrefix(String prefix) {
+        this.prefix = prefix;
         return this;
     }
 }

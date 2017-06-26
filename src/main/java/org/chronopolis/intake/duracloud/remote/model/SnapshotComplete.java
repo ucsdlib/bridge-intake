@@ -7,8 +7,8 @@ package org.chronopolis.intake.duracloud.remote.model;
  */
 public class SnapshotComplete {
 
-    SnapshotStatus status;
-    String details;
+    private SnapshotStatus status;
+    private String details;
 
     public SnapshotComplete() {
     }

@@ -19,8 +19,13 @@ import java.util.concurrent.TimeUnit;
 public class ProductionService implements ChronService {
     private final Logger log = LoggerFactory.getLogger(ProductionService.class);
 
-    @Autowired
+    private final
     ApplicationContext context;
+
+    @Autowired
+    public ProductionService(ApplicationContext context) {
+        this.context = context;
+    }
 
     @Override
     public void run() {

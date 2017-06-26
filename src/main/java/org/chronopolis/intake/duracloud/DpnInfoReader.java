@@ -22,9 +22,9 @@ import java.util.List;
  */
 public class DpnInfoReader {
     private static final Logger log = LoggerFactory.getLogger(DpnInfoReader.class);
-    public static final String DPN_INFO = "dpn-tags/dpn-info.txt";
+    private static final String DPN_INFO = "dpn-tags/dpn-info.txt";
 
-    final ImmutableMultimap<Tag, String> tags;
+    private final ImmutableMultimap<Tag, String> tags;
 
     private DpnInfoReader(ImmutableMultimap<Tag, String> tags) {
         this.tags = tags;

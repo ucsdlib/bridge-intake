@@ -118,7 +118,7 @@ public class TarWriteJob extends WriteJob {
 
             if (validate && !hashCode.equals(payloadFile.getDigest())) {
                 log.error("Digest mismatch for file {}. Expected {}; Found {}",
-                        new Object[]{payloadFile, payloadFile.getDigest(), hashCode});
+                        payloadFile, payloadFile.getDigest(), hashCode);
                 result.setSuccess(false);
                 bag.addError(payloadFile);
             }

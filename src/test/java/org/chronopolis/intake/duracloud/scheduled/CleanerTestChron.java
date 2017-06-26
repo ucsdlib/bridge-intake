@@ -1,7 +1,7 @@
 package org.chronopolis.intake.duracloud.scheduled;
 
 import com.google.common.collect.ImmutableList;
-import org.chronopolis.intake.duracloud.batch.CallWrapper;
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.BagStatus;
 import org.junit.Assert;

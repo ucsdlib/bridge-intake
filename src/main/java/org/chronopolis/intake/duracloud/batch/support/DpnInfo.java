@@ -104,13 +104,13 @@ public class DpnInfo implements TagFile {
 
         DpnInfo dpnInfo = (DpnInfo) o;
 
-        return path != null ? path.equals(dpnInfo.path) : dpnInfo.path == null;
+        return path.equals(dpnInfo.path);
 
     }
 
     @Override
     public int hashCode() {
-        return path != null ? path.hashCode() : 0;
+        return path.hashCode();
     }
 
 }

@@ -15,7 +15,7 @@ public class BaggingHistory extends History {
     private static final String snapshotAction = "SNAPSHOT_BAGGED";
 
     private final String snapshotId;
-    List<BagReceipt> history = new ArrayList<>();
+    private List<BagReceipt> history = new ArrayList<>();
 
     public BaggingHistory(String snapshotId, boolean alternate) {
         this.snapshotId = snapshotId;

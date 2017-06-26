@@ -7,8 +7,8 @@ package org.chronopolis.intake.duracloud.remote.model;
  */
 public class HistorySummary {
 
-    Snapshot snapshot;
-    String history;
+    private Snapshot snapshot;
+    private String history;
 
     public Snapshot getSnapshot() {
         return snapshot;

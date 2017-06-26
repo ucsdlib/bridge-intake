@@ -34,17 +34,17 @@ import static org.mockito.Mockito.when;
 public class DpnCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
-    @Mock Events events;
-    @Mock BridgeAPI bridge;
-    @Mock BalustradeTransfers transfers;
-    @Mock BalustradeNode nodes;
-    @Mock BalustradeBag bags;
+    @Mock private Events events;
+    @Mock private BridgeAPI bridge;
+    @Mock private BalustradeTransfers transfers;
+    @Mock private BalustradeNode nodes;
+    @Mock private BalustradeBag bags;
 
     // And our test object
-    DpnCheck check;
+    private DpnCheck check;
 
     // Dependency to the DpnCheck
-    LocalAPI dpn;
+    private LocalAPI dpn;
 
     @Before
     public void setup() {

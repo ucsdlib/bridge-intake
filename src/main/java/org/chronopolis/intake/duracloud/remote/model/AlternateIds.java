@@ -10,7 +10,7 @@ import java.util.List;
  * Created by shake on 7/27/15.
  */
 public class AlternateIds {
-    List<String> alternateIds;
+    private List<String> alternateIds;
 
     public AlternateIds() {
         this.alternateIds = new ArrayList<>();

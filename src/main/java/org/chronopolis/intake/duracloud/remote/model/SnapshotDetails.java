@@ -7,16 +7,16 @@ package org.chronopolis.intake.duracloud.remote.model;
  */
 public class SnapshotDetails {
 
-    String snapshotId;
-    String snapshotDate;
-    SnapshotStatus status;
-    String sourceHost;
-    String sourceSpaceId;
-    String sourceStoreId;
-    String description;
-    String contentItemCount;
-    String totalSizeInBytes;
-    String memberId;
+    private String snapshotId;
+    private String snapshotDate;
+    private SnapshotStatus status;
+    private String sourceHost;
+    private String sourceSpaceId;
+    private String sourceStoreId;
+    private String description;
+    private String contentItemCount;
+    private String totalSizeInBytes;
+    private String memberId;
 
     public String getSnapshotId() {
         return snapshotId;

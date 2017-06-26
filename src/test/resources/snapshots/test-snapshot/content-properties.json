@@ -1,8 +1,8 @@
 [
 {
   "test-file": {
-      "content-size": "36"
-      "content-mimetype": "text/plain"
+      "content-size": "36",
+      "content-mimetype": "text/plain",
       "content-checksum": "2d4d32fa7824b7148ea08d695f137f45",
       "content-modified": "2016-10-14T14:45:22"
   }

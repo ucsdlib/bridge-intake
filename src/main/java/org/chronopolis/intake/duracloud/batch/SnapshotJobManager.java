@@ -88,7 +88,7 @@ public class SnapshotJobManager {
     }
 
     public void startSnapshotTasklet(SnapshotDetails details) {
-        BagData data = null;
+        BagData data;
         try {
             data = collector.collectBagData(details.getSnapshotId());
             startJob(data.snapshotId(),
@@ -141,7 +141,7 @@ public class SnapshotJobManager {
         // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
-        BagData data = null;
+        BagData data;
         try {
             data = collector.collectBagData(details.getSnapshotId());
         } catch (IOException e) {

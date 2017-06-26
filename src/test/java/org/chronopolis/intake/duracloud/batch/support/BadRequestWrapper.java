@@ -22,17 +22,16 @@ public class BadRequestWrapper<E> extends CallWrapper<E> {
 
     @Override
     public retrofit2.Response<E> execute() throws IOException {
-        Response<E> error = Response.<E>error(ResponseBody.create(MediaType.parse("text/plain"), "Test Bad Request"), new okhttp3.Response.Builder() //
+        return Response.error(ResponseBody.create(MediaType.parse("text/plain"), "Test Bad Request"), new okhttp3.Response.Builder() //
                 .code(400)
                 .protocol(Protocol.HTTP_1_1)
                 .request(new Request.Builder().url("http://localhost/").build())
                 .build());
-        return error;
     }
 
     @Override
     public void enqueue(Callback<E> callback) {
-        callback.onResponse(this, Response.<E>error(400, ResponseBody.create(MediaType.parse("application/json"), "{message: 'Test Bad Request'}")));
+        callback.onResponse(this, Response.error(400, ResponseBody.create(MediaType.parse("application/json"), "{message: 'Test Bad Request'}")));
     }
 
 }

@@ -24,7 +24,7 @@ public class NotFoundWrapper<E> extends CallWrapper<E> {
 
     @Override
     public void enqueue(Callback<E> callback) {
-        callback.onResponse(this, retrofit2.Response.<E>error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
+        callback.onResponse(this, retrofit2.Response.error(404, ResponseBody.create(MediaType.parse("application/json"), "")));
     }
 
 }

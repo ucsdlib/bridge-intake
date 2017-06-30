@@ -63,9 +63,6 @@ public class Application implements CommandLineRunner {
     private final Logger log = LoggerFactory.getLogger(Application.class);
 
     @Autowired
-    SnapshotJobManager manager;
-
-    @Autowired
     ChronService service;
 
     public static void main(String[] args) {

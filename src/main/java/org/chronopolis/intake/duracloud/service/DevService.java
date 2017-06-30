@@ -12,10 +12,8 @@ import org.chronopolis.bag.partitioner.Bagger;
 import org.chronopolis.bag.partitioner.BaggingResult;
 import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.WriteResult;
-import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.scheduled.Cleaner;
 import org.slf4j.Logger;
@@ -48,17 +46,17 @@ public class DevService implements ChronService {
 
     private final Logger log = LoggerFactory.getLogger(DevService.class);
 
-    final Bridge bridge;
-    final Cleaner cleaner;
-    final SnapshotJobManager manager;
-    final IntakeSettings settings;
+    private final Bridge bridge;
+    private final Cleaner cleaner;
+    // private final SnapshotJobManager manager;
+    // private final IntakeSettings settings;
 
     @Autowired
-    public DevService(Bridge bridge, Cleaner cleaner, SnapshotJobManager manager, IntakeSettings settings) {
+    public DevService(Bridge bridge, Cleaner cleaner) {
         this.bridge = bridge;
         this.cleaner = cleaner;
-        this.manager = manager;
-        this.settings = settings;
+        // this.manager = manager;
+        // this.settings = settings;
     }
 
     @Override
@@ -127,9 +125,9 @@ public class DevService implements ChronService {
 
         BagWriter writer = new DpnWriter("tufts", "tufts_1106_ms208-mobius_2017-01-10-15-55-24")
                 .withPackager(new TarPackager(Paths.get("/export/gluster/test-bags/tufts-test")));
-        partition.getBags().forEach(b -> {
-                    log.info("{} -> ({} Files, {} Size)", new Object[]{b.getName(), b.getManifest().getFiles().size(), b.getManifest().getSize()});
-                });
+        partition.getBags().forEach(b ->
+                log.info("{} -> ({} Files, {} Size)",
+                        new Object[]{b.getName(), b.getManifest().getFiles().size(), b.getManifest().getSize()}));
         List<WriteResult> results = writer.write(partition.getBags());
         results.forEach(this::printInfo);
 
@@ -152,12 +150,12 @@ public class DevService implements ChronService {
             String line = f.getDigest().toString() + " " + f.getFile().toString() + "\n";
             ByteBuffer encode = Charset.forName("UTF-8").encode(line);
             ByteBuffer encodedf = Charset.defaultCharset().encode(line);
-            log.info("{} -> L={} B={} E-UTF8={} E-DC={}", new Object[]{f.getFile().toString(),
+            log.info("{} -> L={} B={} E-UTF8={} E-DC={}",
+                    f.getFile().toString(),
                     line.length(),
                     line.getBytes(Charset.forName("UTF-8")).length,
                     encode.limit(),
-                    encodedf.limit()}
-                    );
+                    encodedf.limit());
         });
     }
 

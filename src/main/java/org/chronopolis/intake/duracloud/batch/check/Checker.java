@@ -52,7 +52,7 @@ public abstract class Checker implements Runnable {
         });
 
         int totalReplications = receipts.size() * 3;
-        log.info("{} - found {}/{} completed replications", new Object[]{snapshot, accumulator.get(), totalReplications});
+        log.info("{} - found {}/{} completed replications", snapshot, accumulator.get(), totalReplications);
         if (accumulator.get() == totalReplications) {
             for (ReplicationHistory val: history.values()) {
                 Call<HistorySummary> call = bridge.postHistory(snapshot, val);

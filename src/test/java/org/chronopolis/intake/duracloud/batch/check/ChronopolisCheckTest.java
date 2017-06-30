@@ -32,10 +32,10 @@ import static org.mockito.Mockito.when;
 public class ChronopolisCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
-    @Mock BridgeAPI bridge;
-    @Mock IngestAPI ingest;
+    @Mock private BridgeAPI bridge;
+    @Mock private IngestAPI ingest;
 
-    ChronopolisCheck check;
+    private ChronopolisCheck check;
 
     @Before
     public void setup() {

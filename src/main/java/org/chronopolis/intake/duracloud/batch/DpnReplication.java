@@ -128,6 +128,7 @@ public class DpnReplication implements Runnable {
 
     private void pushReplication(Bag bag, Predicate<Weight> predicate) {
         weights.stream()
+                .limit(2)
                 .filter(predicate)
                 .map(weight -> call(bag, weight.getNode()))
                 .forEach(call -> call.enqueue(new SimpleCallback<>()));

@@ -12,10 +12,10 @@
 
     <groupId>org.chronopolis.intake</groupId>
     <artifactId>duracloud-backend</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.5.1-RELEASE</version>
 
     <properties>
-        <chron.version>1.5.0-SNAPSHOT</chron.version>
+        <chron.version>1.5.0-RELEASE</chron.version>
     </properties>
 
     <build>

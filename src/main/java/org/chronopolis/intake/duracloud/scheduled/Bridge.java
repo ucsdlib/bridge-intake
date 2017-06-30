@@ -58,7 +58,7 @@ public class Bridge {
         log.trace("Polling for snapshots...");
         Snapshots snapshots;
         Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
-        Response<Snapshots> response = null;
+        Response<Snapshots> response;
         try {
             response = snapshotCall.execute();
         } catch (IOException e) {
@@ -82,8 +82,8 @@ public class Bridge {
             Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
             Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, new HashMap<>());
 
-            Response<SnapshotDetails> detailsResponse = null;
-            Response<SnapshotHistory> historyResponse = null;
+            Response<SnapshotDetails> detailsResponse;
+            Response<SnapshotHistory> historyResponse;
             try {
                 detailsResponse = detailsCall.execute();
                 historyResponse = historyCall.execute();

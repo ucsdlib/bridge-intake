@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by shake on 12/4/15.
  */
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
 public class DpnReplicationTest extends BatchTestBase {
 
     // We return these later
@@ -81,6 +81,7 @@ public class DpnReplicationTest extends BatchTestBase {
     // Pretty ugly, we'll want to find a better way to handle init
     private List<BagReceipt> initialize(int numReceipts) {
         weights = ImmutableList.of(new Weight(UUID.randomUUID().toString(), "snapshot"),
+                new Weight(UUID.randomUUID().toString(), "snapshot"),
                 new Weight(UUID.randomUUID().toString(), "snapshot"));
         BagData data = data();
 
@@ -125,7 +126,7 @@ public class DpnReplicationTest extends BatchTestBase {
      */
     @Test
     public void bagExistsCreateReplications() {
-        initialize(1);
+        initialize(2);
         Bag b = createBagNoReplications(receipt());
 
         when(bags.getBag(anyString())).thenReturn(new CallWrapper<>(b));
@@ -136,10 +137,10 @@ public class DpnReplicationTest extends BatchTestBase {
 
         tasklet.run();
 
-        verify(bags, times(1)).getBag(anyString());
+        verify(bags, times(2)).getBag(anyString());
         verify(bags, times(0)).createBag(any(Bag.class));
-        verify(transfers, times(1)).getReplications(anyMap());
-        verify(transfers, times(2)).createReplication(any(Replication.class));
+        verify(transfers, times(2)).getReplications(anyMap());
+        verify(transfers, times(4)).createReplication(any(Replication.class));
     }
 
     /**

@@ -11,6 +11,7 @@ import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.config.props.Ingest;
 import org.chronopolis.intake.duracloud.notify.MailNotifier;
 import org.chronopolis.intake.duracloud.notify.Notifier;
@@ -57,7 +58,7 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@EnableConfigurationProperties(IntakeSettings.class)
+@EnableConfigurationProperties({IntakeSettings.class, BagProperties.class})
 @ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
 public class Application implements CommandLineRunner {
     private final Logger log = LoggerFactory.getLogger(Application.class);

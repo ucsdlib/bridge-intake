@@ -124,11 +124,11 @@ public class Application implements CommandLineRunner {
     @JobScope
     BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
                                   @Value("#{jobParameters[depositor]}") String depositor,
-                                  @Value("#{jobParameters[collectionName]}") String collectionName,
                                   IntakeSettings settings,
+                                  BagProperties properties,
                                   BridgeAPI bridge,
                                   Notifier notifier) {
-        return new BaggingTasklet(snapshotId, depositor, settings, bridge, notifier);
+        return new BaggingTasklet(snapshotId, depositor, settings, properties, bridge, notifier);
     }
 
     @Bean

@@ -6,7 +6,6 @@ import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
-import org.chronopolis.bag.core.Unit;
 import org.chronopolis.bag.packager.DirectoryPackager;
 import org.chronopolis.bag.packager.TarPackager;
 import org.chronopolis.bag.partitioner.Bagger;
@@ -17,6 +16,7 @@ import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -57,6 +57,7 @@ public class BaggingTasklet implements Tasklet {
     private String snapshotId;
     private String depositor;
     private IntakeSettings settings;
+    private BagProperties bagProperties;
 
     private BridgeAPI bridge;
     private Notifier notifier;
@@ -64,11 +65,13 @@ public class BaggingTasklet implements Tasklet {
     public BaggingTasklet(String snapshotId,
                           String depositor,
                           IntakeSettings settings,
+                          BagProperties bagProperties,
                           BridgeAPI bridge,
                           Notifier notifier) {
         this.snapshotId = snapshotId;
         this.depositor = depositor;
         this.settings = settings;
+        this.bagProperties = bagProperties;
         this.bridge = bridge;
         this.notifier = notifier;
     }
@@ -108,7 +111,6 @@ public class BaggingTasklet implements Tasklet {
      */
     private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) throws IOException {
         // TODO: fill out with what...?
-        // TODO: EXTERNAL-IDENTIFIER: snapshot.description
         BagInfo info = new BagInfo()
                 .includeMissingTags(true)
                 .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, depositor);
@@ -117,6 +119,7 @@ public class BaggingTasklet implements Tasklet {
                 .withBagInfo(info)
                 .withBagit(new BagIt())
                 .withPayloadManifest(manifest)
+                .withMaxSize(bagProperties.getMaxSize(), bagProperties.getUnit())
                 .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)));
@@ -174,8 +177,7 @@ public class BaggingTasklet implements Tasklet {
      */
     private Bagger configurePartitioner(Bagger bagger, boolean dpn) {
         if (dpn) {
-            bagger.withMaxSize(245, Unit.GIGABYTE)
-                  .withNamingSchema(new UUIDNamingSchema());
+            bagger.withNamingSchema(new UUIDNamingSchema());
         } else {
             bagger.withNamingSchema(new SimpleNamingSchema(snapshotId));
         }

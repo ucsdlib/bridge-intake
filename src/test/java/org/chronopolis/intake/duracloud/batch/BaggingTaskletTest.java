@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.notify.Notifier;
@@ -37,10 +38,12 @@ public class BaggingTaskletTest {
     private Notifier notifier;
     private BaggingTasklet tasklet;
     private IntakeSettings settings;
+    private BagProperties bagProperties;
 
     @Before
     public void setup() throws URISyntaxException {
         // setup
+        bagProperties = new BagProperties();
         URL resources = ClassLoader.getSystemClassLoader().getResource("");
         Path bags = Paths.get(resources.toURI()).resolve("bags");
         Path snapshots = Paths.get(resources.toURI()).resolve("snapshots");
@@ -66,7 +69,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bridge, notifier);
+        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, bridge, notifier);
         when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
@@ -84,7 +87,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bridge, notifier);
+        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, bridge, notifier);
 
         try {
             tasklet.execute(null, null);

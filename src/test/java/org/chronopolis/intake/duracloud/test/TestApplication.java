@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.test;
 
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,7 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@EnableConfigurationProperties(IntakeSettings.class)
+@EnableConfigurationProperties({IntakeSettings.class, BagProperties.class})
 public class TestApplication {
 
     public static void main(String[] args) {

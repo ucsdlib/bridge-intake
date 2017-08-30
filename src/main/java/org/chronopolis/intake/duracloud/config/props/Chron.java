@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  *
- * Created by shake on 10/31/16.
+ * @author shake
  */
 @ConfigurationProperties(prefix = "chron")
 public class Chron {
@@ -19,29 +19,9 @@ public class Chron {
     private String node;
 
     /**
-     * Location of the bag staging directory
-     */
-    private String bags = "/staging/bags";
-
-    /**
-     * Location of the token staging directory
-     */
-    private String tokens = "/staging/tokens";
-
-    /**
      * Prefix to use when pushing to chronopolis
      */
     private String prefix = "";
-
-    /**
-     * Location of the restoration staging directory
-     */
-    private String restoration = "/staging/restoration";
-
-    /**
-     * Location of the preservation storage
-     */
-    private String preservation = "/data/preservation";
 
     /**
      * List of nodes to replicate to
@@ -54,42 +34,6 @@ public class Chron {
 
     public Chron setNode(String node) {
         this.node = node;
-        return this;
-    }
-
-    public String getBags() {
-        return bags;
-    }
-
-    public Chron setBags(String bags) {
-        this.bags = bags;
-        return this;
-    }
-
-    public String getTokens() {
-        return tokens;
-    }
-
-    public Chron setTokens(String tokens) {
-        this.tokens = tokens;
-        return this;
-    }
-
-    public String getRestoration() {
-        return restoration;
-    }
-
-    public Chron setRestoration(String restoration) {
-        this.restoration = restoration;
-        return this;
-    }
-
-    public String getPreservation() {
-        return preservation;
-    }
-
-    public Chron setPreservation(String preservation) {
-        this.preservation = preservation;
         return this;
     }
 

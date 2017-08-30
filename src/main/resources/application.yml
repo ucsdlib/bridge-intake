@@ -1,10 +1,6 @@
 # General chron configuration
 chron:
   node: chron
-  bags: /export/bags
-  tokens: /export/tokens
-  preservation: /data/preservation
-  restoration: /export/restore
   ingest:
     endpoint: http://localhost:8081/
     username: ingest-admin
@@ -12,6 +8,9 @@ chron:
   replicatingTo:
     - ucsd
     - umiacs
+  stage.bags:
+    posix.path: /export/bags
+    posix.id: 1
 
 dpn:
   endpoint: http://localhost:3000/

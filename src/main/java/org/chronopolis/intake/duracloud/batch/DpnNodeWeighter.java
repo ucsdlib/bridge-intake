@@ -10,6 +10,7 @@ import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.util.List;
@@ -55,7 +56,7 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
         Chron chron = settings.getChron();
         // 5 nodes -> page size of 5
         List<String> nodes;
-        retrofit2.Response<Node> response = null;
+        Response<Node> response = null;
         Call<Node> call = dpn.getNodeAPI().getNode(chron.getNode());
         try {
             response = call.execute();

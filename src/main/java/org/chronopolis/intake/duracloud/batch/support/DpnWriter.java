@@ -89,6 +89,7 @@ public class DpnWriter extends SimpleBagWriter {
         DpnInfo dpnInfo = new DpnInfo();
 
         // ex: chron://ucsd/some-ucsd-dpn-snapshot/0
+        // todo: BagProperties to set DpnInfo/BagInfo
         String local = "chron://" + depositor + "/" + snapshotId + "/" + b.getNumber();
         dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_NAME, "Sibyl Schaefer")
                .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "sschaefer@uscd.edu")

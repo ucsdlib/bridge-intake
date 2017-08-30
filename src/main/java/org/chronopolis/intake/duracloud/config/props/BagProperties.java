@@ -4,6 +4,8 @@ import org.chronopolis.bag.core.Unit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Properties for configuration of a BagWriter
+ *
  * @author shake
  */
 @ConfigurationProperties(prefix = "bag")

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.ace.OkBasicInterceptor;
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
@@ -24,6 +25,7 @@ import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.support.PageDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeDeserializer;
 import org.chronopolis.rest.support.ZonedDateTimeSerializer;
+import org.chronopolis.tokenize.scheduled.TokenTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -48,18 +50,16 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-// import org.chronopolis.earth.api.LocalAPI;
-// import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 
 /**
  * Quick main class thrown together for doing integration testing of the services
  *
- * Created by shake on 9/28/15.
+ * @author shake
  */
 @SpringBootApplication
 @EnableBatchProcessing
-@EnableConfigurationProperties({IntakeSettings.class, BagProperties.class})
-@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
+@EnableConfigurationProperties({IntakeSettings.class, BagProperties.class, BagStagingProperties.class})
+@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class, TokenTask.class})
 public class Application implements CommandLineRunner {
     private final Logger log = LoggerFactory.getLogger(Application.class);
 
@@ -126,9 +126,10 @@ public class Application implements CommandLineRunner {
                                   @Value("#{jobParameters[depositor]}") String depositor,
                                   IntakeSettings settings,
                                   BagProperties properties,
+                                  BagStagingProperties stagingProperties,
                                   BridgeAPI bridge,
                                   Notifier notifier) {
-        return new BaggingTasklet(snapshotId, depositor, settings, properties, bridge, notifier);
+        return new BaggingTasklet(snapshotId, depositor, settings, properties, stagingProperties, bridge, notifier);
     }
 
     @Bean

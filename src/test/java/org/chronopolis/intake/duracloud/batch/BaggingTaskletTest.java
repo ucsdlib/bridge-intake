@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.common.storage.Posix;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
@@ -39,6 +41,7 @@ public class BaggingTaskletTest {
     private BaggingTasklet tasklet;
     private IntakeSettings settings;
     private BagProperties bagProperties;
+    private BagStagingProperties stagingProperties;
 
     @Before
     public void setup() throws URISyntaxException {
@@ -52,7 +55,8 @@ public class BaggingTaskletTest {
         settings.setPushDPN(true);
         Chron chron = new Chron();
         Duracloud dc = new Duracloud();
-        chron.setBags(bags.toString());
+        stagingProperties = new BagStagingProperties();
+        stagingProperties.setPosix(new Posix().setPath(bags.toString()));
         dc.setSnapshots(snapshots.toString());
         dc.setManifest("manifest-sha256.txt");
         settings.setChron(chron);
@@ -69,7 +73,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, bridge, notifier);
+        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
         when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
@@ -87,7 +91,7 @@ public class BaggingTaskletTest {
         String name = "test";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, bridge, notifier);
+        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
 
         try {
             tasklet.execute(null, null);

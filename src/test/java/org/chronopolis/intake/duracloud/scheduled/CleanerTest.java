@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud.scheduled;
 
+import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.common.storage.Posix;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -31,6 +33,7 @@ public class CleanerTest {
     Path bags;
     Cleaner cleaner;
     IntakeSettings settings;
+    BagStagingProperties stagingProperties;
 
     final String FROM_OTHER = "94400957-cb72-4c19-bf07-6476c5a3a60d";
     final String FROM_SNAPSHOT = "5309da6f-c1cc-40ad-be42-e67e722cce04";
@@ -44,7 +47,9 @@ public class CleanerTest {
         tmp = Files.createTempDirectory("cleanertest");
         settings = new IntakeSettings();
         settings.setCleanerEnabled(true);
-        cleaner = new Cleaner(bridge, ingest, localAPI, settings);
+        stagingProperties = new BagStagingProperties()
+                .setPosix(new Posix().setPath(tmp.toString()));
+        cleaner = new Cleaner(ingest, localAPI, settings, stagingProperties);
 
         URL resources = ClassLoader.getSystemClassLoader().getResource("");
         bags = Paths.get(resources.toURI()).resolve("bags");

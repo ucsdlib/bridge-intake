@@ -90,7 +90,7 @@ public class DpnReplicationTest extends BatchTestBase {
                 .collect(Collectors.toList());
 
         dpn = new LocalAPI();
-        tasklet = new DpnReplication(data, receipts, weights, dpn, settings);
+        tasklet = new DpnReplication(data, receipts, weights, dpn, settings, stagingProperties);
         MockitoAnnotations.initMocks(this);
 
         dpn.setBagAPI(bags)

@@ -1,6 +1,8 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -8,6 +10,7 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
+import org.chronopolis.rest.service.IngestRequestSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -27,6 +30,8 @@ public class ChronopolisIngest implements Runnable {
     private final Logger log = LoggerFactory.getLogger(ChronopolisIngest.class);
 
     private IntakeSettings settings;
+    private IngestSupplierFactory factory;
+    private BagStagingProperties stagingProperties;
 
     private BagData data;
     private List<BagReceipt> receipts;
@@ -36,11 +41,24 @@ public class ChronopolisIngest implements Runnable {
     public ChronopolisIngest(BagData data,
                              List<BagReceipt> receipts,
                              IngestAPI ingest,
-                             IntakeSettings settings) {
+                             IntakeSettings settings,
+                             BagStagingProperties stagingProperties) {
+        this(data, receipts, ingest, settings, stagingProperties, new IngestSupplierFactory());
+    }
+
+    @VisibleForTesting
+    protected ChronopolisIngest(BagData data,
+                             List<BagReceipt> receipts,
+                             IngestAPI ingest,
+                             IntakeSettings settings,
+                             BagStagingProperties stagingProperties,
+                             IngestSupplierFactory supplierFactory) {
         this.data = data;
         this.chron = ingest;
         this.receipts = receipts;
         this.settings = settings;
+        this.stagingProperties = stagingProperties;
+        this.factory = supplierFactory;
     }
 
     @Override
@@ -54,22 +72,27 @@ public class ChronopolisIngest implements Runnable {
         Chron chronSettings = settings.getChron();
         String prefix = chronSettings.getPrefix();
         String depositor = Strings.isNullOrEmpty(prefix) ? data.depositor() : prefix + data.depositor();
+
         // I'm sure there's a better way to handle this... but for now this should be ok
         String bag = settings.pushDPN() ? receipt.getName() + ".tar" : receipt.getName();
+        Path stage = Paths.get(stagingProperties.getPosix().getPath());
+        Path location = stage.resolve(data.depositor()).resolve(bag);
 
-        log.info("Notifying chronopolis about bag {}", receipt.getName());
-        Path location = Paths.get(chronSettings.getBags(), data.depositor(), bag);
+        log.info("[{}] Building ingest request for chronopolis", receipt.getName());
+        log.info("[depositor, {}]", depositor);
+        IngestRequestSupplier supplier = factory.supplier(location, stage, depositor, receipt.getName());
+        supplier.get().ifPresent(this::pushRequest);
+        return receipt;
+    }
+
+    private void pushRequest(IngestRequest ingestRequest) {
+        Chron chronSettings = settings.getChron();
         List<String> replicatingNodes = chronSettings.getReplicatingTo();
+        ingestRequest.setStorageRegion(null);
+        ingestRequest.setRequiredReplications(replicatingNodes.size());
+        ingestRequest.setReplicatingNodes(replicatingNodes);
 
-        IngestRequest chronRequest = new IngestRequest();
-        chronRequest.setRequiredReplications(replicatingNodes.size());
-        chronRequest.setName(receipt.getName());
-        chronRequest.setDepositor(depositor);
-        chronRequest.setLocation(location.toString()); // This is the relative path
-
-        chronRequest.setReplicatingNodes(replicatingNodes);
-
-        Call<Bag> stageCall = chron.stageBag(chronRequest);
+        Call<Bag> stageCall = chron.stageBag(ingestRequest);
         try {
             retrofit2.Response<Bag> response = stageCall.execute();
             if (response.isSuccessful()) {
@@ -80,7 +103,14 @@ public class ChronopolisIngest implements Runnable {
         } catch (IOException e) {
             log.error("Unable to stage bag with chronopolis", e);
         }
+    }
 
-        return receipt;
+    /**
+     * Delegate class so that we can use a Mock supplier
+     */
+    public static class IngestSupplierFactory {
+        public IngestRequestSupplier supplier(Path location, Path stage, String depositor, String name) {
+            return new IngestRequestSupplier(location, stage, depositor, name);
+        }
     }
 }

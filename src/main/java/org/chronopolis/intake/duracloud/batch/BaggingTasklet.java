@@ -13,11 +13,12 @@ import org.chronopolis.bag.partitioner.BaggingResult;
 import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteResult;
+import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.common.storage.Posix;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
@@ -58,6 +59,7 @@ public class BaggingTasklet implements Tasklet {
     private String depositor;
     private IntakeSettings settings;
     private BagProperties bagProperties;
+    private BagStagingProperties stagingProperties;
 
     private BridgeAPI bridge;
     private Notifier notifier;
@@ -66,23 +68,25 @@ public class BaggingTasklet implements Tasklet {
                           String depositor,
                           IntakeSettings settings,
                           BagProperties bagProperties,
+                          BagStagingProperties stagingProperties,
                           BridgeAPI bridge,
                           Notifier notifier) {
         this.snapshotId = snapshotId;
         this.depositor = depositor;
         this.settings = settings;
         this.bagProperties = bagProperties;
+        this.stagingProperties = stagingProperties;
         this.bridge = bridge;
         this.notifier = notifier;
     }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        Chron chron = settings.getChron();
         Duracloud dc = settings.getDuracloud();
+        Posix posix = stagingProperties.getPosix();
 
         Path duraBase = Paths.get(dc.getSnapshots());
-        Path out = Paths.get(chron.getBags(), depositor);
+        Path out = Paths.get(posix.getPath(), depositor);
         Path snapshotBase = duraBase.resolve(snapshotId);
         String manifestName = dc.getManifest();
 

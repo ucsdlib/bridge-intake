@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.batch;
 
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
@@ -131,12 +132,15 @@ public class SnapshotJobManager {
      *
      * We do it here just for consistency, even though it's not
      * part of the batch stuff
-     *
      * @param details the details of the snapshot
      * @param receipts the bag receipts for the snapshot
      * @param settings the settings for our intake service
+     * @param stagingProperties the properties defining the bag staging area
      */
-    public void startReplicationTasklet(SnapshotDetails details, List<BagReceipt> receipts, IntakeSettings settings) {
+    public void startReplicationTasklet(SnapshotDetails details,
+                                        List<BagReceipt> receipts,
+                                        IntakeSettings settings,
+                                        BagStagingProperties stagingProperties) {
         // If we're pushing to dpn, let's make the differences here
         // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
@@ -150,14 +154,14 @@ public class SnapshotJobManager {
         }
 
         Checker check;
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings, stagingProperties);
 
         if (settings.pushDPN()) {
             // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
             DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
             List<Weight> weights = weighter.get();
 
-            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings);
+            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings, stagingProperties);
             replication.run();
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);

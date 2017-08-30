@@ -4,11 +4,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.IngestAPI;
 import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
@@ -43,17 +43,17 @@ public class Cleaner {
     private final String SNAPSHOT_FILE = ".collection-snapshot.properties";
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
-    private final BridgeAPI bridge;
     private final IngestAPI ingest;
     private final BalustradeBag registry;
     private final IntakeSettings settings;
+    private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Cleaner(BridgeAPI bridge, IngestAPI ingest, LocalAPI dpn, IntakeSettings settings) {
-        this.bridge = bridge;
+    public Cleaner(IngestAPI ingest, LocalAPI dpn, IntakeSettings settings, BagStagingProperties stagingProperties) {
         this.ingest = ingest;
         this.registry = dpn.getBagAPI();
         this.settings = settings;
+        this.stagingProperties = stagingProperties;
     }
 
     @Scheduled(cron = "${bridge.clean:0 0 0 * * *}")
@@ -63,7 +63,7 @@ public class Cleaner {
             return;
         }
 
-        String bagStage = settings.getChron().getBags();
+        String bagStage = stagingProperties.getPosix().getPath();
         Path bags = Paths.get(bagStage);
         try (Stream<Path> files = Files.find(bags, 2, this::matchTar)) {
             files.filter(this::isSerializedSnapshot)
@@ -112,7 +112,7 @@ public class Cleaner {
             return;
         }
 
-        String bagStage = settings.getChron().getBags();
+        String bagStage = stagingProperties.getPosix().getPath();
         Path bags = Paths.get(bagStage);
 
         try (Stream<Path> files =

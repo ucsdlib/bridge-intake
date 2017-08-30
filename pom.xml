@@ -15,7 +15,7 @@
     <version>1.6.0-SNAPSHOT</version>
 
     <properties>
-        <chron.version>1.5.0-RELEASE</chron.version>
+        <chron.version>1.6.0-SNAPSHOT</chron.version>
     </properties>
 
     <build>
@@ -99,19 +99,23 @@
 
         <dependency>
             <groupId>org.chronopolis</groupId>
+            <artifactId>tokenizer</artifactId>
+            <version>${chron.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.chronopolis</groupId>
+            <artifactId>chron-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.chronopolis</groupId>
             <artifactId>earth-core</artifactId>
             <version>2.0.0-RELEASE</version>
         </dependency>
 
-        <!--
-        <dependency>
-            <groupId>org.chronopolis.ingest</groupId>
-            <artifactId>bagger</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        -->
-
-        <!-- TODO: Get this in sync with the rest of chron -->
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>retrofit</artifactId>
@@ -129,14 +133,6 @@
             <artifactId>gson</artifactId>
             <version>2.7</version>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-        -->
 
         <dependency>
             <groupId>com.h2database</groupId>

@@ -87,18 +87,6 @@
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>rest-common</artifactId>
-            <version>${chron.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.chronopolis</groupId>
-            <artifactId>chron-common</artifactId>
-            <version>${chron.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.chronopolis</groupId>
             <artifactId>tokenizer</artifactId>
             <version>${chron.version}</version>
         </dependency>

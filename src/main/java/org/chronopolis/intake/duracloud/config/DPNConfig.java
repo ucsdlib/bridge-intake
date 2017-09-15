@@ -4,7 +4,7 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
-import org.chronopolis.common.ace.OkBasicInterceptor;
+import org.chronopolis.rest.support.OkBasicInterceptor;
 import org.chronopolis.common.dpn.OkTokenInterceptor;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;

@@ -154,7 +154,7 @@ public class SnapshotJobManager {
         }
 
         Checker check;
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.ingest, settings, stagingProperties);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.generator, settings, stagingProperties);
 
         if (settings.pushDPN()) {
             // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
@@ -166,7 +166,7 @@ public class SnapshotJobManager {
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);
         } else {
-            check = new ChronopolisCheck(data, receipts, holder.bridge, holder.ingest);
+            check = new ChronopolisCheck(data, receipts, holder.bridge, holder.generator);
         }
 
         // Might tie these to futures, not sure yet. That way we won't block here.

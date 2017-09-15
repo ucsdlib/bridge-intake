@@ -1,10 +1,5 @@
 package org.chronopolis.intake.duracloud;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import okhttp3.OkHttpClient;
-import org.chronopolis.common.ace.OkBasicInterceptor;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
@@ -13,18 +8,15 @@ import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Ingest;
 import org.chronopolis.intake.duracloud.notify.MailNotifier;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
 import org.chronopolis.rest.api.ErrorLogger;
-import org.chronopolis.rest.api.IngestAPI;
-import org.chronopolis.rest.models.Bag;
-import org.chronopolis.rest.support.PageDeserializer;
-import org.chronopolis.rest.support.ZonedDateTimeDeserializer;
-import org.chronopolis.rest.support.ZonedDateTimeSerializer;
+import org.chronopolis.rest.api.IngestAPIProperties;
+import org.chronopolis.rest.api.IngestGenerator;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.tokenize.scheduled.TokenTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,14 +33,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.domain.PageImpl;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
-import java.lang.reflect.Type;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -81,38 +65,8 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    IngestAPI ingestAPI(IntakeSettings settings) {
-        Ingest ingest = settings.getChron().getIngest();
-        String endpoint = ingest.getEndpoint();
-
-        Type bagPage = new TypeToken<PageImpl<Bag>>() {}.getType();
-        Type bagList = new TypeToken<List<Bag>>() {}.getType();
-
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(bagPage, new PageDeserializer(bagList))
-                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeSerializer())
-                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
-                .create();
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new OkBasicInterceptor(
-                        ingest.getUsername(),
-                        ingest.getPassword()))
-                .addInterceptor(chain -> {
-                    log.info("{} {}", chain.request().method(), chain.request().url().toString());
-                    return chain.proceed(chain.request());
-                })
-                .readTimeout(5, TimeUnit.HOURS)
-                .build();
-
-        Retrofit adapter = new Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .baseUrl(endpoint)
-                .client(client)
-                .build();
-
-        return adapter.create(IngestAPI.class);
-
+    ServiceGenerator generator(IngestAPIProperties properties) {
+        return new IngestGenerator(properties);
     }
 
     @Bean
@@ -133,8 +87,8 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    APIHolder holder(IngestAPI ingest, BridgeAPI bridge, LocalAPI dpn) {
-        return new APIHolder(ingest, bridge, dpn);
+    APIHolder holder(ServiceGenerator generator, BridgeAPI bridge, LocalAPI dpn) {
+        return new APIHolder(generator, bridge, dpn);
     }
 
     @Bean(destroyMethod = "destroy")

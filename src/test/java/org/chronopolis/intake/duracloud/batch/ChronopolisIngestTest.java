@@ -1,10 +1,12 @@
 package org.chronopolis.intake.duracloud.batch;
 
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import com.google.common.collect.ImmutableList;
+import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
-import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.ServiceGenerator;
+import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
 import org.chronopolis.rest.service.IngestRequestSupplier;
@@ -28,6 +30,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * todo: we need to verify the fixity value is created in certain cases
+ *       unfortunately at the moment the ChronopolisIngest class simply tries to read the tagmanifest
+ *       off disk which makes it hard to check... unless we can generate it. That would require
+ *       some more setup and basically this is something we need to dig a bit more in to.
  *
  * Created by shake on 6/2/16.
  */
@@ -35,7 +41,9 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ChronopolisIngestTest extends BatchTestBase {
 
-    @Mock IngestAPI api;
+    @Mock BagService bags;
+    @Mock StagingService staging;
+    @Mock ServiceGenerator generator;
     @Mock IngestRequestSupplier supplier;
     @Mock ChronopolisIngest.IngestSupplierFactory factory;
 
@@ -52,37 +60,48 @@ public class ChronopolisIngestTest extends BatchTestBase {
     @Test
     public void withoutPrefix() throws Exception {
         settings.setPushDPN(true);
+        Bag bag = BagConverter.toBagModel(createChronBag());
         BagReceipt receipt = receipt();
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings, stagingProperties, factory);
+        when(generator.bags()).thenReturn(bags);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
 
         IngestRequest request = request(receipt, data.depositor(), ".tar");
         when(factory.supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()))).thenReturn(supplier);
         when(supplier.get()).thenReturn(Optional.of(request));
-        when(api.stageBag(eq(request))).thenReturn(new CallWrapper<Bag>(BagConverter.toBagModel(createChronBag())));
+        when(bags.deposit(eq(request))).thenReturn(new CallWrapper<Bag>(bag));
+        // when(staging.createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class))).thenReturn(new CallWrapper<>(null));
 
         ingest.run();
 
         verify(factory, times(1)).supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()));
         verify(supplier, times(1)).get();
-        verify(api, times(1)).stageBag(eq(request));
+        verify(bags, times(1)).deposit(eq(request));
+        // verify(staging, times(1)).createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class));
     }
 
     @Test
     public void withPrefix() throws Exception {
         settings.setPushDPN(false);
+        Bag bag = BagConverter.toBagModel(createChronBag());
         BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), api, settings, stagingProperties, factory);
+        when(generator.bags()).thenReturn(bags);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
 
         String depositor = prefix + data.depositor();
         IngestRequest request = request(receipt, depositor, null);
+
         when(factory.supplier(any(Path.class), any(Path.class), eq(depositor), eq(receipt.getName()))).thenReturn(supplier);
         when(supplier.get()).thenReturn(Optional.of(request));
-        when(api.stageBag(eq(request))).thenReturn(new CallWrapper<>(BagConverter.toBagModel(createChronBag())));
+        when(bags.deposit(eq(request))).thenReturn(new CallWrapper<>(bag));
+        // when(staging.createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class))).thenReturn(new CallWrapper<>(null));
+
         ingest.run();
-        verify(api, times(1)).stageBag(eq(request));
+
         verify(factory, times(1)).supplier(any(Path.class), any(Path.class), eq(depositor), eq(receipt.getName()));
         verify(supplier, times(1)).get();
+        verify(bags, times(1)).deposit(eq(request));
+        // verify(staging, times(1)).createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class));
 
         settings.getChron().setPrefix("");
     }

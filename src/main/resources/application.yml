@@ -12,6 +12,11 @@ chron:
     posix.path: /export/bags
     posix.id: 1
 
+ace.ims:
+  port: 8080
+  endpoint: localhost
+  waitTime: 5000
+
 dpn:
   endpoint: http://localhost:3000/
   username: chron

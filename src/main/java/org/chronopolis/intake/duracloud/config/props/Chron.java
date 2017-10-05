@@ -11,8 +11,6 @@ import java.util.List;
 @ConfigurationProperties(prefix = "chron")
 public class Chron {
 
-    private Ingest ingest;
-
     /**
      * Name of the local chronopolis user
      */
@@ -43,15 +41,6 @@ public class Chron {
 
     public Chron setReplicatingTo(List<String> replicatingTo) {
         this.replicatingTo = replicatingTo;
-        return this;
-    }
-
-    public Ingest getIngest() {
-        return ingest;
-    }
-
-    public Chron setIngest(Ingest ingest) {
-        this.ingest = ingest;
         return this;
     }
 

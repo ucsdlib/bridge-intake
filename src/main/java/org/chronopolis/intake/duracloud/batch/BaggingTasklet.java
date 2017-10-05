@@ -6,6 +6,8 @@ import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
+import org.chronopolis.bag.metrics.Metric;
+import org.chronopolis.bag.metrics.WriteMetrics;
 import org.chronopolis.bag.packager.DirectoryPackager;
 import org.chronopolis.bag.packager.TarPackager;
 import org.chronopolis.bag.partitioner.Bagger;
@@ -152,6 +154,7 @@ public class BaggingTasklet implements Tasklet {
         BaggingHistory history = new BaggingHistory(snapshotId, false);
         // we could filter -> map -> consume instead
         results.stream().filter(WriteResult::isSuccess)
+                .peek(this::captureMetrics)
                 .map(w -> new BagReceipt()
                         .setName(w.getBag().getName())
                         .setReceipt(w.getReceipt()))
@@ -168,6 +171,24 @@ public class BaggingTasklet implements Tasklet {
                     + " succeeded";
             notifier.notify(String.format(TITLE, snapshotId), message);
         }
+    }
+
+    private void captureMetrics(WriteResult result) {
+        Logger logger = LoggerFactory.getLogger("metrics");
+        WriteMetrics metrics = result.getMetrics();
+        String bag = result.getBag().getName();
+        logMetric(logger, bag, "bag", metrics.getBag());
+        logMetric(logger, bag, "manifest", metrics.getManifest());
+        logMetric(logger, bag, "tagmanifest", metrics.getTagmanifest());
+        logMetric(logger, bag, "payload", metrics.getPayload());
+        metrics.getPayloadFiles()
+               .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
+        metrics.getExtraTags()
+                .forEach(metric -> logMetric(logger, bag, "tag-file", metric));
+    }
+
+    private void logMetric(Logger log, String bag, String type, Metric metric) {
+        log.info("{},{},{},{},{}", bag, type, metric.getElapsed(), metric.getFilesWritten(), metric.getBytesWritten());
     }
 
     /**

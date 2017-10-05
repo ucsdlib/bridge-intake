@@ -57,7 +57,7 @@ public class DpnWriter extends SimpleBagWriter {
     }
 
     private WriteResult fromBag(Bag bag) {
-        WriteJob job = new WriteJob(bag, validate, packager);
+        WriteJob job = new WriteJob(bag, true, validate, packager);
         return job.get();
     }
 

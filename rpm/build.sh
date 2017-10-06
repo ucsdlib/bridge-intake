@@ -37,7 +37,7 @@ jarfile=target/duracloud-backend-$version-$release_type.jar
 
 if [ ! -e $jarfile ]; then
     echo "Building latest jar..."
-    exec mvn -q -Dmaven.test.redirectTestOutputToFile=true clean install # > /dev/null
+    mvn -q -Dmaven.test.redirectTestOutputToFile=true clean install # > /dev/null
     if [ $? -ne 0 ]; then
         echo "Error building bridge-client"
         exit

@@ -7,7 +7,7 @@
 
 Name: bridge-intake
 Version: %{ver}
-Release: %{build_date}%{?dist}
+Release: %{build_date}.el7
 Source: bridge-intake.service
 Source1: bridge-intake.jar
 Source2: application.yml

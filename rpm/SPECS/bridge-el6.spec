@@ -8,8 +8,8 @@
 Name: bridge-intake
 Version: %{ver}
 Release: %{build_date}.el6
-Source: bridge-intake.jar
-Source1: bridge-intake.sh
+Source: bridge-intake.sh
+Source1: bridge-intake.jar
 Source2: application.yml
 Summary: Chronopolis Intake Client for the Duracloud Bridge
 License: UMD
@@ -26,9 +26,9 @@ and prepares them for ingestion into DPN/Chronopolis
 
 %install
 
-%__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{_prefix}/%{jar}"
-%__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{_prefix}/%{yaml}"
 %__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{initsh}"
+%__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
+%__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
 
 %__install -d "%{buildroot}/var/log/chronopolis"
 
@@ -36,11 +36,11 @@ and prepares them for ingestion into DPN/Chronopolis
 
 %defattr(-,root,root)
 %dir %{_prefix}
+%dir %attr(0755,-,-) /var/log/chronopolis
+
+%{initsh}
 %{_prefix}/%{jar}
 %config(noreplace) %{_prefix}/%{yaml}
-%{initsh}
-
-%dir %attr(0755,-,-) /var/log/chronopolis
 
 %post
 

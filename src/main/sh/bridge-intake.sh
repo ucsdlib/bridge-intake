@@ -19,7 +19,7 @@
 CHRON_USER="chronopolis"
 
 INTAKE_DIR="/usr/local/chronopolis/intake/dc"
-INTAKE_JAR="bridge-client.jar"
+INTAKE_JAR="bridge-intake.jar"
 
 JAVA_BIN=/usr/bin/java
 JAVA_CMD="$JAVA_BIN -jar $INTAKE_DIR/$INTAKE_JAR &"
@@ -31,8 +31,8 @@ pidfile="/var/run/bridge-intake.pid"
 lockfile="/var/lock/subsys/bridge-intake"
 
 # env vars for spring
-export SPRING_CONFIG_LOCATION="/etc/chronopolis/"
 export SPRING_PID_FILE="$pidfile"
+export SPRING_CONFIG_LOCATION="$INTAKE_DIR/"
 
 start(){
     # check user exists

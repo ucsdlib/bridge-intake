@@ -31,17 +31,16 @@ systemctl disable bridge-intake
 %install
 
 %__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{service}"
-%__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{_prefix}/%{jar}"
-%__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{_prefix}/%{yaml}"
+%__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
+%__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
 
 %__install -d "%{buildroot}/var/log/chronopolis"
 
 %files
 
 %defattr(-,root,root)
-
 %dir %{_prefix}
-%config %attr(0755,-,-) /var/log/chronopolis
+%dir %attr(0755,-,-) /var/log/chronopolis
 
 %{service}
 %{_prefix}/%{jar}

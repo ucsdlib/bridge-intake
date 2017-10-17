@@ -31,6 +31,7 @@ duracloud:
     endpoint: http://localhost:8080/
 
 spring.profiles.active: develop
+spring.pid.file: /var/run/bridge-intake.pid
 
 disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu

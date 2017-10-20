@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -16,7 +17,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import retrofit2.Call;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -63,6 +67,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
         Bag bag = BagConverter.toBagModel(createChronBag());
         BagReceipt receipt = receipt();
         when(generator.bags()).thenReturn(bags);
+        when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
+                .thenReturn(getNoBag());
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
 
         IngestRequest request = request(receipt, data.depositor(), ".tar");
@@ -86,6 +92,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
         BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
         when(generator.bags()).thenReturn(bags);
+        when(bags.get(eq(ImmutableMap.of("depositor", prefix + data.depositor(), "name", receipt.getName()))))
+                .thenReturn(getNoBag());
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
 
         String depositor = prefix + data.depositor();
@@ -106,6 +114,24 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.getChron().setPrefix("");
     }
 
+    @Test
+    public void withBagExists() {
+        settings.setPushDPN(false);
+        Bag bag = BagConverter.toBagModel(createChronBag());
+        BagReceipt receipt = receipt();
+        when(generator.bags()).thenReturn(bags);
+        when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
+                .thenReturn(getBagExists(bag));
+
+        verify(factory, times(0)).supplier(any(Path.class), any(Path.class), anyString(), anyString());
+        verify(supplier, times(0)).get();
+        verify(bags, times(0)).deposit(any(IngestRequest.class));
+    }
+
+    private Call<PageImpl<Bag>> getNoBag() {
+        return new CallWrapper<>(new PageImpl<Bag>(ImmutableList.of()));
+    }
+
     private IngestRequest request(BagReceipt receipt, String depostior, String fileType) {
         String bag = fileType == null ? receipt.getName() : receipt.getName() + fileType;
         Path location = Paths.get(stagingProperties.getPosix().getPath(), data.depositor(), bag);
@@ -122,4 +148,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
         return request;
     }
 
+    public Call<PageImpl<Bag>> getBagExists(Bag bag) {
+        return new CallWrapper<>(new PageImpl<Bag>(ImmutableList.of(bag)));
+    }
 }

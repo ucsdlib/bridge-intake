@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
@@ -21,6 +22,7 @@ import org.chronopolis.rest.models.storage.FixityCreate;
 import org.chronopolis.rest.service.IngestRequestSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageImpl;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -82,19 +85,32 @@ public class ChronopolisIngest implements Runnable {
 
     private BagReceipt chronopolis(BagReceipt receipt) {
         Chron chronSettings = settings.getChron();
+        String name = receipt.getName();
         String prefix = chronSettings.getPrefix();
         String depositor = Strings.isNullOrEmpty(prefix) ? data.depositor() : prefix + data.depositor();
 
         // I'm sure there's a better way to handle this... but for now this should be ok
-        String bag = settings.pushDPN() ? receipt.getName() + ".tar" : receipt.getName();
+        String bag = settings.pushDPN() ? name + ".tar" : name;
         Path stage = Paths.get(stagingProperties.getPosix().getPath());
         Path location = stage.resolve(data.depositor()).resolve(bag);
 
-        log.info("[{}] Building ingest request for chronopolis", receipt.getName());
-        log.info("[depositor, {}]", depositor);
-        IngestRequestSupplier supplier = factory.supplier(location, stage, depositor, receipt.getName());
-        supplier.get().ifPresent(this::pushRequest);
+        Optional<PageImpl<Bag>> bagPage = getBag(depositor, name);
+        Boolean create = bagPage.map(page -> page.getTotalElements() == 0)
+                .orElse(false);
+        if (create) {
+            log.info("[{}] Building ingest request for chronopolis", name);
+            log.info("[depositor, {}]", depositor);
+            IngestRequestSupplier supplier = factory.supplier(location, stage, depositor, name);
+            supplier.get().ifPresent(this::pushRequest);
+        }
         return receipt;
+    }
+
+    private Optional<PageImpl<Bag>> getBag(String depositor, String name) {
+        SimpleCallback<PageImpl<Bag>> cb = new SimpleCallback<>();
+        Call<PageImpl<Bag>> call = bags.get(ImmutableMap.of("depositor", depositor, "name", name));
+        call.enqueue(cb);
+        return cb.getResponse();
     }
 
     private void pushRequest(IngestRequest ingestRequest) {

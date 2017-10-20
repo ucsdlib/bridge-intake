@@ -13,8 +13,8 @@ public class Chron {
 
     /**
      * Name of the local chronopolis user
-     */
     private String node;
+     */
 
     /**
      * Prefix to use when pushing to chronopolis
@@ -26,6 +26,7 @@ public class Chron {
      */
     private List<String> replicatingTo;
 
+    /*
     public String getNode() {
         return node;
     }
@@ -34,6 +35,7 @@ public class Chron {
         this.node = node;
         return this;
     }
+    */
 
     public List<String> getReplicatingTo() {
         return replicatingTo;

@@ -299,7 +299,7 @@ public class DpnReplicationTest extends BatchTestBase {
     private Replication createReplication(String to) {
         // Fill out the rest of the replication?
         Replication r = new Replication();
-        r.setFromNode(settings.getChron().getNode());
+        r.setFromNode(settings.getDpn().getUsername());
         r.setToNode(to);
         return r;
     }

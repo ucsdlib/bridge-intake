@@ -6,6 +6,8 @@ import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
+import org.chronopolis.bag.metrics.Metric;
+import org.chronopolis.bag.metrics.WriteMetrics;
 import org.chronopolis.bag.packager.DirectoryPackager;
 import org.chronopolis.bag.packager.TarPackager;
 import org.chronopolis.bag.partitioner.Bagger;
@@ -13,11 +15,12 @@ import org.chronopolis.bag.partitioner.BaggingResult;
 import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteResult;
+import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.common.storage.Posix;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
@@ -58,6 +61,7 @@ public class BaggingTasklet implements Tasklet {
     private String depositor;
     private IntakeSettings settings;
     private BagProperties bagProperties;
+    private BagStagingProperties stagingProperties;
 
     private BridgeAPI bridge;
     private Notifier notifier;
@@ -66,23 +70,25 @@ public class BaggingTasklet implements Tasklet {
                           String depositor,
                           IntakeSettings settings,
                           BagProperties bagProperties,
+                          BagStagingProperties stagingProperties,
                           BridgeAPI bridge,
                           Notifier notifier) {
         this.snapshotId = snapshotId;
         this.depositor = depositor;
         this.settings = settings;
         this.bagProperties = bagProperties;
+        this.stagingProperties = stagingProperties;
         this.bridge = bridge;
         this.notifier = notifier;
     }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
-        Chron chron = settings.getChron();
         Duracloud dc = settings.getDuracloud();
+        Posix posix = stagingProperties.getPosix();
 
         Path duraBase = Paths.get(dc.getSnapshots());
-        Path out = Paths.get(chron.getBags(), depositor);
+        Path out = Paths.get(posix.getPath(), depositor);
         Path snapshotBase = duraBase.resolve(snapshotId);
         String manifestName = dc.getManifest();
 
@@ -148,6 +154,7 @@ public class BaggingTasklet implements Tasklet {
         BaggingHistory history = new BaggingHistory(snapshotId, false);
         // we could filter -> map -> consume instead
         results.stream().filter(WriteResult::isSuccess)
+                .peek(this::captureMetrics)
                 .map(w -> new BagReceipt()
                         .setName(w.getBag().getName())
                         .setReceipt(w.getReceipt()))
@@ -164,6 +171,24 @@ public class BaggingTasklet implements Tasklet {
                     + " succeeded";
             notifier.notify(String.format(TITLE, snapshotId), message);
         }
+    }
+
+    private void captureMetrics(WriteResult result) {
+        Logger logger = LoggerFactory.getLogger("metrics");
+        WriteMetrics metrics = result.getMetrics();
+        String bag = result.getBag().getName();
+        logMetric(logger, bag, "bag", metrics.getBag());
+        logMetric(logger, bag, "manifest", metrics.getManifest());
+        logMetric(logger, bag, "tagmanifest", metrics.getTagmanifest());
+        logMetric(logger, bag, "payload", metrics.getPayload());
+        metrics.getPayloadFiles()
+               .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
+        metrics.getExtraTags()
+                .forEach(metric -> logMetric(logger, bag, "tag-file", metric));
+    }
+
+    private void logMetric(Logger log, String bag, String type, Metric metric) {
+        log.info("{},{},{},{},{}", bag, type, metric.getElapsed(), metric.getFilesWritten(), metric.getBytesWritten());
     }
 
     /**

@@ -90,7 +90,7 @@ public class DpnReplicationTest extends BatchTestBase {
                 .collect(Collectors.toList());
 
         dpn = new LocalAPI();
-        tasklet = new DpnReplication(data, receipts, weights, dpn, settings);
+        tasklet = new DpnReplication(data, receipts, weights, dpn, settings, stagingProperties);
         MockitoAnnotations.initMocks(this);
 
         dpn.setBagAPI(bags)
@@ -299,7 +299,7 @@ public class DpnReplicationTest extends BatchTestBase {
     private Replication createReplication(String to) {
         // Fill out the rest of the replication?
         Replication r = new Replication();
-        r.setFromNode(settings.getChron().getNode());
+        r.setFromNode(settings.getDpn().getUsername());
         r.setToNode(to);
         return r;
     }

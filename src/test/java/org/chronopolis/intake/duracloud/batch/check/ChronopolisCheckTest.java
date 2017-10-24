@@ -8,7 +8,8 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
-import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -33,36 +34,40 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
     @Mock private BridgeAPI bridge;
-    @Mock private IngestAPI ingest;
+    @Mock private BagService bagService;
+    @Mock private ServiceGenerator generator;
 
     private ChronopolisCheck check;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        check = new ChronopolisCheck(data(), receipts(), bridge, ingest);
     }
 
     @Test
     public void testCompleteSnapshot() {
-        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
+        when(generator.bags()).thenReturn(bagService);
+        when(bagService.get(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
                 (ImmutableList.of(toBagModel(createChronBagFullReplications())))));
         when(bridge.postHistory(any(String.class), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
+        check = new ChronopolisCheck(data(), receipts(), bridge,  generator);
         check.run();
-        verify(ingest, times(2)).getBags(any(Map.class));
+        verify(bagService, times(2)).get(any(Map.class));
         verify(bridge, times(3)).postHistory(any(String.class), any(History.class));
         verify(bridge, times(1)).completeSnapshot(any(String.class), any(AlternateIds.class));
     }
 
     @Test
     public void testIncompleteSnapshot() {
-        when(ingest.getBags(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
+        when(generator.bags()).thenReturn(bagService);
+        when(bagService.get(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
                 (ImmutableList.of(toBagModel(createChronBagPartialReplications())))));
 
+        check = new ChronopolisCheck(data(), receipts(), bridge,  generator);
         check.run();
-        verify(ingest, times(2)).getBags(any(Map.class));
+        verify(bagService, times(2)).get(any(Map.class));
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));
         verify(bridge, times(0)).completeSnapshot(any(String.class), any(AlternateIds.class));
     }

@@ -1,0 +1,14 @@
+[Unit]
+Description=Chronopolis Intake Service for the Duracloud Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=chronopolis
+Group=chronopolis
+Environment=SPRING_CONFIG_LOCATION=/usr/local/chronopolis/intake/dc/
+ExecStart=/usr/bin/java -jar /usr/local/chronopolis/intake/dc/bridge-intake.jar
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

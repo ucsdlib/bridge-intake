@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.scheduled;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
@@ -44,12 +45,14 @@ public class Bridge {
     private final BridgeAPI bridge;
     private final SnapshotJobManager manager;
     private final IntakeSettings settings;
+    private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge) {
+    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge, BagStagingProperties stagingProperties) {
         this.settings = settings;
         this.manager = manager;
         this.bridge = bridge;
+        this.stagingProperties = stagingProperties;
     }
 
     @Scheduled(cron = "${bridge.poll:0 0 0 * * *}")
@@ -116,7 +119,7 @@ public class Bridge {
                     manager.startSnapshotTasklet(details);
                 } else if (fromJson instanceof BaggingHistory) {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
-                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings);
+                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings, stagingProperties);
                 }
             } else {
                 log.warn("Snapshot {} has no history, ignoring", snapshotId);

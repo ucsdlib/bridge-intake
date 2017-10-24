@@ -5,11 +5,12 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Chron;
+import org.chronopolis.intake.duracloud.config.props.DPN;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,11 +53,11 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
     }
 
     private List<String> loadNode(IntakeSettings settings) {
-        Chron chron = settings.getChron();
+        DPN cfg = settings.getDpn();
         // 5 nodes -> page size of 5
         List<String> nodes;
-        retrofit2.Response<Node> response = null;
-        Call<Node> call = dpn.getNodeAPI().getNode(chron.getNode());
+        Response<Node> response = null;
+        Call<Node> call = dpn.getNodeAPI().getNode(cfg.getUsername());
         try {
             response = call.execute();
         } catch (IOException e) {

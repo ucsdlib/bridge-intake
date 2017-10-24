@@ -3,6 +3,8 @@ package org.chronopolis.intake.duracloud.batch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.common.storage.Posix;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeTransfers;
@@ -14,7 +16,6 @@ import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public class DpnReplication implements Runnable {
     private final String PROTOCOL = "rsync";
     private final String ALGORITHM = "sha256";
 
+    private BagStagingProperties stagingProperties;
     private ReaderFactory readerFactory;
     private IntakeSettings settings;
     private String snapshot;
@@ -77,7 +79,9 @@ public class DpnReplication implements Runnable {
                           List<BagReceipt> receipts,
                           List<Weight> weights,
                           LocalAPI dpn,
-                          IntakeSettings settings) {
+                          IntakeSettings settings,
+                          BagStagingProperties stagingProperties) {
+        this.stagingProperties = stagingProperties;
         this.data = data;
         this.receipts = receipts;
         this.weights = weights;
@@ -135,10 +139,10 @@ public class DpnReplication implements Runnable {
     }
 
     private Call<Replication> call(Bag bag, String to) {
-        Chron chron = settings.getChron();
         BalustradeTransfers transfers = dpn.getTransfersAPI();
 
-        Path save = Paths.get(chron.getBags(), depositor, bag.getUuid() + ".tar");
+        Posix posix = stagingProperties.getPosix();
+        Path save = Paths.get(posix.getPath(), depositor, bag.getUuid() + ".tar");
         String ourNode = dpn.getNode();
 
         Replication replication = new Replication();
@@ -188,9 +192,9 @@ public class DpnReplication implements Runnable {
     private Optional<Bag> createBag(BagReceipt receipt) {
         log.info("Creating bag for receipt {}", receipt.getName());
 
-        Chron chron = settings.getChron();
         String name = receipt.getName();
-        Path save = Paths.get(chron.getBags(), depositor, name + ".tar");
+        Posix posix = stagingProperties.getPosix();
+        Path save = Paths.get(posix.getPath(), depositor, name + ".tar");
 
         Optional<Bag> optional = Optional.empty();
 

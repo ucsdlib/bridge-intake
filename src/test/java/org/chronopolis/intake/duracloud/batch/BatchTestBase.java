@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
+import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -35,6 +36,7 @@ public class BatchTestBase {
     protected final String SNAPSHOT_ID = "test-snapshot-id";
 
     @Autowired IntakeSettings settings;
+    @Autowired BagStagingProperties stagingProperties;
 
     protected BagData data() {
         BagData data = new BagData();

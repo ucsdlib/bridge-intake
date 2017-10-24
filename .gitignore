@@ -1,3 +1,10 @@
 target/
 .idea/
 duracloud-backend.iml
+
+rpm/tmp/
+rpm/RPMS/
+rpm/SRPMS/
+rpm/BUILD/
+rpm/SOURCES/
+rpm/BUILDROOT/

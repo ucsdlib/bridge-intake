@@ -1,10 +1,6 @@
 # General chron configuration
 chron:
   node: chron
-  bags: /export/bags
-  tokens: /export/tokens
-  preservation: /data/preservation
-  restoration: /export/restore
   ingest:
     endpoint: http://localhost:8081/
     username: ingest-admin
@@ -12,6 +8,14 @@ chron:
   replicatingTo:
     - ucsd
     - umiacs
+  stage.bags:
+    posix.path: /export/bags
+    posix.id: 1
+
+ace.ims:
+  port: 8080
+  endpoint: ims.umiacs.umd.edu
+  waitTime: 5000
 
 dpn:
   endpoint: http://localhost:3000/
@@ -27,6 +31,7 @@ duracloud:
     endpoint: http://localhost:8080/
 
 spring.profiles.active: develop
+spring.pid.file: /var/run/bridge-intake.pid
 
 disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu

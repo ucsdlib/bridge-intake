@@ -9,7 +9,8 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +44,14 @@ public class Cleaner {
     private final String SNAPSHOT_FILE = ".collection-snapshot.properties";
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
-    private final IngestAPI ingest;
+    private final BagService bagService;
     private final BalustradeBag registry;
     private final IntakeSettings settings;
     private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Cleaner(IngestAPI ingest, LocalAPI dpn, IntakeSettings settings, BagStagingProperties stagingProperties) {
-        this.ingest = ingest;
+    public Cleaner(ServiceGenerator generator, LocalAPI dpn, IntakeSettings settings, BagStagingProperties stagingProperties) {
+        this.bagService = generator.bags();
         this.registry = dpn.getBagAPI();
         this.settings = settings;
         this.stagingProperties = stagingProperties;
@@ -132,7 +133,7 @@ public class Cleaner {
 
         log.info("Checking {}/{} replication status", parent, name);
 
-        Call<PageImpl<org.chronopolis.rest.models.Bag>> bags = ingest.getBags(ImmutableMap.of(
+        Call<PageImpl<org.chronopolis.rest.models.Bag>> bags = bagService.get(ImmutableMap.of(
                 "name", name.toString(),
                 "depositor", parent.toString()));
         try {

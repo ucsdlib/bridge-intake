@@ -6,7 +6,8 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.mockito.Mock;
@@ -19,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.mockito.Mockito.when;
+
 /**
  * Base class for our other two tests
  *
@@ -26,7 +29,8 @@ import java.nio.file.Paths;
  */
 public class CleanerTest {
     @Mock BridgeAPI bridge;
-    @Mock IngestAPI ingest;
+    @Mock BagService bagService;
+    @Mock ServiceGenerator generator;
     @Mock BalustradeBag bag;
 
     Path tmp;
@@ -49,7 +53,9 @@ public class CleanerTest {
         settings.setCleanerEnabled(true);
         stagingProperties = new BagStagingProperties()
                 .setPosix(new Posix().setPath(tmp.toString()));
-        cleaner = new Cleaner(ingest, localAPI, settings, stagingProperties);
+
+        when(generator.bags()).thenReturn(bagService);
+        cleaner = new Cleaner(generator, localAPI, settings, stagingProperties);
 
         URL resources = ClassLoader.getSystemClassLoader().getResource("");
         bags = Paths.get(resources.toURI()).resolve("bags");

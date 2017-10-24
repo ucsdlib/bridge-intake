@@ -14,7 +14,7 @@ chron:
 
 ace.ims:
   port: 8080
-  endpoint: localhost
+  endpoint: ims.umiacs.umd.edu
   waitTime: 5000
 
 dpn:

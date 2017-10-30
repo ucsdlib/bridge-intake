@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * One day we'll migrate to configuration properties. I swear it.
+ * Configuration settings for the bridge intake service
+ *
+ * todo: supplement from chron-common module where possible
  *
  * Created by shake on 8/1/14.
  */

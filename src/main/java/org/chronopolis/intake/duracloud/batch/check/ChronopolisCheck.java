@@ -5,7 +5,8 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.rest.api.IngestAPI;
+import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +27,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChronopolisCheck extends Checker {
     private final Logger log = LoggerFactory.getLogger(ChronopolisCheck.class);
 
-    private IngestAPI ingest;
+    private BagService bagService;
 
-    public ChronopolisCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, IngestAPI ingest) {
+    public ChronopolisCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, ServiceGenerator generator) {
         super(data, receipts, bridge);
-        this.ingest = ingest;
+        this.bagService = generator.bags();
     }
 
     @Override
@@ -41,7 +42,7 @@ public class ChronopolisCheck extends Checker {
         ImmutableMap<String, Object> params =
                 ImmutableMap.of("depositor", data.depositor(),
                                 "name", receipt.getName());
-        Call<PageImpl<Bag>> bags = ingest.getBags(params);
+        Call<PageImpl<Bag>> bags = bagService.get(params);
         try {
             Response<PageImpl<Bag>> execute = bags.execute();
 

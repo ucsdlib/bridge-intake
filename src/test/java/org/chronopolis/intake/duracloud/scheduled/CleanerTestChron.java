@@ -50,9 +50,9 @@ public class CleanerTestChron extends CleanerTest {
     private Path doChronClean(BagStatus status) throws IOException {
         String uuid = UUID.randomUUID().toString();
         Path bag = Files.createDirectory(tmp.resolve(uuid));
-        when(ingest.getBags(anyMap())).thenReturn(new CallWrapper<>(bag(status)));
+        when(bagService.get(anyMap())).thenReturn(new CallWrapper<>(bag(status)));
         cleaner.chron(bag);
-        verify(ingest, times(1)).getBags(anyMap());
+        verify(bagService, times(1)).get(anyMap());
         return bag;
     }
 

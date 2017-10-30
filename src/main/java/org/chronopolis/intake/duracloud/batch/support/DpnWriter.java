@@ -57,7 +57,7 @@ public class DpnWriter extends SimpleBagWriter {
     }
 
     private WriteResult fromBag(Bag bag) {
-        WriteJob job = new WriteJob(bag, validate, packager);
+        WriteJob job = new WriteJob(bag, true, validate, packager);
         return job.get();
     }
 
@@ -89,6 +89,7 @@ public class DpnWriter extends SimpleBagWriter {
         DpnInfo dpnInfo = new DpnInfo();
 
         // ex: chron://ucsd/some-ucsd-dpn-snapshot/0
+        // todo: BagProperties to set DpnInfo/BagInfo
         String local = "chron://" + depositor + "/" + snapshotId + "/" + b.getNumber();
         dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_NAME, "Sibyl Schaefer")
                .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "sschaefer@uscd.edu")

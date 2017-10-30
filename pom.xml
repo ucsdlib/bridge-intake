@@ -7,15 +7,15 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.1.RELEASE</version>
+        <version>1.5.8.RELEASE</version>
     </parent>
 
     <groupId>org.chronopolis.intake</groupId>
     <artifactId>duracloud-backend</artifactId>
-    <version>1.5.1-RELEASE</version>
+    <version>2.0.0-RELEASE</version>
 
     <properties>
-        <chron.version>1.5.0-RELEASE</chron.version>
+        <chron.version>2.0.1-RELEASE</chron.version>
     </properties>
 
     <build>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.chronopolis</groupId>
             <artifactId>bag-writer</artifactId>
-            <version>1.1.2-RELEASE</version>
+            <version>1.2.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -87,14 +87,15 @@
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>rest-common</artifactId>
+            <artifactId>tokenizer</artifactId>
             <version>${chron.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.chronopolis</groupId>
-            <artifactId>chron-common</artifactId>
-            <version>${chron.version}</version>
+            <artifactId>chron-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -103,15 +104,6 @@
             <version>2.0.0-RELEASE</version>
         </dependency>
 
-        <!--
-        <dependency>
-            <groupId>org.chronopolis.ingest</groupId>
-            <artifactId>bagger</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        -->
-
-        <!-- TODO: Get this in sync with the rest of chron -->
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>retrofit</artifactId>
@@ -129,14 +121,6 @@
             <artifactId>gson</artifactId>
             <version>2.7</version>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-        -->
 
         <dependency>
             <groupId>com.h2database</groupId>

@@ -2,7 +2,7 @@
 
 rpmdir=$PWD
 sources=SOURCES
-finaljar=$sources/bridge-client.jar
+finaljar=$sources/bridge-intake.jar
 retval=0
 
 if [ "$1" = "clean" ]; then
@@ -37,7 +37,7 @@ jarfile=target/duracloud-backend-$version-$release_type.jar
 
 if [ ! -e $jarfile ]; then
     echo "Building latest jar..."
-    mvn -q clean install # > /dev/null
+    mvn -q -Dmaven.test.redirectTestOutputToFile=true clean install # > /dev/null
     if [ $? -ne 0 ]; then
         echo "Error building bridge-client"
         exit
@@ -50,8 +50,10 @@ fi
 # Copy the artifacts
 cp $jarfile rpm/$finaljar
 cp target/classes/application.yml rpm/$sources
-cp src/main/sh/bridge-client.sh rpm/$sources
+cp src/main/sh/bridge-intake.sh rpm/$sources
+cp src/main/sh/bridge-intake.service rpm/$sources
 
 # cd back to where we started and build the rpm
 cd $rpmdir
-rpmbuild -ba --define="_topdir $PWD" --define="_tmppath $PWD/tmp" --define="ver $version" SPECS/bridge.spec
+rpmbuild -ba --define="_topdir $PWD" --define="_tmppath $PWD/tmp" --define="ver $version" SPECS/bridge-el6.spec
+rpmbuild -ba --define="_topdir $PWD" --define="_tmppath $PWD/tmp" --define="ver $version" SPECS/bridge-el7.spec

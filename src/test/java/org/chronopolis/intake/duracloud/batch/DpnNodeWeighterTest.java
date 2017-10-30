@@ -9,7 +9,7 @@ import org.chronopolis.intake.duracloud.batch.support.ExceptingWrapper;
 import org.chronopolis.intake.duracloud.batch.support.NotFoundWrapper;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Chron;
+import org.chronopolis.intake.duracloud.config.props.DPN;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,9 +47,9 @@ public class DpnNodeWeighterTest {
 
         // Setup our settings
         IntakeSettings settings = new IntakeSettings();
-        Chron chron = new Chron();
-        chron.setNode(node);
-        settings.setChron(chron);
+        DPN dpn = new DPN();
+        dpn.setUsername(node);
+        settings.setDpn(dpn);
 
         // And setup the snapshot details
         SnapshotDetails details = new SnapshotDetails();

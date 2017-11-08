@@ -12,6 +12,7 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.DuracloudRequest;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.rest.api.IngestAPIProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -34,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Start a Tasklet based on the type of request that comes in
- *
+ * <p>
  * Created by shake on 7/29/14.
  */
 public class SnapshotJobManager {
@@ -105,8 +106,8 @@ public class SnapshotJobManager {
         log.info("Tasklet {}", baggingTasklet == null);
         Job job = jobBuilderFactory.get("bagging-job")
                 .start(stepBuilderFactory.get("bagging-step")
-                    .tasklet(baggingTasklet)
-                    .build()
+                        .tasklet(baggingTasklet)
+                        .build()
                 ).build();
 
         JobParameters parameters = new JobParametersBuilder()
@@ -129,17 +130,20 @@ public class SnapshotJobManager {
 
     /**
      * Start a standalone ReplicationTasklet
-     *
+     * <p>
      * We do it here just for consistency, even though it's not
      * part of the batch stuff
-     * @param details the details of the snapshot
-     * @param receipts the bag receipts for the snapshot
-     * @param settings the settings for our intake service
+     *
+     * @param details           the details of the snapshot
+     * @param receipts          the bag receipts for the snapshot
+     * @param settings          the settings for our intake service
+     * @param ingestProperties  the properties for chronopolis Ingest API configuration
      * @param stagingProperties the properties defining the bag staging area
      */
     public void startReplicationTasklet(SnapshotDetails details,
                                         List<BagReceipt> receipts,
                                         IntakeSettings settings,
+                                        IngestAPIProperties ingestProperties,
                                         BagStagingProperties stagingProperties) {
         // If we're pushing to dpn, let's make the differences here
         // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
@@ -154,7 +158,7 @@ public class SnapshotJobManager {
         }
 
         Checker check;
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.generator, settings, stagingProperties);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.generator, settings, stagingProperties, ingestProperties);
 
         if (settings.pushDPN()) {
             // todo we could use CompletableFutures to supply the weights and construct a better control flow in general

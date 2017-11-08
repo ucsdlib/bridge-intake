@@ -6,6 +6,7 @@ import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.test.TestApplication;
+import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.entities.Bag;
 import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
@@ -36,6 +37,7 @@ public class BatchTestBase {
     protected final String SNAPSHOT_ID = "test-snapshot-id";
 
     @Autowired IntakeSettings settings;
+    @Autowired IngestAPIProperties ingestProperties;
     @Autowired BagStagingProperties stagingProperties;
 
     protected BagData data() {

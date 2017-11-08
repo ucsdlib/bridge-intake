@@ -57,6 +57,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     @Before
     public void setup() {
         settings.setPushChronopolis(true);
+        ingestProperties.setReplicateTo(ImmutableList.of("test-node"));
         MockitoAnnotations.initMocks(this);
         data = data();
     }
@@ -69,7 +70,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
         when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
                 .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory, ingestProperties);
 
         IngestRequest request = request(receipt, data.depositor(), ".tar");
         when(factory.supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()))).thenReturn(supplier);
@@ -94,7 +95,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
         when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", prefix + data.depositor(), "name", receipt.getName()))))
                 .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory, ingestProperties);
 
         String depositor = prefix + data.depositor();
         IngestRequest request = request(receipt, depositor, null);
@@ -135,7 +136,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     private IngestRequest request(BagReceipt receipt, String depostior, String fileType) {
         String bag = fileType == null ? receipt.getName() : receipt.getName() + fileType;
         Path location = Paths.get(stagingProperties.getPosix().getPath(), data.depositor(), bag);
-        List<String> nodes = settings.getChron().getReplicatingTo();
+        List<String> nodes = ingestProperties.getReplicateTo();
         IngestRequest request = new IngestRequest();
         request.setSize(1L);
         request.setTotalFiles(1L);

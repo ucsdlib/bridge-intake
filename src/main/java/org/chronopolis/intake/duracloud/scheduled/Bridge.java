@@ -18,6 +18,7 @@ import org.chronopolis.intake.duracloud.remote.model.SnapshotStaged;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStagedDeserializer;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStatus;
 import org.chronopolis.intake.duracloud.remote.model.Snapshots;
+import org.chronopolis.rest.api.IngestAPIProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,15 +44,17 @@ public class Bridge {
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
     private final BridgeAPI bridge;
-    private final SnapshotJobManager manager;
     private final IntakeSettings settings;
+    private final SnapshotJobManager manager;
+    private final IngestAPIProperties ingestProperties;
     private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge, BagStagingProperties stagingProperties) {
+    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge, IngestAPIProperties ingestProperties, BagStagingProperties stagingProperties) {
         this.settings = settings;
         this.manager = manager;
         this.bridge = bridge;
+        this.ingestProperties = ingestProperties;
         this.stagingProperties = stagingProperties;
     }
 
@@ -119,7 +122,7 @@ public class Bridge {
                     manager.startSnapshotTasklet(details);
                 } else if (fromJson instanceof BaggingHistory) {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
-                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings, stagingProperties);
+                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings, ingestProperties, stagingProperties);
                 }
             } else {
                 log.warn("Snapshot {} has no history, ignoring", snapshotId);

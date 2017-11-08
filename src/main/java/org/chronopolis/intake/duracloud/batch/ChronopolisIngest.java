@@ -13,6 +13,7 @@ import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
@@ -41,9 +42,10 @@ import java.util.Optional;
 public class ChronopolisIngest implements Runnable {
     private final Logger log = LoggerFactory.getLogger(ChronopolisIngest.class);
 
-    private IntakeSettings settings;
-    private IngestSupplierFactory factory;
-    private BagStagingProperties stagingProperties;
+    private final IntakeSettings settings;
+    private final IngestSupplierFactory factory;
+    private final IngestAPIProperties ingestProperties;
+    private final BagStagingProperties stagingProperties;
 
     private BagData data;
     private List<BagReceipt> receipts;
@@ -55,17 +57,17 @@ public class ChronopolisIngest implements Runnable {
                              List<BagReceipt> receipts,
                              ServiceGenerator generator,
                              IntakeSettings settings,
-                             BagStagingProperties stagingProperties) {
-        this(data, receipts, generator, settings, stagingProperties, new IngestSupplierFactory());
+                             BagStagingProperties stagingProperties, IngestAPIProperties ingestProperties) {
+        this(data, receipts, generator, settings, stagingProperties, new IngestSupplierFactory(), ingestProperties);
     }
 
     @VisibleForTesting
     protected ChronopolisIngest(BagData data,
-                             List<BagReceipt> receipts,
-                             ServiceGenerator generator,
-                             IntakeSettings settings,
-                             BagStagingProperties stagingProperties,
-                             IngestSupplierFactory supplierFactory) {
+                                List<BagReceipt> receipts,
+                                ServiceGenerator generator,
+                                IntakeSettings settings,
+                                BagStagingProperties stagingProperties,
+                                IngestSupplierFactory supplierFactory, IngestAPIProperties ingestProperties) {
         this.data = data;
         this.receipts = receipts;
         this.settings = settings;
@@ -74,6 +76,7 @@ public class ChronopolisIngest implements Runnable {
 
         this.bags = generator.bags();
         this.staging = generator.staging();
+        this.ingestProperties = ingestProperties;
     }
 
     @Override
@@ -114,8 +117,7 @@ public class ChronopolisIngest implements Runnable {
     }
 
     private void pushRequest(IngestRequest ingestRequest) {
-        Chron chronSettings = settings.getChron();
-        List<String> replicatingNodes = chronSettings.getReplicatingTo();
+        List<String> replicatingNodes = ingestProperties.getReplicateTo();
         ingestRequest.setStorageRegion(stagingProperties.getPosix().getId());
         ingestRequest.setRequiredReplications(replicatingNodes.size());
         ingestRequest.setReplicatingNodes(replicatingNodes);

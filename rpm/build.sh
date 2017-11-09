@@ -51,6 +51,7 @@ fi
 cp $jarfile rpm/$finaljar
 cp target/classes/application.yml rpm/$sources
 cp src/main/sh/bridge-intake.sh rpm/$sources
+cp src/main/sh/bridge-prepare.sh rpm/$sources
 cp src/main/sh/bridge-intake.service rpm/$sources
 
 # cd back to where we started and build the rpm

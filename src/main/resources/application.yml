@@ -30,7 +30,6 @@ duracloud:
     password: replace-me
     endpoint: http://localhost:8080/
 
-spring.profiles.active: develop
 spring.pid.file: /var/run/bridge-intake.pid
 
 disableSNI: false
@@ -42,6 +41,8 @@ cleanDryRun: false
 bridge:
   poll: 0 0 0 * * *
 
-logging.level:
-  org.chronopolis: debug
-  org.chronopolis.intake.duracloud.config: trace
+logging:
+  file: /var/log/chronopolis/bridge-intake.log
+  level:
+    org.chronopolis: debug
+    org.chronopolis.intake.duracloud.config: trace

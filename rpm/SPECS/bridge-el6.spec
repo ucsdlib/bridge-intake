@@ -30,13 +30,10 @@ and prepares them for ingestion into DPN/Chronopolis
 %__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
 %__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
 
-%__install -d "%{buildroot}/var/log/chronopolis"
-
 %files
 
 %defattr(-,root,root)
 %dir %{_prefix}
-%dir %attr(0755,-,-) /var/log/chronopolis
 
 %{initsh}
 %{_prefix}/%{jar}
@@ -51,6 +48,9 @@ chkconfig --add bridge-intake
 chkconfig --del bridge-intake
 
 %changelog
+
+* Thu Nov 09 2017 Mike Ritter <shake@umiacs.umd.edu> 2.0.2-20171109
+- Remove /var/log/chronopolis directory creation
 
 * Tue Oct 17 2017 Mike Ritter <shake@umiacs.umd.edu> 1.6.0-20171017
 - Clean up spec and include post/preun/changelog

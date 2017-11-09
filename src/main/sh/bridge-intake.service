@@ -7,6 +7,8 @@ Type=simple
 User=chronopolis
 Group=chronopolis
 Environment=SPRING_CONFIG_LOCATION=/usr/local/chronopolis/intake/dc/
+PermissionsStartOnly=true
+ExecStartPre=/usr/local/chronopolis/intake/dc/bridge-prepare
 ExecStart=/usr/bin/java -jar /usr/local/chronopolis/intake/dc/bridge-intake.jar
 TimeoutSec=300
 

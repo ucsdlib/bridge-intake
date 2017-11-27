@@ -3,6 +3,7 @@ package org.chronopolis.intake.duracloud.batch.check;
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
@@ -36,6 +37,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
     @Mock private BridgeAPI bridge;
     @Mock private BagService bagService;
     @Mock private ServiceGenerator generator;
+    @Mock private Bicarbonate cleaningManager;
 
     private ChronopolisCheck check;
 
@@ -52,7 +54,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(bridge.postHistory(any(String.class), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
-        check = new ChronopolisCheck(data(), receipts(), bridge,  generator);
+        check = new ChronopolisCheck(data(), receipts(), bridge,  generator, cleaningManager);
         check.run();
         verify(bagService, times(2)).get(any(Map.class));
         verify(bridge, times(3)).postHistory(any(String.class), any(History.class));
@@ -65,7 +67,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(bagService.get(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
                 (ImmutableList.of(toBagModel(createChronBagPartialReplications())))));
 
-        check = new ChronopolisCheck(data(), receipts(), bridge,  generator);
+        check = new ChronopolisCheck(data(), receipts(), bridge,  generator, cleaningManager);
         check.run();
         verify(bagService, times(2)).get(any(Map.class));
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));

@@ -7,6 +7,7 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +32,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DpnCheck extends Checker {
     private final Logger log = LoggerFactory.getLogger(DpnCheck.class);
 
-    private BalustradeBag bags;
-    private Events events;
+    private final Events events;
+    private final BalustradeBag bags;
+    private final Bicarbonate cleaningManager;
 
-    public DpnCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, LocalAPI dpn) {
+    public DpnCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, LocalAPI dpn, Bicarbonate cleaningManager) {
         super(data, receipts, bridge);
         this.bags = dpn.getBagAPI();
         this.events = dpn.getEventsAPI();
+        this.cleaningManager = cleaningManager;
     }
 
     @Override
@@ -60,6 +64,9 @@ public class DpnCheck extends Checker {
 
                 if (localAccumulator.get() == 3) {
                     createIngestRecord(bag);
+
+                    // todo: what happens if these fail?
+                    cleaningManager.submit(Paths.get(data.depositor(), bag.getUuid() + ".tar"));
                 }
             }
         } catch (IOException e) {

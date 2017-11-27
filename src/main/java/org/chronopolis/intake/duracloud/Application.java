@@ -5,6 +5,7 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
@@ -46,7 +47,7 @@ import org.springframework.context.annotation.ComponentScan;
 public class Application implements CommandLineRunner {
 
     @Autowired
-    ChronService service;
+    private ChronService service;
 
     public static void main(String[] args) {
         SpringApplication application = new SpringApplication(Application.class);
@@ -60,23 +61,28 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    ErrorLogger logger() {
+    public Bicarbonate bicarbonate(BagStagingProperties stagingProperties) {
+        return new Bicarbonate(stagingProperties);
+    }
+
+    @Bean
+    public ErrorLogger logger() {
         return new ErrorLogger();
     }
 
     @Bean
-    ServiceGenerator generator(IngestAPIProperties properties) {
+    public ServiceGenerator generator(IngestAPIProperties properties) {
         return new IngestGenerator(properties);
     }
 
     @Bean
-    Notifier notifier(IntakeSettings settings) {
+    public Notifier notifier(IntakeSettings settings) {
         return new MailNotifier(settings.getSmtp());
     }
 
     @Bean
     @JobScope
-    BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
+    public BaggingTasklet baggingTasklet(@Value("#{jobParameters[snapshotId]}") String snapshotId,
                                   @Value("#{jobParameters[depositor]}") String depositor,
                                   IntakeSettings settings,
                                   BagProperties properties,
@@ -87,12 +93,12 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean
-    APIHolder holder(ServiceGenerator generator, BridgeAPI bridge, LocalAPI dpn) {
+    public APIHolder holder(ServiceGenerator generator, BridgeAPI bridge, LocalAPI dpn) {
         return new APIHolder(generator, bridge, dpn);
     }
 
     @Bean(destroyMethod = "destroy")
-    SnapshotJobManager snapshotJobManager(JobBuilderFactory jobBuilderFactory,
+    public SnapshotJobManager snapshotJobManager(JobBuilderFactory jobBuilderFactory,
                                           StepBuilderFactory stepBuilderFactory,
                                           JobLauncher jobLauncher,
                                           APIHolder holder,

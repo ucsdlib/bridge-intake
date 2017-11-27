@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class Bicarbonate {
 
-    public final TrackingThreadPoolExecutor<Path> executor;
-    public final BagStagingProperties stagingProperties;
+    private final TrackingThreadPoolExecutor<Path> executor;
+    private final BagStagingProperties stagingProperties;
 
     public Bicarbonate(BagStagingProperties stagingProperties) {
         this.stagingProperties = stagingProperties;

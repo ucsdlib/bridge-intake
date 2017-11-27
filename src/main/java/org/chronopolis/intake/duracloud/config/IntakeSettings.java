@@ -25,16 +25,6 @@ public class IntakeSettings {
     private Duracloud duracloud;
     private Smtp smtp;
 
-   /**
-     * Boolean used to enable cleaner
-     */
-    private Boolean cleanerEnabled = false;
-
-    /**
-     * Boolean used if we want to dry run cleans
-     */
-    private Boolean cleanDryRun = false;
-
     /**
      * Boolean used to push snapshots to DPN
      */
@@ -130,24 +120,6 @@ public class IntakeSettings {
 
     public IntakeSettings setDpn(DPN dpn) {
         this.dpn = dpn;
-        return this;
-    }
-
-    public Boolean isCleanDryRun() {
-        return cleanDryRun;
-    }
-
-    public IntakeSettings setCleanDryRun(Boolean cleanDryRun) {
-        this.cleanDryRun = cleanDryRun;
-        return this;
-    }
-
-    public Boolean isCleanerEnabled() {
-        return cleanerEnabled;
-    }
-
-    public IntakeSettings setCleanerEnabled(Boolean cleanerEnabled) {
-        this.cleanerEnabled = cleanerEnabled;
         return this;
     }
 

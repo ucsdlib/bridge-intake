@@ -17,7 +17,6 @@ import org.chronopolis.rest.api.ErrorLogger;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.IngestGenerator;
 import org.chronopolis.rest.api.ServiceGenerator;
-import org.chronopolis.tokenize.scheduled.TokenTask;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.JobScope;
@@ -42,7 +41,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableBatchProcessing
 @EnableConfigurationProperties({IntakeSettings.class, BagProperties.class, BagStagingProperties.class})
-@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class, TokenTask.class})
+@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
 public class Application implements CommandLineRunner {
 
     @Autowired

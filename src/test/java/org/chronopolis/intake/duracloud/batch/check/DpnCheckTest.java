@@ -9,6 +9,7 @@ import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
@@ -39,6 +40,7 @@ public class DpnCheckTest extends BatchTestBase {
     @Mock private BalustradeTransfers transfers;
     @Mock private BalustradeNode nodes;
     @Mock private BalustradeBag bags;
+    @Mock private Bicarbonate cleaningManager;
 
     // And our test object
     private DpnCheck check;
@@ -56,7 +58,7 @@ public class DpnCheckTest extends BatchTestBase {
         dpn.setBagAPI(bags);
         dpn.setEventsAPI(events);
 
-        check = new DpnCheck(data(), receipts(), bridge, dpn);
+        check = new DpnCheck(data(), receipts(), bridge, dpn, cleaningManager);
     }
 
     @Test

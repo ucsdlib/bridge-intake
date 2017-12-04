@@ -7,6 +7,7 @@ import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
 import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -43,6 +44,7 @@ public class SnapshotJobManager {
 
     // Autowired from the configuration
     private BaggingTasklet baggingTasklet;
+    private Bicarbonate cleaningManager;
 
     private JobBuilderFactory jobBuilderFactory;
     private StepBuilderFactory stepBuilderFactory;
@@ -168,9 +170,9 @@ public class SnapshotJobManager {
             DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings, stagingProperties);
             replication.run();
 
-            check = new DpnCheck(data, receipts, holder.bridge, holder.dpn);
+            check = new DpnCheck(data, receipts, holder.bridge, holder.dpn, cleaningManager);
         } else {
-            check = new ChronopolisCheck(data, receipts, holder.bridge, holder.generator);
+            check = new ChronopolisCheck(data, receipts, holder.bridge, holder.generator, cleaningManager);
         }
 
         // Might tie these to futures, not sure yet. That way we won't block here.

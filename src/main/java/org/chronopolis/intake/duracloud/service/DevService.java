@@ -15,7 +15,6 @@ import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
-import org.chronopolis.intake.duracloud.scheduled.Cleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,16 +46,10 @@ public class DevService implements ChronService {
     private final Logger log = LoggerFactory.getLogger(DevService.class);
 
     private final Bridge bridge;
-    private final Cleaner cleaner;
-    // private final SnapshotJobManager manager;
-    // private final IntakeSettings settings;
 
     @Autowired
-    public DevService(Bridge bridge, Cleaner cleaner) {
+    public DevService(Bridge bridge) {
         this.bridge = bridge;
-        this.cleaner = cleaner;
-        // this.manager = manager;
-        // this.settings = settings;
     }
 
     @Override
@@ -73,7 +66,7 @@ public class DevService implements ChronService {
             } else if ("td".equalsIgnoreCase(input)) {
                 testDpn();
             } else if ("tc".equalsIgnoreCase(input))  {
-                testClean();
+                //
             } else if ("p".equalsIgnoreCase(input) || "b".equalsIgnoreCase(input)) {
                 try {
                     bridge.findSnapshots();
@@ -82,11 +75,6 @@ public class DevService implements ChronService {
                 }
             }
         }
-    }
-
-    private void testClean() {
-        cleaner.cleanDpn();
-        cleaner.cleanChron();
     }
 
     // Test based on some static content

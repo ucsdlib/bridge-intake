@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
 import com.google.common.collect.ImmutableMap;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
@@ -8,6 +9,7 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
+import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
@@ -15,6 +17,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,11 +30,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChronopolisCheck extends Checker {
     private final Logger log = LoggerFactory.getLogger(ChronopolisCheck.class);
 
-    private BagService bagService;
+    private final BagService bagService;
+    private final Bicarbonate cleaningManager;
 
-    public ChronopolisCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, ServiceGenerator generator) {
+    public ChronopolisCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, ServiceGenerator generator, Bicarbonate cleaningManager) {
         super(data, receipts, bridge);
         this.bagService = generator.bags();
+        this.cleaningManager = cleaningManager;
     }
 
     @Override
@@ -59,6 +64,10 @@ public class ChronopolisCheck extends Checker {
                     h.addReceipt(b.getName());
                     history.put(n, h);
                 });
+
+                if (b.getStatus() == BagStatus.PRESERVED) {
+                    cleaningManager.submit(Paths.get(data.depositor(), receipt.getName()));
+                }
             });
         } catch (IOException e) {
             log.error("", e);

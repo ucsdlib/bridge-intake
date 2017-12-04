@@ -26,7 +26,7 @@ and prepares them for ingestion into DPN/Chronopolis
 
 %install
 
-%__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{initsh}"
+%__install -D -m0755 "%{SOURCE0}" "%{buildroot}%{initsh}"
 %__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
 %__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
 

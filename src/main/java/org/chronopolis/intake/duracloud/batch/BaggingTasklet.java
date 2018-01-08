@@ -176,15 +176,17 @@ public class BaggingTasklet implements Tasklet {
     private void captureMetrics(WriteResult result) {
         Logger logger = LoggerFactory.getLogger("metrics");
         WriteMetrics metrics = result.getMetrics();
-        String bag = result.getBag().getName();
-        logMetric(logger, bag, "bag", metrics.getBag());
-        logMetric(logger, bag, "manifest", metrics.getManifest());
-        logMetric(logger, bag, "tagmanifest", metrics.getTagmanifest());
-        logMetric(logger, bag, "payload", metrics.getPayload());
-        metrics.getPayloadFiles()
-               .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
-        metrics.getExtraTags()
-                .forEach(metric -> logMetric(logger, bag, "tag-file", metric));
+        if (metrics != null) {
+            String bag = result.getBag().getName();
+            logMetric(logger, bag, "bag", metrics.getBag());
+            logMetric(logger, bag, "manifest", metrics.getManifest());
+            logMetric(logger, bag, "tagmanifest", metrics.getTagmanifest());
+            logMetric(logger, bag, "payload", metrics.getPayload());
+            metrics.getPayloadFiles()
+                   .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
+            metrics.getExtraTags()
+                    .forEach(metric -> logMetric(logger, bag, "tag-file", metric));
+        }
     }
 
     private void logMetric(Logger log, String bag, String type, Metric metric) {

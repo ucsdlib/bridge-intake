@@ -34,6 +34,7 @@ public class Cleaner implements Runnable {
         String root = stagingProperties.getPosix().getPath();
         Path bag = Paths.get(root).resolve(relative);
 
+        log.info("[{}] Attempting to remove staged content from {}", relative, root);
         try {
             MoreFiles.deleteRecursively(bag);
         } catch (IOException e) {

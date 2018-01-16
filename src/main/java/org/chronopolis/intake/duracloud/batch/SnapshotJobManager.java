@@ -56,12 +56,14 @@ public class SnapshotJobManager {
     // Instantiated per manager
     private ExecutorService executor;
 
-    public SnapshotJobManager(JobBuilderFactory jobBuilderFactory,
+    public SnapshotJobManager(Bicarbonate cleaningManager,
+                              JobBuilderFactory jobBuilderFactory,
                               StepBuilderFactory stepBuilderFactory,
                               JobLauncher jobLauncher,
                               APIHolder holder,
                               BaggingTasklet baggingTasklet,
                               DataCollector collector) {
+        this.cleaningManager = cleaningManager;
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.baggingTasklet = baggingTasklet;

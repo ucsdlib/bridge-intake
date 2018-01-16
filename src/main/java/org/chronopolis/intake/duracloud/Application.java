@@ -97,13 +97,15 @@ public class Application implements CommandLineRunner {
     }
 
     @Bean(destroyMethod = "destroy")
-    public SnapshotJobManager snapshotJobManager(JobBuilderFactory jobBuilderFactory,
+    public SnapshotJobManager snapshotJobManager(Bicarbonate cleaningManager,
+                                          JobBuilderFactory jobBuilderFactory,
                                           StepBuilderFactory stepBuilderFactory,
                                           JobLauncher jobLauncher,
                                           APIHolder holder,
                                           BaggingTasklet baggingTasklet,
                                           IntakeSettings settings) {
-        return new SnapshotJobManager(jobBuilderFactory,
+        return new SnapshotJobManager(cleaningManager,
+                jobBuilderFactory,
                 stepBuilderFactory,
                 jobLauncher,
                 holder,

@@ -70,6 +70,12 @@ public class CleanerTest {
     }
 
     @Test
+    public void cleanDirectoryNotExists() {
+        Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, UUID.randomUUID().toString()), stagingProperties);
+        cleaner.run();
+    }
+
+    @Test
     public void cleanTarball() throws IOException {
         Path depositorLevel = tmp.resolve(TEST_DEPOSITOR);
         Path bag = depositorLevel.resolve(FROM_TAR + ".tar");

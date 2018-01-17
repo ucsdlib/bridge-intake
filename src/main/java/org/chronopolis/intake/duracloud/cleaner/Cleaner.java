@@ -31,12 +31,18 @@ public class Cleaner implements Runnable {
 
     @Override
     public void run() {
+        boolean success = false;
         String root = stagingProperties.getPosix().getPath();
         Path bag = Paths.get(root).resolve(relative);
 
         log.info("[{}] Attempting to remove staged content from {}", relative, root);
         try {
-            MoreFiles.deleteRecursively(bag);
+            if (Files.exists(bag)) {
+                MoreFiles.deleteRecursively(bag);
+                success = true;
+            } else {
+                log.warn("[{}] Bag no longer exists, unable to remove", relative);
+            }
         } catch (IOException e) {
             log.error("[{}] Error removing bag from staging", relative, e);
         }
@@ -44,7 +50,7 @@ public class Cleaner implements Runnable {
         Path parent = bag.getParent();
         try {
             // Sanity check (parent != root) and check that the dir is empty
-            if (!parent.equals(root) && MoreFiles.listFiles(parent).isEmpty()) {
+            if (success && !parent.equals(root) && MoreFiles.listFiles(parent).isEmpty()) {
                 Files.delete(parent);
             }
         } catch (IOException e) {

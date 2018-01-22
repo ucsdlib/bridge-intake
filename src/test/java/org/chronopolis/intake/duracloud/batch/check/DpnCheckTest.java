@@ -10,6 +10,7 @@ import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
+import org.chronopolis.intake.duracloud.cleaner.TrueCleaner;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
@@ -21,14 +22,18 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Tests for DpnCheck
- * TODO: Test IOException
+ *
+ * Tests todo:
+ * - ingest create fail
+ * - cleaning dpn fail
+ * - cleaning chron fail
  *
  * Created by shake on 6/1/16.
  */
@@ -64,8 +69,10 @@ public class DpnCheckTest extends BatchTestBase {
     @Test
     public void testCompleteSnapshot() {
         when(bags.getBag(any(String.class))).thenReturn(new CallWrapper<>(createBagFullReplications()));
-        when(events.getIngests(anyMap())).thenReturn(new CallWrapper(new Response<>()));
+        when(events.getIngests(any())).thenReturn(new CallWrapper<>(new Response<>()));
         when(events.createIngest(any(Ingest.class))).thenReturn(new CallWrapper<>(new Ingest()));
+        when(cleaningManager.cleaner(any())).thenReturn(new TrueCleaner());
+        when(cleaningManager.forChronopolis(anyString(), anyString())).thenReturn(new TrueCleaner());
         when(bridge.postHistory(any(String.class), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class))).thenReturn(new CallWrapper<>(new SnapshotComplete()));
 

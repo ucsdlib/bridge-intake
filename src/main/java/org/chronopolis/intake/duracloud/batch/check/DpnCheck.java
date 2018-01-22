@@ -1,6 +1,8 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.Events;
 import org.chronopolis.earth.api.LocalAPI;
@@ -16,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
-import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -25,7 +27,15 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class validates BagReceipts against the DPN registry
+ * This class checks the DPN Registry in order to retrieve the completed
+ * replications for a Bag (given by its receipt).
+ * <p>
+ * When all replications complete, there are a few operations left to do:
+ * - push ingest records to the DPN Registry (records of when nodes were marked as having stored the Bag)
+ * - remove the Bag from staging
+ * - check the Chronopolis Ingest server to see if the staged data can be removed
+ * <p>
+ * Note that if any of these fail, the accumulator will be reset
  * <p>
  * Created by shake on 6/1/16.
  */
@@ -45,53 +55,63 @@ public class DpnCheck extends Checker {
 
     @Override
     protected void checkReceipts(BagReceipt receipt, BagData data, AtomicInteger accumulator, Map<String, ReplicationHistory> history) {
-        AtomicInteger localAccumulator = new AtomicInteger(0);
         String snapshot = data.snapshotId();
-        Call<Bag> call = bags.getBag(receipt.getName());
-        try {
-            retrofit2.Response<Bag> response = call.execute();
-            if (response.isSuccessful()) {
-                Bag bag = response.body();
+        log.info("[DPN Check] Checking {} for completion", snapshot);
 
-                // Once again, might revisit this
-                bag.getReplicatingNodes().forEach(n -> {
-                    localAccumulator.incrementAndGet();
-                    accumulator.incrementAndGet();
-                    ReplicationHistory h = history.getOrDefault(n, new ReplicationHistory(snapshot, n, false));
-                    h.addReceipt(bag.getUuid());
-                    history.put(n, h);
-                });
+        String uuid = receipt.getName();
+        String depositor = data.depositor();
+        Path dpn = Paths.get(depositor, uuid + ".tar");
 
-                if (localAccumulator.get() == 3) {
-                    createIngestRecord(bag);
+        Call<Bag> call = bags.getBag(uuid);
+        SimpleCallback<Bag> cb = new SimpleCallback<>();
+        call.enqueue(cb);
 
-                    // todo: what happens if these fail?
-                    cleaningManager.submit(Paths.get(data.depositor(), bag.getUuid() + ".tar"));
-                }
-            }
-        } catch (IOException e) {
-            // denote an error
-            log.error("", e);
-            accumulator.set(-1);
+        // not sure how much I like chaining 4 filters together but 
+        List<String> replications = cb.getResponse()
+                .filter(bag -> bag.getReplicatingNodes().size() == 3)
+                .filter(this::ingestRecordExists)
+                .filter(bag -> cleaningManager.cleaner(dpn).call())
+                .filter(bag -> cleaningManager.forChronopolis(depositor, uuid).call())
+                .map(Bag::getReplicatingNodes).orElse(ImmutableList.of());
+
+        for (String node : replications) {
+            accumulator.incrementAndGet();
+            ReplicationHistory h = history.getOrDefault(node,
+                    new ReplicationHistory(snapshot, node, false));
+            h.addReceipt(uuid);
+            history.put(node, h);
         }
+    }
+
+    /**
+     * Check if a ingest record exists for a bag, creating a record if it is not present
+     *
+     * @param bag the bag to retrieve the ingest record of
+     * @return the
+     */
+    private Boolean ingestRecordExists(Bag bag) {
+        log.info("[DPN Check] {} querying for ingest record", bag.getUuid());
+
+        Call<Response<Ingest>> get = events.getIngests(ImmutableMap.of("bag", bag.getUuid()));
+        SimpleCallback<Response<Ingest>> cb = new SimpleCallback<>();
+        get.enqueue(cb);
+
+        // A bit wonky but we need to filter then map or else we can fail to call
+        // createIngestRecord when no record exists
+        return cb.getResponse()
+                .filter(response -> response.getCount() == 1)
+                .map(response -> true)
+                .orElseGet(() -> createIngestRecord(bag));
     }
 
     /**
      * Create an ingest record for a bag
      *
      * @param bag the bag to create an ingest record for
-     * @throws IOException if there is a problem communicating with the dpn server
+     * @return if the record was successfully created
      */
-    private void createIngestRecord(Bag bag) throws IOException {
-        log.info("{} creating ingest record", bag.getUuid());
-
-        // short circuit if we already have an ingest record
-        // todo: might be able to get rid of this and just catch the 409
-        Call<Response<Ingest>> get = events.getIngests(ImmutableMap.of("bag", bag.getUuid()));
-        retrofit2.Response<Response<Ingest>> execute = get.execute();
-        if (execute.isSuccessful() && execute.body().getCount() > 0) {
-            return;
-        }
+    private Boolean createIngestRecord(Bag bag) {
+        log.info("[DPN Check] {} creating ingest record", bag.getUuid());
 
         Ingest record = new Ingest()
                 .setIngestId(UUID.randomUUID().toString())
@@ -101,10 +121,10 @@ public class DpnCheck extends Checker {
                 .setReplicatingNodes(bag.getReplicatingNodes());
 
         Call<Ingest> ingest = events.createIngest(record);
-        retrofit2.Response<Ingest> response = ingest.execute();
-        if (!response.isSuccessful()) {
-            throw new IOException("Could not create ingest record with DPN");
-        }
+        SimpleCallback<Ingest> cb = new SimpleCallback<>();
+        ingest.enqueue(cb);
+
+        return cb.getResponse().isPresent();
     }
 
 }

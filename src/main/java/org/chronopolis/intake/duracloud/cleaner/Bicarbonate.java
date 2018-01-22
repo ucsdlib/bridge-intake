@@ -1,34 +1,60 @@
 package org.chronopolis.intake.duracloud.cleaner;
 
-import org.chronopolis.common.concurrent.TrackingThreadPoolExecutor;
 import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.rest.api.ServiceGenerator;
+import org.chronopolis.rest.models.Bag;
 
 import java.nio.file.Path;
-import java.util.Optional;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.nio.file.Paths;
 
 /**
- * Class to submit Cleaning tasks to.
+ * Class to create different types of {@link Cleaner}s
  *
  * @author shake
  */
 public class Bicarbonate {
 
-    private final TrackingThreadPoolExecutor<Path> executor;
+    private final ServiceGenerator generator;
     private final BagStagingProperties stagingProperties;
 
-    public Bicarbonate(BagStagingProperties stagingProperties) {
+    public Bicarbonate(ServiceGenerator generator, BagStagingProperties stagingProperties) {
+        this.generator = generator;
         this.stagingProperties = stagingProperties;
-        this.executor = new TrackingThreadPoolExecutor<>(1, 2, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
-    public Optional<FutureTask<Path>> submit(Path bag) {
-        return executor.submitIfAvailable(new Cleaner(bag, stagingProperties), bag);
+    /**
+     * Create a {@link Cleaner} to remove a directory from the staging area
+     *
+     * @param relative the relative path to remove
+     * @return the Cleaner
+     */
+    public Cleaner cleaner(Path relative) {
+        return new Cleaner(relative, stagingProperties);
     }
 
-    public void shutdown() {
-        executor.shutdownNow();
+    /**
+     * Create a {@link Cleaner} for removing a bag from Chronopolis staging with a given Bag
+     *
+     * @param bag the bag to remove
+     * @return the ChronopolisCleaner
+     */
+    public Cleaner forChronopolis(Bag bag) {
+        // Note: the bag staging may not exist, so use the depositor and bag name to create the path
+        Path relative = Paths.get(bag.getDepositor(), bag.getName());
+        return new ChronopolisCleaner(relative, stagingProperties, generator, bag);
     }
+
+    /**
+     * Create a {@link Cleaner} for removing a bag from Chronopolis staging given the names of the
+     * depositor and bag
+     *
+     * @param depositor the name of the depositor
+     * @param bag       the name of the bag
+     * @return the ChronopolisCleaner
+     */
+    public Cleaner forChronopolis(String depositor, String bag) {
+        Path relative = Paths.get(depositor, bag);
+        return new ChronopolisCleaner(relative, stagingProperties, generator, depositor, bag);
+    }
+
 }

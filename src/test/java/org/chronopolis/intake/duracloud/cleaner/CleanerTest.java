@@ -42,7 +42,7 @@ public class CleanerTest {
         Files.createFile(bagLevel.resolve(FROM_DIR).resolve(TEST_FILE));
 
         Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_DIR), stagingProperties);
-        cleaner.run();
+        cleaner.call();
 
         Assert.assertTrue(Files.notExists(bagLevel.resolve(TEST_FILE)));
         Assert.assertTrue(Files.notExists(bagLevel));
@@ -60,7 +60,7 @@ public class CleanerTest {
         Files.createDirectories(depositorLevel.resolve(extra));
 
         Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_DIR), stagingProperties);
-        cleaner.run();
+        cleaner.call();
 
         Assert.assertTrue(Files.notExists(bagLevel.resolve(TEST_FILE)));
         Assert.assertTrue(Files.notExists(bagLevel));
@@ -72,7 +72,7 @@ public class CleanerTest {
     @Test
     public void cleanDirectoryNotExists() {
         Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, UUID.randomUUID().toString()), stagingProperties);
-        cleaner.run();
+        cleaner.call();
     }
 
     @Test
@@ -83,7 +83,7 @@ public class CleanerTest {
         Files.createFile(bag);
 
         Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_TAR + ".tar"), stagingProperties);
-        cleaner.run();
+        cleaner.call();
 
         Assert.assertTrue(Files.notExists(bag));
         Assert.assertTrue(Files.notExists(depositorLevel));

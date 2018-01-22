@@ -45,8 +45,12 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
 public class Application implements CommandLineRunner {
 
+    private final ChronService service;
+
     @Autowired
-    private ChronService service;
+    public Application(ChronService service) {
+        this.service = service;
+    }
 
     public static void main(String[] args) {
         SpringApplication application = new SpringApplication(Application.class);
@@ -55,13 +59,13 @@ public class Application implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... strings) throws Exception {
+    public void run(String... strings) {
         service.run();
     }
 
     @Bean
-    public Bicarbonate bicarbonate(BagStagingProperties stagingProperties) {
-        return new Bicarbonate(stagingProperties);
+    public Bicarbonate bicarbonate(ServiceGenerator generator, BagStagingProperties stagingProperties) {
+        return new Bicarbonate(generator, stagingProperties);
     }
 
     @Bean

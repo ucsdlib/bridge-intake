@@ -1,15 +1,16 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.test.TestApplication;
 import org.chronopolis.rest.api.IngestAPIProperties;
-import org.chronopolis.rest.entities.Bag;
-import org.chronopolis.rest.entities.BagDistribution;
 import org.chronopolis.rest.entities.Node;
+import org.chronopolis.rest.models.Bag;
+import org.chronopolis.rest.models.BagStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -60,42 +61,38 @@ public class BatchTestBase {
         return ImmutableList.of(receipt(), receipt());
     }
 
-    // TODO: Split these further? ChronBase // DpnBase
-
     // Chronopolis Entities
     protected Node createChronNode() {
         return new Node(UUID.randomUUID().toString(), UUID.randomUUID().toString());
     }
 
     protected Bag createChronBag() {
-        Bag b = new Bag(NAME, DEPOSITOR);
-        b.setId(UUID.randomUUID().getMostSignificantBits());
+        Bag b = new Bag();
+        b.setName(NAME)
+         .setDepositor(DEPOSITOR)
+         .setStatus(BagStatus.REPLICATING)
+         .setId(UUID.randomUUID().getMostSignificantBits());
         return b;
     }
 
     protected Bag createChronBagPartialReplications() {
         Bag b = createChronBag();
-        b.addDistribution(createDistribution(b));
+        b.setReplicatingNodes(ImmutableSet.of(UUID.randomUUID().toString()));
         return b;
     }
 
     protected Bag createChronBagFullReplications() {
         Bag b = createChronBag();
-        b.addDistribution(createDistribution(b));
-        b.addDistribution(createDistribution(b));
-        b.addDistribution(createDistribution(b));
+        b.setStatus(BagStatus.PRESERVED);
+        b.setReplicatingNodes(ImmutableSet.of(
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString()));
         return b;
     }
 
-    protected BagDistribution createDistribution(Bag b) {
-        BagDistribution dist = new BagDistribution();
-        dist.setBag(b);
-        dist.setNode(createChronNode());
-        dist.setStatus(BagDistribution.BagDistributionStatus.REPLICATE);
-        return dist;
-    }
-
     // DPN Entities
+    // todo: move these somewhere else... maybe a DPNTestRoot
     protected org.chronopolis.earth.models.Bag createBagNoReplications() {
         org.chronopolis.earth.models.Bag b = new org.chronopolis.earth.models.Bag();
         b.setUuid(UUID.randomUUID().toString());
@@ -126,7 +123,5 @@ public class BatchTestBase {
         b.setReplicatingNodes(ImmutableList.of("test-repl-1"));
         return b;
     }
-
-    // Subclasses to wrap our http calls
 
 }

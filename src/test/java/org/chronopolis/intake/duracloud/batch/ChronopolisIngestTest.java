@@ -11,7 +11,6 @@ import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
 import org.chronopolis.rest.service.IngestRequestSupplier;
-import org.chronopolis.rest.support.BagConverter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,7 +64,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     @Test
     public void withoutPrefix() throws Exception {
         settings.setPushDPN(true);
-        Bag bag = BagConverter.toBagModel(createChronBag());
+        Bag bag = createChronBag();
         BagReceipt receipt = receipt();
         when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
@@ -89,7 +88,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     @Test
     public void withPrefix() throws Exception {
         settings.setPushDPN(false);
-        Bag bag = BagConverter.toBagModel(createChronBag());
+        Bag bag = createChronBag();
         BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
         when(generator.bags()).thenReturn(bags);
@@ -118,7 +117,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     @Test
     public void withBagExists() {
         settings.setPushDPN(false);
-        Bag bag = BagConverter.toBagModel(createChronBag());
+        Bag bag = createChronBag();
         BagReceipt receipt = receipt();
         when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))

@@ -126,7 +126,7 @@ public class ChronopolisCleaner extends Cleaner {
         call.enqueue(callback);
 
         return callback.getResponse()
-                .filter(response -> response.getSize() == 1)           // make sure we're only operating on the bag we expect
+                .filter(response -> response.getTotalElements() == 1)           // make sure we're only operating on the bag we expect
                 .map(response -> response.getContent().get(0))         // pop the head
                 .filter(bag -> bag.getStatus() == BagStatus.PRESERVED) // only continue if the bag is preserved
                 .map(bag -> rm(full) && deactivate(bag)).orElse(false);

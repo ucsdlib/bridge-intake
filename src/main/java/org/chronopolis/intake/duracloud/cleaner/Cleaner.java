@@ -56,17 +56,17 @@ public class Cleaner implements Callable<Boolean> {
      * @return whether that path was successfully removed
      */
     protected boolean rm(Path path) {
-        boolean success = false;
+        boolean success = true;
         try {
             log.info("[Cleaner] Attempting to remove {}", path);
             if (Files.exists(path)) {
                 MoreFiles.deleteRecursively(path);
-                success = true;
             } else {
                 log.warn("[Cleaner] {} no longer exists, unable to remove", path);
             }
         } catch (IOException e) {
             log.error("[Cleaner] Error removing {} from staging", path, e);
+            success = false;
         }
         return success;
     }

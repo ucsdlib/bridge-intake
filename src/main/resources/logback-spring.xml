@@ -2,7 +2,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
-    <springProfile name="production">
+    <springProfile name="default">
         <property name="TOKENIZER_LOG_FILENAME" value="/var/log/chronopolis/tokenizer.log"/>
 
         <appender name="TOKENIZER_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">

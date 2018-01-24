@@ -59,10 +59,7 @@ public class ChronopolisCheck extends Checker {
         SimpleCallback<PageImpl<Bag>> cb = new SimpleCallback<>();
         bags.enqueue(cb);
         Set<String> replicatingNodes = cb.getResponse()
-                .filter(page -> {
-                    log.info("pte {} pne {}", page.getTotalElements(), page.getNumberOfElements());
-                    return page.getTotalElements() == 1;
-                })   // filter on having one element
+                .filter(page -> page.getTotalElements() == 1)   // filter on having one element
                 .map(page -> page.getContent().get(0)) // get the head
                 .filter(bag -> bag.getStatus() == BagStatus.PRESERVED)
                 .filter(bag -> cleaningManager.forChronopolis(bag).call()) // attempt to clean

@@ -73,8 +73,8 @@ public class ChronopolisCleaner extends Cleaner {
     public ChronopolisCleaner(Path relative,
                               BagStagingProperties properties,
                               ServiceGenerator generator,
-                              String name,
-                              String depositor) {
+                              String depositor,
+                              String name) {
         super(relative, properties);
         if (name == null || depositor == null) {
             throw new IllegalArgumentException("Depositor and Bag Name are not allowed to be null");
@@ -126,10 +126,26 @@ public class ChronopolisCleaner extends Cleaner {
         call.enqueue(callback);
 
         return callback.getResponse()
-                .filter(response -> response.getTotalElements() == 1)           // make sure we're only operating on the bag we expect
+                .filter(this::checkResponse)  // make sure we're only operating on the bag we expect
                 .map(response -> response.getContent().get(0))         // pop the head
-                .filter(bag -> bag.getStatus() == BagStatus.PRESERVED) // only continue if the bag is preserved
+                .filter(this::checkPreserved) // only continue if the bag is preserved
                 .map(bag -> rm(full) && deactivate(bag)).orElse(false);
+    }
+
+    private boolean checkPreserved(Bag bag) {
+        boolean preserved = bag.getStatus() == BagStatus.PRESERVED;
+        if (!preserved) {
+            log.warn("[Cleaner] Unable to continue, status is {}", bag.getStatus());
+        }
+        return preserved;
+    }
+
+    private boolean checkResponse(PageImpl<Bag> bags) {
+        boolean one = bags.getTotalElements() == 1;
+        if (!one) {
+            log.warn("[Cleaner] Unable to query for {}::{}", depositor, bag);
+        }
+        return one;
     }
 
 

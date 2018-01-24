@@ -95,7 +95,7 @@ public class ChronopolisCleanerTest {
         when(GENERATOR.staging().toggleStorage(eq(bag.getId()), eq("BAG"), eq(TOGGLE)))
                 .thenReturn(new CallWrapper<>(INACTIVE_STORAGE));
 
-        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, BAG_NAME, DEPOSITOR);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertTrue(clean);
@@ -112,7 +112,7 @@ public class ChronopolisCleanerTest {
         when(GENERATOR.staging().toggleStorage(eq(bag.getId()), eq("BAG"), eq(TOGGLE)))
                 .thenReturn(new CallWrapper<>(ACTIVE_STORAGE));
 
-        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, BAG_NAME, DEPOSITOR);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);
@@ -126,7 +126,7 @@ public class ChronopolisCleanerTest {
                 new PageImpl<>(ImmutableList.of(bag, bag)));
         when(GENERATOR.bags().get(PARAMS)).thenReturn(wrapper);
 
-        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, BAG_NAME, DEPOSITOR);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);
@@ -141,7 +141,7 @@ public class ChronopolisCleanerTest {
                 new PageImpl<>(ImmutableList.of(bag)));
         when(GENERATOR.bags().get(PARAMS)).thenReturn(wrapper);
 
-        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, BAG_NAME, DEPOSITOR);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, properties, GENERATOR, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);

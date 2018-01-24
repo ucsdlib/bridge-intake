@@ -19,7 +19,7 @@
             </triggeringPolicy>
         </appender>
 
-        <logger name="access-log" level="INFO" additivity="false">
+        <logger name="tokenizer-log" level="INFO" additivity="false">
             <appender-ref ref="TOKENIZER_LOG"/>
         </logger>
     </springProfile>

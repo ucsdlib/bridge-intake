@@ -9,15 +9,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.Callable;
 
 /**
  * Class to remove data under a directory
  *
- * todo: return the status of the deletion? anyway to tell progress? log it?
- *
  * @author shake
  */
-public class Cleaner implements Runnable {
+public class Cleaner implements Callable<Boolean> {
 
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
@@ -30,31 +29,45 @@ public class Cleaner implements Runnable {
     }
 
     @Override
-    public void run() {
-        boolean success = false;
+    public Boolean call() {
         String root = stagingProperties.getPosix().getPath();
         Path bag = Paths.get(root).resolve(relative);
 
-        log.info("[{}] Attempting to remove staged content from {}", relative, root);
-        try {
-            if (Files.exists(bag)) {
-                MoreFiles.deleteRecursively(bag);
-                success = true;
-            } else {
-                log.warn("[{}] Bag no longer exists, unable to remove", relative);
-            }
-        } catch (IOException e) {
-            log.error("[{}] Error removing bag from staging", relative, e);
-        }
+        boolean success = rm(bag);
 
-        Path parent = bag.getParent();
         try {
+            Path parent = bag.getParent();
             // Sanity check (parent != root) and check that the dir is empty
-            if (success && !parent.equals(root) && MoreFiles.listFiles(parent).isEmpty()) {
+            if (success && !parent.toString().equals(root) &&
+                    MoreFiles.listFiles(parent).isEmpty()) {
                 Files.delete(parent);
             }
         } catch (IOException e) {
             log.error("[{}] Error removing parent directory", relative, e);
         }
+
+        return success;
+    }
+
+    /**
+     * Helper to remove a file or directory given by a full path.
+     *
+     * @param path the full path of the object to remove
+     * @return whether that path was successfully removed
+     */
+    protected boolean rm(Path path) {
+        boolean success = true;
+        try {
+            log.info("[Cleaner] Attempting to remove {}", path);
+            if (Files.exists(path)) {
+                MoreFiles.deleteRecursively(path);
+            } else {
+                log.warn("[Cleaner] {} no longer exists, unable to remove", path);
+            }
+        } catch (IOException e) {
+            log.error("[Cleaner] Error removing {} from staging", path, e);
+            success = false;
+        }
+        return success;
     }
 }

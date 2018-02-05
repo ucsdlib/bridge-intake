@@ -155,13 +155,18 @@ public class ChronopolisCleaner extends Cleaner {
      * @param bag the bag to deactivate storage for
      */
     private boolean deactivate(Bag bag) {
-        log.info("[Cleaner] Deactivating storage for {} {}", bag.getDepositor(), bag.getName());
-        SimpleCallback<StagingStorageModel> stagingCB = new SimpleCallback<>();
-        Call<StagingStorageModel> call = generator.staging()
-                .toggleStorage(bag.getId(), "BAG", new ActiveToggle(false));
-        call.enqueue(stagingCB);
-        return stagingCB.getResponse()
-                .map(staging -> !staging.isActive()) // make sure the staging model is NOT active
-                .orElse(false);
+        boolean deactivated = true;
+        if (bag.getBagStorage() != null) {
+            log.info("[Cleaner] Deactivating storage for {} {}", bag.getDepositor(), bag.getName());
+            SimpleCallback<StagingStorageModel> stagingCB = new SimpleCallback<>();
+            Call<StagingStorageModel> call = generator.staging()
+                    .toggleStorage(bag.getId(), "BAG", new ActiveToggle(false));
+            call.enqueue(stagingCB);
+            deactivated = stagingCB.getResponse()
+                    .map(staging -> !staging.isActive()) // make sure the staging model is NOT active
+                    .orElse(false);
+        }
+
+        return deactivated;
     }
 }

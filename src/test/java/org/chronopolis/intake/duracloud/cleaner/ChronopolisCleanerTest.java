@@ -59,6 +59,9 @@ public class ChronopolisCleanerTest {
                 .setId(1L)
                 .setName(BAG_NAME)
                 .setDepositor(DEPOSITOR)
+                .setBagStorage(new StagingStorageModel()
+                        .setActive(true)
+                        .setPath(BAG_NAME + DEPOSITOR))
                 .setStatus(BagStatus.PRESERVED);
 
         Path tmp = Files.createTempDirectory("cleanertest");

@@ -14,6 +14,7 @@ import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +47,12 @@ public class DevService implements ChronService {
     private final Logger log = LoggerFactory.getLogger(DevService.class);
 
     private final Bridge bridge;
+    private final BagProperties bagProperties;
 
     @Autowired
-    public DevService(Bridge bridge) {
+    public DevService(Bridge bridge, BagProperties bagProperties) {
         this.bridge = bridge;
+        this.bagProperties = bagProperties;
     }
 
     @Override
@@ -78,6 +81,7 @@ public class DevService implements ChronService {
     }
 
     // Test based on some static content
+    // really should clean this up one day
     private void testBag() {
         System.out.println("Enter snapshot id for snapshot to bag");
         Path snapshotBase = Paths.get("/export/gluster/test-bags/tufts_1106_ms208-mobius_2017-01-10-15-55-24");
@@ -111,7 +115,9 @@ public class DevService implements ChronService {
 
         BaggingResult partition = bagger.partition();
 
-        BagWriter writer = new DpnWriter("tufts", "tufts_1106_ms208-mobius_2017-01-10-15-55-24")
+        String depositor = "tufts";
+        String snapshotId = "tufts_1106_ms208-mobius_2017-01-10-15-55-24";
+        BagWriter writer = new DpnWriter(depositor, snapshotId, bagProperties)
                 .withPackager(new TarPackager(Paths.get("/export/gluster/test-bags/tufts-test")));
         partition.getBags().forEach(b ->
                 log.info("{} -> ({} Files, {} Size)",
@@ -121,15 +127,6 @@ public class DevService implements ChronService {
 
         log.info("{}", Charset.defaultCharset());
 
-        /*
-        SnapshotDetails details = new SnapshotDetails();
-        details.setSnapshotId(snapshotId);
-        try {
-            manager.startSnapshotTasklet(details);
-        } catch (Exception e) {
-            log.warn("Error testing", e);
-        }
-        */
     }
 
     private void printInfo(WriteResult writeResult) {

@@ -50,7 +50,11 @@ public class Bridge {
     private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Bridge(IntakeSettings settings, SnapshotJobManager manager, BridgeAPI bridge, IngestAPIProperties ingestProperties, BagStagingProperties stagingProperties) {
+    public Bridge(IntakeSettings settings,
+                  SnapshotJobManager manager,
+                  BridgeAPI bridge,
+                  IngestAPIProperties ingestProperties,
+                  BagStagingProperties stagingProperties) {
         this.settings = settings;
         this.manager = manager;
         this.bridge = bridge;

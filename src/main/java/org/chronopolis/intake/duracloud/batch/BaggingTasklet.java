@@ -231,7 +231,7 @@ public class BaggingTasklet implements Tasklet {
      * @return the DpnWriter
      */
     private BagWriter buildDpnWriter(Path out) {
-        return new DpnWriter(depositor, snapshotId)
+        return new DpnWriter(depositor, snapshotId, bagProperties)
                 .validate(true)
                 .withPackager(new TarPackager(out));
     }

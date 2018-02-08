@@ -45,6 +45,13 @@ public abstract class Checker implements Runnable {
         AtomicInteger accumulator = new AtomicInteger(0);
 
 
+        /*
+           Trying to come up with some ideas on how to rearrange this... what if...
+           - instead of an AtomicInteger accumulator we use a CompletableFuture
+           - Map each receipt to a CF
+           - CFs should return a Map<String, ReplicationHistory>
+           - Same idea toward the end - check total replications wanted against how many history items we have
+         */
         // Might revisit this but for now it seems ok
         receipts.forEach(r -> {
             alternates.addAlternateId(r.getName());

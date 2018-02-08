@@ -51,12 +51,12 @@ public class DPNConfig {
     private final Logger log = LoggerFactory.getLogger(DPNConfig.class);
 
     @Bean
-    ErrorLogger logger() {
+    public ErrorLogger logger() {
         return new ErrorLogger();
     }
 
     @Bean
-    Optional<String> checkSNI(IntakeSettings settings) throws GeneralSecurityException {
+    public Optional<String> checkSNI(IntakeSettings settings) throws GeneralSecurityException {
         if (settings.getDisableSNI()) {
             log.info("Disabling SNI");
             System.setProperty("jsse.enableSNIExtension", "false");
@@ -87,7 +87,7 @@ public class DPNConfig {
     }
 
     @Bean
-    BridgeAPI bridgeAPI(IntakeSettings settings) {
+    public BridgeAPI bridgeAPI(IntakeSettings settings) {
         Bridge bridge = settings.getDuracloud().getBridge();
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(History.class, new HistorySerializer())
@@ -114,7 +114,7 @@ public class DPNConfig {
     }
 
     @Bean
-    LocalAPI localAPI(IntakeSettings settings) {
+    public LocalAPI localAPI(IntakeSettings settings) {
         String endpoint = settings.getDpn().getEndpoint();
 
         if (!endpoint.endsWith("/")) {

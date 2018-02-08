@@ -1,6 +1,9 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.chronopolis.earth.SimpleCallback;
+import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
@@ -8,15 +11,15 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
+import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import retrofit2.Call;
-import retrofit2.Response;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,41 +30,47 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChronopolisCheck extends Checker {
     private final Logger log = LoggerFactory.getLogger(ChronopolisCheck.class);
 
-    private BagService bagService;
+    private final BagService bagService;
+    private final Bicarbonate cleaningManager;
 
-    public ChronopolisCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, ServiceGenerator generator) {
+    public ChronopolisCheck(BagData data,
+                            List<BagReceipt> receipts,
+                            BridgeAPI bridge,
+                            ServiceGenerator generator,
+                            Bicarbonate cleaningManager) {
         super(data, receipts, bridge);
         this.bagService = generator.bags();
+        this.cleaningManager = cleaningManager;
     }
 
     @Override
-    protected void checkReceipts(BagReceipt receipt, BagData data, AtomicInteger accumulator, Map<String, ReplicationHistory> history) {
+    protected void checkReceipts(BagReceipt receipt,
+                                 BagData data,
+                                 AtomicInteger accumulator,
+                                 Map<String, ReplicationHistory> history) {
         String snapshot = data.snapshotId();
+        log.info("[CCheck] Processing {}", snapshot);
 
         // honestly should just be <String, String>
         ImmutableMap<String, Object> params =
                 ImmutableMap.of("depositor", data.depositor(),
                                 "name", receipt.getName());
         Call<PageImpl<Bag>> bags = bagService.get(params);
-        try {
-            Response<PageImpl<Bag>> execute = bags.execute();
+        SimpleCallback<PageImpl<Bag>> cb = new SimpleCallback<>();
+        bags.enqueue(cb);
+        Set<String> replicatingNodes = cb.getResponse()
+                .filter(page -> page.getTotalElements() == 1)   // filter on having one element
+                .map(page -> page.getContent().get(0)) // get the head
+                .filter(bag -> bag.getStatus() == BagStatus.PRESERVED)
+                .filter(bag -> cleaningManager.forChronopolis(bag).call()) // attempt to clean
+                .map(Bag::getReplicatingNodes).orElse(ImmutableSet.of());
 
-            // hmmmm
-            // ideally we wouldn't have an iterable bags we're looping over
-            // but I suppose this is good enough for a first pass
-            // TODO: Can throw errors if there's any error executing
-            execute.body().getContent().forEach(b -> {
-                log.info("{}", b.getName());
-                b.getReplicatingNodes().forEach(n -> {
-                    log.info("Receipt for node {}", n);
-                    accumulator.incrementAndGet();
-                    ReplicationHistory h = history.getOrDefault(b, new ReplicationHistory(snapshot, n, false));
-                    h.addReceipt(b.getName());
-                    history.put(n, h);
-                });
-            });
-        } catch (IOException e) {
-            log.error("", e);
+        for (String node : replicatingNodes) {
+            accumulator.incrementAndGet();
+            ReplicationHistory h = history.getOrDefault(node,
+                    new ReplicationHistory(snapshot, node, false));
+            h.addReceipt(receipt.getName());
+            history.put(node, h);
         }
     }
 }

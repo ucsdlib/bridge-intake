@@ -36,13 +36,12 @@ disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu
 pushDPN: false
 pushChronopolis: false
-cleanDryRun: false
 
 bridge:
   poll: 0 0 0 * * *
 
 logging:
-  file: /var/log/chronopolis/bridge-intake.log
+  file: bridge-intake.log
   level:
     org.chronopolis: debug
     org.chronopolis.intake.duracloud.config: trace

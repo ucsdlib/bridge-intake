@@ -7,6 +7,7 @@ import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteJob;
 import org.chronopolis.bag.writer.WriteResult;
+import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,14 +26,16 @@ public class DpnWriter extends SimpleBagWriter {
 
     private final String depositor;
     private final String snapshotId;
+    private final BagProperties properties;
     private boolean validate;
     private Packager packager;
 
-    public DpnWriter(String depositor, String snapshotId) {
+    public DpnWriter(String depositor, String snapshotId, BagProperties properties) {
         super();
 
         this.depositor = depositor;
         this.snapshotId = snapshotId;
+        this.properties = properties;
     }
 
     @Override
@@ -86,16 +89,14 @@ public class DpnWriter extends SimpleBagWriter {
 
     private TagFile createDpnInfo(Bag b) {
         log.debug("Adding dpn-info for {}", b.getName());
+        BagProperties.Dpn infoProperties = properties.getDpn();
         DpnInfo dpnInfo = new DpnInfo();
 
         // ex: chron://ucsd/some-ucsd-dpn-snapshot/0
-        // todo: BagProperties to set DpnInfo/BagInfo
         String local = "chron://" + depositor + "/" + snapshotId + "/" + b.getNumber();
-        dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_NAME, "Sibyl Schaefer")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "sschaefer@uscd.edu")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, "chronopolis-support-l@mailman.ucsd.edu")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_ADDRESS, "University of California, San Diego, 9500 Gilman Dr, La Jolla, CA 92093")
-               .withInfo(DpnInfo.Tag.INGEST_NODE_NAME, "Chronopolis")
+        dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_NAME, infoProperties.getNodeContact())
+               .withInfo(DpnInfo.Tag.INGEST_NODE_ADDRESS, infoProperties.getNodeAddress())
+               .withInfo(DpnInfo.Tag.INGEST_NODE_NAME, infoProperties.getNodeName())
                .withInfo(DpnInfo.Tag.DPN_OBJECT_ID, b.getName())
                .withInfo(DpnInfo.Tag.FIRST_VERSION_OBJECT_ID, b.getName())
                .withInfo(DpnInfo.Tag.VERSION_NUMBER, String.valueOf(1))
@@ -104,6 +105,8 @@ public class DpnWriter extends SimpleBagWriter {
                // Empty entries for the inter/rights for now
                .withInfo(DpnInfo.Tag.RIGHTS_OBJECT_ID, "")
                .withInfo(DpnInfo.Tag.INTERPRETIVE_OBJECT_ID, "");
+        infoProperties.getNodeEmail()
+                .forEach(email -> dpnInfo.withInfo(DpnInfo.Tag.INGEST_NODE_CONTACT_EMAIL, email));
         return dpnInfo;
     }
 }

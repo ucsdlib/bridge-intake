@@ -17,6 +17,7 @@ import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
+import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -29,24 +30,22 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.StepContribution;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.core.step.tasklet.Tasklet;
-import org.springframework.batch.repeat.RepeatStatus;
 import retrofit2.Call;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Tasklet to handle bagging and updating of history to duracloud
  * <p/>
  * Created by shake on 11/12/15.
  */
-public class BaggingTasklet implements Tasklet {
+public class BaggingTasklet implements Runnable {
 
     private final Logger log = LoggerFactory.getLogger(BaggingTasklet.class);
 
@@ -83,7 +82,8 @@ public class BaggingTasklet implements Tasklet {
     }
 
     @Override
-    public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+    public void run() {
+        final String errorMsg = "Snapshot contains no files and is unable to be bagged";
         Duracloud dc = settings.getDuracloud();
         Posix posix = stagingProperties.getPosix();
 
@@ -93,29 +93,27 @@ public class BaggingTasklet implements Tasklet {
         String manifestName = dc.getManifest();
 
         // Create the manifest to be used later on
-        PayloadManifest manifest = PayloadManifest.loadFromStream(
-                Files.newInputStream(snapshotBase.resolve(manifestName)),
-                snapshotBase);
-
-        if (manifest.getFiles().isEmpty()) {
-            log.warn("{} - snapshot is empty!", snapshotId);
-            notifier.notify(String.format(TITLE, snapshotId), "Snapshot contains no files and is unable to be bagged");
-        } else {
-            prepareBags(snapshotBase, out, manifest);
+        try (InputStream input = Files.newInputStream(snapshotBase.resolve(manifestName))) {
+            PayloadManifest manifest = PayloadManifest.loadFromStream(input, snapshotBase);
+            if (manifest.getFiles().isEmpty()) {
+                log.warn("{} - snapshot is empty!", snapshotId);
+                notifier.notify(String.format(TITLE, snapshotId), errorMsg);
+            } else {
+                prepareBags(snapshotBase, out, manifest);
+            }
+        } catch (IOException e) {
+            log.error("{} - unable to read manifest", snapshotId, e);
         }
-
-        return RepeatStatus.FINISHED;
     }
 
     /**
      * Prepare and write bags for a snapshot
      *
      * @param snapshotBase The base directory of the snapshot
-     * @param out The output directory to write to
-     * @param manifest The PayloadManifest of all files in the snapshot
-     * @throws IOException If there's an error writing or communicating with the bridge
+     * @param out          The output directory to write to
+     * @param manifest     The PayloadManifest of all files in the snapshot
      */
-    private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) throws IOException {
+    private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) {
         // TODO: fill out with what...?
         BagInfo info = new BagInfo()
                 .includeMissingTags(true)
@@ -147,13 +145,19 @@ public class BaggingTasklet implements Tasklet {
     /**
      * Update the bridge with the results of our bagging if we succeeded
      *
+     * Not sure if we need to return the response, but we'll do it for now in case we end up
+     * needing it.
+     *
      * @param results The results from writing the bags
-     * @throws IOException If there's an exception communicating with the bridge
+     * @return the response from communicating with the bridge
      */
-    private void updateBridge(List<WriteResult> results) throws IOException {
+    private Optional<HistorySummary> updateBridge(List<WriteResult> results) {
+        Optional<HistorySummary> response = Optional.empty();
+        SimpleCallback<HistorySummary> summaryCB = new SimpleCallback<>();
         BaggingHistory history = new BaggingHistory(snapshotId, false);
-        // we could filter -> map -> consume instead
-        results.stream().filter(WriteResult::isSuccess)
+
+        results.stream()
+                .filter(WriteResult::isSuccess)
                 .peek(this::captureMetrics)
                 .map(w -> new BagReceipt()
                         .setName(w.getBag().getName())
@@ -162,7 +166,8 @@ public class BaggingTasklet implements Tasklet {
 
         if (results.size() == history.getHistory().size()) {
             Call<HistorySummary> hc = bridge.postHistory(snapshotId, history);
-            hc.execute();
+            hc.enqueue(summaryCB);
+            response = summaryCB.getResponse();
         } else {
             log.error("Error writing bags for {}", snapshotId);
             String message = "Unable to write bags for snapshot, "
@@ -171,6 +176,8 @@ public class BaggingTasklet implements Tasklet {
                     + " succeeded";
             notifier.notify(String.format(TITLE, snapshotId), message);
         }
+
+        return response;
     }
 
     private void captureMetrics(WriteResult result) {
@@ -183,7 +190,7 @@ public class BaggingTasklet implements Tasklet {
             logMetric(logger, bag, "tagmanifest", metrics.getTagmanifest());
             logMetric(logger, bag, "payload", metrics.getPayload());
             metrics.getPayloadFiles()
-                   .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
+                    .forEach(metric -> logMetric(logger, bag, "payload-file", metric));
             metrics.getExtraTags()
                     .forEach(metric -> logMetric(logger, bag, "tag-file", metric));
         }

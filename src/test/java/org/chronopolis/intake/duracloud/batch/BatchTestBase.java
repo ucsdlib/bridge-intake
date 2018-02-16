@@ -37,9 +37,9 @@ public class BatchTestBase {
     protected final String DEPOSITOR = "test-depositor";
     protected final String SNAPSHOT_ID = "test-snapshot-id";
 
-    @Autowired IntakeSettings settings;
-    @Autowired IngestAPIProperties ingestProperties;
-    @Autowired BagStagingProperties stagingProperties;
+    @Autowired public IntakeSettings settings;
+    @Autowired public IngestAPIProperties ingestProperties;
+    @Autowired public BagStagingProperties stagingProperties;
 
     protected BagData data() {
         BagData data = new BagData();

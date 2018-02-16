@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.bagging;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;

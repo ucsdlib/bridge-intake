@@ -9,7 +9,6 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.BagService;
-import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
@@ -36,10 +35,10 @@ public class ChronopolisCheck extends Checker {
     public ChronopolisCheck(BagData data,
                             List<BagReceipt> receipts,
                             BridgeAPI bridge,
-                            ServiceGenerator generator,
+                            BagService bags,
                             Bicarbonate cleaningManager) {
         super(data, receipts, bridge);
-        this.bagService = generator.bags();
+        this.bagService = bags;
         this.cleaningManager = cleaningManager;
     }
 

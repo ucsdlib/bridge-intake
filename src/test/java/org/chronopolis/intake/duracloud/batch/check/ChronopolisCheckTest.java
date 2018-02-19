@@ -14,7 +14,6 @@ import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.chronopolis.rest.api.BagService;
-import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +43,6 @@ public class ChronopolisCheckTest extends BatchTestBase {
     // Mocks for our http apis
     @Mock private BridgeAPI bridge;
     @Mock private BagService bagService;
-    @Mock private ServiceGenerator generator;
     @Mock private Bicarbonate cleaningManager;
 
     private ChronopolisCheck check;
@@ -70,7 +68,6 @@ public class ChronopolisCheckTest extends BatchTestBase {
         // 3. clean staging
         // 4. POST /snapshot/{id}/history
         // 5. POST /snapshot/{id}/complete
-        when(generator.bags()).thenReturn(bagService);
         when(bagService.get(eq(params))).thenReturn(bagGetWrapper);
         when(cleaningManager.forChronopolis(eq(bag))).thenReturn(new TrueCleaner());
         when(bridge.postHistory(any(String.class), any(History.class)))
@@ -78,7 +75,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class)))
                 .thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
-        check = new ChronopolisCheck(bagData, ImmutableList.of(receipt), bridge, generator, cleaningManager);
+        check = new ChronopolisCheck(bagData, ImmutableList.of(receipt), bridge, bagService, cleaningManager);
         check.run();
 
         verify(bagService, times(1)).get(eq(params));
@@ -88,11 +85,10 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     @Test
     public void testIncompleteSnapshot() {
-        when(generator.bags()).thenReturn(bagService);
         when(bagService.get(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
                 (ImmutableList.of(createChronBagPartialReplications()))));
 
-        check = new ChronopolisCheck(data(), receipts(), bridge, generator, cleaningManager);
+        check = new ChronopolisCheck(data(), receipts(), bridge, bagService, cleaningManager);
         check.run();
         verify(bagService, times(2)).get(any(Map.class));
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));

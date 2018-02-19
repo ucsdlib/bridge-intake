@@ -1,10 +1,17 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.earth.api.BalustradeBag;
+import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.intake.duracloud.DataCollector;
+import org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.ChronopolisCheck;
 import org.chronopolis.intake.duracloud.batch.check.DpnCheck;
+import org.chronopolis.intake.duracloud.batch.ingest.ChronopolisIngest;
+import org.chronopolis.intake.duracloud.batch.ingest.DpnDigest;
+import org.chronopolis.intake.duracloud.batch.ingest.DpnIngest;
+import org.chronopolis.intake.duracloud.batch.ingest.DpnReplicate;
 import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
@@ -15,6 +22,7 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.rest.api.IngestAPIProperties;
+import org.chronopolis.rest.api.ServiceGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,11 +37,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Start a Tasklet based on the type of request that comes in
- *
+ * <p>
  * If needed we could break this up into two classes as we start to decompose some of the objects
  * That way we aren't overrun with overly large constructors, and are able to keep functionality
  * more concise. i.e. BaggingBuilder, IngestBuilder, or something of the like.
- *
+ * <p>
  * <p>
  * Created by shake on 7/29/14.
  */
@@ -100,7 +108,7 @@ public class SnapshotJobManager {
                         intakeSettings, bagProperties, bagStagingProperties, holder.bridge, notifier);
 
                 CompletableFuture.runAsync(bagger, executor)
-                    .whenComplete((v, t) -> processing.remove(snapshotId));
+                        .whenComplete((v, t) -> processing.remove(snapshotId));
             }
         } catch (IOException e) {
             log.error("Error reading from properties file for snapshot {}", details.getSnapshotId());
@@ -137,19 +145,36 @@ public class SnapshotJobManager {
         }
 
         Checker check;
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, holder.generator, settings, stagingProperties, ingestProperties);
+        ServiceGenerator chronServices = holder.generator;
+        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, chronServices.bags(),
+                chronServices.staging(), settings, stagingProperties, ingestProperties);
 
+        // todo: if this all becomes async, we'll need to track that we're working on a snapshot
+        // so... similar to the above
         if (settings.pushDPN()) {
-            // todo we could use CompletableFutures to supply the weights and construct a better control flow in general
-            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
-            List<Weight> weights = weighter.get();
+            BalustradeBag bagAPI = holder.dpn.getBagAPI();
+            BalustradeTransfers transfers = holder.dpn.getTransfersAPI();
 
-            DpnReplication replication = new DpnReplication(data, receipts, weights, holder.dpn, settings, stagingProperties);
-            replication.run();
+            // only want to execute this once
+            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
+
+            // hmmm
+            receipts.forEach(receipt -> {
+                DpnDigest dpnDigest = new DpnDigest(receipt, bagAPI, settings);
+                DpnIngest dpnIngest = new DpnIngest(data, receipt, bagAPI, settings,
+                        stagingProperties);
+                DpnReplicate dpnReplicate = new DpnReplicate(data.depositor(), settings,
+                        stagingProperties, transfers);
+
+                CompletableFuture<List<Weight>> weights = CompletableFuture.supplyAsync(weighter);
+                CompletableFuture.supplyAsync(dpnIngest)
+                        .thenApply(dpnDigest)
+                        .thenAcceptBoth(weights, dpnReplicate);
+            });
 
             check = new DpnCheck(data, receipts, holder.bridge, holder.dpn, cleaningManager);
         } else {
-            check = new ChronopolisCheck(data, receipts, holder.bridge, holder.generator, cleaningManager);
+            check = new ChronopolisCheck(data, receipts, holder.bridge, chronServices.bags(), cleaningManager);
         }
 
         // Might tie these to futures, not sure yet. That way we won't block here.

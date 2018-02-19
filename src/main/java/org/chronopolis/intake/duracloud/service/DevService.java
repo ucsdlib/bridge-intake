@@ -32,9 +32,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_COLLECTION_PROPERTIES;
-import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_CONTENT_PROPERTIES;
-import static org.chronopolis.intake.duracloud.batch.BaggingTasklet.SNAPSHOT_MD5;
+import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_COLLECTION_PROPERTIES;
+import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_CONTENT_PROPERTIES;
+import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_MD5;
 
 /**
  *

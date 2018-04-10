@@ -19,16 +19,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Test
+ * Config for our beans
  *
  * @author shake
  */
 @Configuration
-@EnableConfigurationProperties({BagStagingProperties.class, IntakeSettings.class, BagProperties.class})
+@EnableConfigurationProperties({BagStagingProperties.class,
+        IntakeSettings.class,
+        BagProperties.class})
 public class BeanConfig {
 
     @Bean
-    public Bicarbonate bicarbonate(ServiceGenerator generator, BagStagingProperties stagingProperties) {
+    public Bicarbonate bicarbonate(ServiceGenerator generator,
+                                   BagStagingProperties stagingProperties) {
         return new Bicarbonate(generator, stagingProperties);
     }
 

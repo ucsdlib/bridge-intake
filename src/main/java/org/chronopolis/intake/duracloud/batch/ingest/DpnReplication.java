@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -81,13 +81,23 @@ public class DpnReplication implements Runnable {
                           LocalAPI dpn,
                           IntakeSettings settings,
                           BagStagingProperties stagingProperties) {
+        this(data, receipts, weights, dpn, settings, stagingProperties, new ReaderFactory());
+    }
+
+    public DpnReplication(BagData data,
+                          List<BagReceipt> receipts,
+                          List<Weight> weights,
+                          LocalAPI dpn,
+                          IntakeSettings settings,
+                          BagStagingProperties stagingProperties,
+                          ReaderFactory factory) {
         this.stagingProperties = stagingProperties;
         this.data = data;
         this.receipts = receipts;
         this.weights = weights;
         this.dpn = dpn;
         this.settings = settings;
-        this.readerFactory = new ReaderFactory();
+        this.readerFactory = factory;
     }
 
     @Override
@@ -103,10 +113,10 @@ public class DpnReplication implements Runnable {
 
     /**
      * Create replications for a bag
-     *
+     * <p>
      * Search for replications already created
-     *  -> if none exist, create both
-     *  -> if one exists, create the missing
+     * -> if none exist, create both
+     * -> if one exists, create the missing
      *
      * @param bag the bag to replicate
      */
@@ -225,7 +235,6 @@ public class DpnReplication implements Runnable {
                 .setLocalId(reader.getLocalId())
                 .setRights(reader.getRightsIds())
                 .setVersion(reader.getVersionNumber())
-                // .setIngestNode(reader.getIngestNodeName())
                 .setIngestNode(settings.getDpn().getUsername())
                 .setInterpretive(reader.getInterpretiveIds())
                 .setFirstVersionUuid(reader.getFirstVersionUUID())
@@ -236,7 +245,7 @@ public class DpnReplication implements Runnable {
         bagDigest.setAlgorithm("sha256");
         bagDigest.setBag(bag.getUuid());
         bagDigest.setValue(receipt.getReceipt());
-        bagDigest.setNode("chron");
+        bagDigest.setNode(settings.getDpn().getUsername());
         bagDigest.setCreatedAt(ZonedDateTime.now());
 
         // TODO: Maybe look for a way to clean this up a bit

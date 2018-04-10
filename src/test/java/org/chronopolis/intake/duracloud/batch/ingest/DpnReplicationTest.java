@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.earth.api.BalustradeBag;
@@ -10,6 +10,7 @@ import org.chronopolis.earth.models.Digest;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
+import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.BadRequestWrapper;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.batch.support.ExceptingWrapper;
@@ -19,7 +20,6 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 /**
  * TODO: Possibly have a super class which holds the
  * creators for some of our objects (bags, replications, etc)
- *
+ * <p>
  * Tests completed:
  * - Exception getting bag -> no creation
  * - Bag present, no repls -> create repls
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
  * - Bag create fail -> no creation of replications
  * - Reader fail -> no creation
  * - Bag present, single repl -> create additional
- *
+ * <p>
  * Created by shake on 12/4/15.
  */
 @RunWith(SpringRunner.class)
@@ -70,32 +70,33 @@ public class DpnReplicationTest extends BatchTestBase {
     @Mock private DpnInfoReader reader;
 
     // And our test object
-    @InjectMocks
     private DpnReplication tasklet;
 
-    private LocalAPI dpn;
     private List<Weight> weights;
 
     // Helpers for our tests
 
     // Pretty ugly, we'll want to find a better way to handle init
     private List<BagReceipt> initialize(int numReceipts) {
-        weights = ImmutableList.of(new Weight(UUID.randomUUID().toString(), "snapshot"),
-                new Weight(UUID.randomUUID().toString(), "snapshot"),
-                new Weight(UUID.randomUUID().toString(), "snapshot"));
+        MockitoAnnotations.initMocks(this);
+
+        String snapshot = "snapshot";
+        weights = ImmutableList.of(new Weight(UUID.randomUUID().toString(), snapshot),
+                new Weight(UUID.randomUUID().toString(), snapshot),
+                new Weight(UUID.randomUUID().toString(), snapshot));
         BagData data = data();
 
         List<BagReceipt> receipts = IntStream.range(0, numReceipts)
                 .mapToObj(i -> receipt())
                 .collect(Collectors.toList());
 
-        dpn = new LocalAPI();
-        tasklet = new DpnReplication(data, receipts, weights, dpn, settings, stagingProperties);
-        MockitoAnnotations.initMocks(this);
-
-        dpn.setBagAPI(bags)
+        LocalAPI dpn = new LocalAPI()
+                .setBagAPI(bags)
                 .setTransfersAPI(transfers)
                 .setNodeAPI(nodes);
+
+        tasklet = new DpnReplication(data, receipts, weights,
+                dpn, settings, stagingProperties, factory);
 
         return receipts;
     }
@@ -217,6 +218,7 @@ public class DpnReplicationTest extends BatchTestBase {
 
     /**
      * Test a failure in registering the Bag and Digest; Ensure no replication creation after
+     *
      * @throws IOException from readyBagMocks - static method can throw it
      */
     @Test

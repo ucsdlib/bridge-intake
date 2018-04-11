@@ -18,6 +18,8 @@ import java.util.List;
 /**
  * Read a dpn info file from any type of source and I need food
  *
+ * todo: interface this?
+ *
  * Created by shake on 11/12/15.
  */
 public class DpnInfoReader {
@@ -32,8 +34,9 @@ public class DpnInfoReader {
 
     public static DpnInfoReader read(Path bag) throws IOException {
         Path info = bag.resolve(DPN_INFO);
-        BufferedReader reader = Files.newBufferedReader(info, Charset.defaultCharset());
-        return read(reader);
+        try (BufferedReader reader = Files.newBufferedReader(info, Charset.defaultCharset())) {
+            return read(reader);
+        }
     }
 
     public static DpnInfoReader read(TarArchiveInputStream is, String root) throws IOException {
@@ -89,8 +92,6 @@ public class DpnInfoReader {
         ImmutableCollection<String> strings = tags.get(Tag.LOCAL_ID);
         return getConcatenatedEntry(strings);
     }
-
-
 
     public String getUUID() {
         return getConcatenatedEntry(tags.get(Tag.DPN_OBJECT_ID));

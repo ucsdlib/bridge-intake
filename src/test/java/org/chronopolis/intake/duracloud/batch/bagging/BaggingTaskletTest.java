@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.bagging;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
@@ -16,7 +16,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -30,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * mawp
  *
  * Created by shake on 5/4/16.
  */
@@ -68,16 +68,15 @@ public class BaggingTaskletTest {
     }
 
     @Test
-    public void testBagger() throws IOException {
+    public void testBagger() {
         String id = "test-snapshot";
-        String name = "test";
         String depositor = "test-depositor";
 
         tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
         when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
-            tasklet.execute(null, null);
+            tasklet.run();
         } catch (Exception e) {
             log.error("", e);
         }
@@ -86,15 +85,14 @@ public class BaggingTaskletTest {
     }
 
     @Test
-    public void testEmptyBagger() throws IOException {
+    public void testEmptyBagger() {
         String id = "empty-snapshot";
-        String name = "test";
         String depositor = "test-depositor";
 
         tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
 
         try {
-            tasklet.execute(null, null);
+            tasklet.run();
         } catch (Exception e) {
             log.error("", e);
         }

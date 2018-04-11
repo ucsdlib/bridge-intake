@@ -3,7 +3,6 @@ package org.chronopolis.intake.duracloud;
 import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +17,6 @@ import org.springframework.context.annotation.ComponentScan;
  * @author shake
  */
 @SpringBootApplication
-@EnableBatchProcessing
 @ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
 public class Application implements CommandLineRunner {
 

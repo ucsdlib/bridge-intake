@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.earth.api.BalustradeNode;
-import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.batch.support.ExceptingWrapper;
@@ -42,8 +41,6 @@ public class DpnNodeWeighterTest {
     public void setup() {
         // Setup our mock api
         nodes = mock(BalustradeNode.class);
-        LocalAPI api = new LocalAPI();
-        api.setNodeAPI(nodes);
 
         // Setup our settings
         IntakeSettings settings = new IntakeSettings();
@@ -55,7 +52,7 @@ public class DpnNodeWeighterTest {
         SnapshotDetails details = new SnapshotDetails();
         details.setSnapshotId(id);
 
-        weighter = new DpnNodeWeighter(api, settings, details);
+        weighter = new DpnNodeWeighter(nodes, settings, details);
     }
 
     private Node response() {
@@ -63,7 +60,7 @@ public class DpnNodeWeighterTest {
     }
 
     @Test
-    public void success() throws Exception {
+    public void success() {
         when(nodes.getNode(node)).thenReturn(new CallWrapper<>(response()));
         List<Weight> weights = weighter.get();
         Assert.assertEquals(3, weights.size());

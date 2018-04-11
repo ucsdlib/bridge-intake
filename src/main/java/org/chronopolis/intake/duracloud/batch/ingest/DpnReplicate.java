@@ -62,10 +62,10 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
 
         rcb.getResponse().ifPresent(response -> {
             if (response.getCount() == 0) {
-                pushReplication(bag, weights, (weight) -> true);
+                pushReplication(bag, weights, 2, weight -> true);
             } else if (response.getCount() == 1) {
                 Replication exists = response.getResults().get(0);
-                pushReplication(bag, weights, doesNotExist(exists.getToNode()));
+                pushReplication(bag, weights, 1, doesNotExist(exists.getToNode()));
             }
         });
     }
@@ -74,14 +74,22 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
      * Use the weighted list of nodes to create replications for a given bag. Before creating a
      * replication, use a {@link Predicate} to test if the node in the weight can be used.
      *
+     * The filter (predicate) is run on the list of weights prior to invoking the limit so that we
+     * have all options for replications available. e.g. if limit == 1 and our predicate matches the
+     * first weight, we still want the next available weight to have a replication created for it.
+     *
      * @param bag       the bag to create replications for
      * @param weights   the possible replicating nodes, weighted
+     * @param limit     the number of replications to create
      * @param predicate the predicate to test each weight
      */
-    private void pushReplication(Bag bag, List<Weight> weights, Predicate<Weight> predicate) {
+    private void pushReplication(Bag bag,
+                                 List<Weight> weights,
+                                 int limit,
+                                 Predicate<Weight> predicate) {
         weights.stream()
-                .limit(2)
                 .filter(predicate)
+                .limit(limit)
                 .map(weight -> call(bag, weight.getNode()))
                 .forEach(call -> call.enqueue(new SimpleCallback<>()));
     }

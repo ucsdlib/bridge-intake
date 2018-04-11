@@ -1,16 +1,15 @@
 package org.chronopolis.intake.duracloud.cleaner;
 
-import com.google.common.collect.ImmutableMap;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
-import org.chronopolis.rest.api.ServiceGenerator;
+import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.BagStatus;
 import org.chronopolis.rest.models.storage.ActiveToggle;
 import org.chronopolis.rest.models.storage.StagingStorageModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageImpl;
 import retrofit2.Call;
 
 import java.nio.file.Path;
@@ -32,7 +31,8 @@ public class ChronopolisCleaner extends Cleaner {
 
     private final Logger log = LoggerFactory.getLogger(ChronopolisCleaner.class);
 
-    private final ServiceGenerator generator;
+    private final DepositorAPI depositors;
+    private final StagingService stagingService;
     private final BagStagingProperties properties;
 
     /**
@@ -55,11 +55,13 @@ public class ChronopolisCleaner extends Cleaner {
      * staging.
      */
     public ChronopolisCleaner(Path relative,
+                              DepositorAPI depositors,
+                              StagingService stagingService,
                               BagStagingProperties properties,
-                              ServiceGenerator generator,
                               Bag bag) {
         super(relative, properties);
-        this.generator = generator;
+        this.depositors = depositors;
+        this.stagingService = stagingService;
         this.properties = properties;
         this.bag = bag;
     }
@@ -71,17 +73,19 @@ public class ChronopolisCleaner extends Cleaner {
      * bag can be removed.
      */
     public ChronopolisCleaner(Path relative,
+                              DepositorAPI depositors,
+                              StagingService stagingService,
                               BagStagingProperties properties,
-                              ServiceGenerator generator,
                               String depositor,
                               String name) {
         super(relative, properties);
+        this.depositors = depositors;
+        this.stagingService = stagingService;
         if (name == null || depositor == null) {
             throw new IllegalArgumentException("Depositor and Bag Name are not allowed to be null");
         }
 
 
-        this.generator = generator;
         this.bag = null;
         this.name = name;
         this.depositor = depositor;
@@ -119,15 +123,12 @@ public class ChronopolisCleaner extends Cleaner {
         final Path root = Paths.get(properties.getPosix().getPath());
         final Path full = root.resolve(depositor).resolve(name);
 
-        // create the http request to retrieve the bag
-        Call<PageImpl<Bag>> call = generator.bags()
-                .get(ImmutableMap.of("depositor", depositor, "name", name));
-        SimpleCallback<PageImpl<Bag>> callback = new SimpleCallback<>();
+        // retrieve the bag
+        SimpleCallback<Bag> callback = new SimpleCallback<>();
+        Call<Bag> call = depositors.getDepositorBag(depositor, name);
         call.enqueue(callback);
 
         return callback.getResponse()
-                .filter(this::checkResponse)  // make sure we're only operating on the bag we expect
-                .map(response -> response.getContent().get(0))         // pop the head
                 .filter(this::checkPreserved) // only continue if the bag is preserved
                 .map(bag -> rm(full) && deactivate(bag)).orElse(false);
     }
@@ -140,15 +141,6 @@ public class ChronopolisCleaner extends Cleaner {
         return preserved;
     }
 
-    private boolean checkResponse(PageImpl<Bag> bags) {
-        boolean one = bags.getTotalElements() == 1;
-        if (!one) {
-            log.warn("[Cleaner] Unable to query for {}::{}", depositor, bag);
-        }
-        return one;
-    }
-
-
     /**
      * Deactivate the bag storage for a given bag
      *
@@ -159,7 +151,7 @@ public class ChronopolisCleaner extends Cleaner {
         if (bag.getBagStorage() != null) {
             log.info("[Cleaner] Deactivating storage for {} {}", bag.getDepositor(), bag.getName());
             SimpleCallback<StagingStorageModel> stagingCB = new SimpleCallback<>();
-            Call<StagingStorageModel> call = generator.staging()
+            Call<StagingStorageModel> call = stagingService
                     .toggleStorage(bag.getId(), "BAG", new ActiveToggle(false));
             call.enqueue(stagingCB);
             deactivated = stagingCB.getResponse()

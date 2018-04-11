@@ -1,7 +1,7 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import com.google.common.collect.ImmutableList;
-import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -33,12 +33,14 @@ import static java.util.Comparator.reverseOrder;
 public class DpnNodeWeighter implements Supplier<List<Weight>> {
     private final Logger log = LoggerFactory.getLogger(DpnNodeWeighter.class);
 
-    private final LocalAPI dpn;
+    private final BalustradeNode nodeAPI;
     private final IntakeSettings settings;
     private final SnapshotDetails details;
 
-    public DpnNodeWeighter(LocalAPI dpn, IntakeSettings settings, SnapshotDetails details) {
-        this.dpn = dpn;
+    public DpnNodeWeighter(BalustradeNode nodeAPI,
+                           IntakeSettings settings,
+                           SnapshotDetails details) {
+        this.nodeAPI = nodeAPI;
         this.settings = settings;
         this.details = details;
     }
@@ -57,7 +59,7 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
         // 5 nodes -> page size of 5
         List<String> nodes;
         Response<Node> response = null;
-        Call<Node> call = dpn.getNodeAPI().getNode(cfg.getUsername());
+        Call<Node> call = nodeAPI.getNode(cfg.getUsername());
         try {
             response = call.execute();
         } catch (IOException e) {

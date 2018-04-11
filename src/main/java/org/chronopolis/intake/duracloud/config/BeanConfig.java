@@ -4,7 +4,6 @@ import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.PropertiesDataCollector;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
-import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.notify.MailNotifier;
@@ -50,24 +49,24 @@ public class BeanConfig {
         return new MailNotifier(settings.getSmtp());
     }
 
-    @Bean
-    public APIHolder holder(ServiceGenerator generator, BridgeAPI bridge, LocalAPI dpn) {
-        return new APIHolder(generator, bridge, dpn);
-    }
-
     @Bean(destroyMethod = "destroy")
     public SnapshotJobManager snapshotJobManager(Notifier notifier,
                                                  BagProperties bagProperties,
                                                  BagStagingProperties bagStagingProperties,
                                                  Bicarbonate cleaningManager,
-                                                 APIHolder holder,
+                                                 ServiceGenerator generator,
+                                                 BridgeAPI bridgeAPI,
+                                                 LocalAPI dpn,
                                                  IntakeSettings settings) {
         return new SnapshotJobManager(notifier,
                 cleaningManager,
                 bagProperties,
                 settings,
                 bagStagingProperties,
-                holder,
+                bridgeAPI,
+                dpn,
+                generator.bags(),
+                generator.staging(),
                 new PropertiesDataCollector(settings));
     }
 

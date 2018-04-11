@@ -34,12 +34,15 @@ public class TokenTaskConfig {
 
     @Bean
     public Executor executorForBatch() {
-        return new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue());
+        return new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
     @Bean
-    public ChronopolisTokenRequestBatch batch(Executor executorForBatch, AceConfiguration configuration, TokenService tokens) {
-        ChronopolisTokenRequestBatch batch = new ChronopolisTokenRequestBatch(configuration, tokens);
+    public ChronopolisTokenRequestBatch batch(Executor executorForBatch,
+                                              AceConfiguration configuration,
+                                              TokenService tokens) {
+        ChronopolisTokenRequestBatch batch =
+                new ChronopolisTokenRequestBatch(configuration, tokens);
         executorForBatch.execute(batch);
         return batch;
     }

@@ -59,7 +59,8 @@ public class ChronopolisIngest implements Runnable {
                              IntakeSettings settings,
                              BagStagingProperties stagingProperties,
                              IngestAPIProperties ingestProperties) {
-        this(data, receipts, bags, staging, settings, stagingProperties, new IngestSupplierFactory(), ingestProperties);
+        this(data, receipts, bags, staging, settings,
+                stagingProperties, new IngestSupplierFactory(), ingestProperties);
     }
 
     @VisibleForTesting

@@ -2,7 +2,10 @@ package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.BalustradeBag;
+import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
+import org.chronopolis.earth.api.Events;
+import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
@@ -12,7 +15,6 @@ import org.chronopolis.intake.duracloud.batch.ingest.ChronopolisIngest;
 import org.chronopolis.intake.duracloud.batch.ingest.DpnDigest;
 import org.chronopolis.intake.duracloud.batch.ingest.DpnIngest;
 import org.chronopolis.intake.duracloud.batch.ingest.DpnReplicate;
-import org.chronopolis.intake.duracloud.batch.support.APIHolder;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
@@ -20,9 +22,11 @@ import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.notify.Notifier;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.IngestAPIProperties;
-import org.chronopolis.rest.api.ServiceGenerator;
+import org.chronopolis.rest.api.StagingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +60,10 @@ public class SnapshotJobManager {
     private final IntakeSettings intakeSettings;
     private final BagStagingProperties bagStagingProperties;
 
-    private APIHolder holder;
+    private final BridgeAPI bridge;
+    private final LocalAPI dpnLocal;
+    private final BagService chronBags;
+    private final StagingService chronStaging;
 
     // do we want an overseer TP which we use to say: job(x, y) is already running, REJECTED!
     // for the most part this functionality could be served by this class, could work ok
@@ -71,9 +78,15 @@ public class SnapshotJobManager {
                               BagProperties bagProperties,
                               IntakeSettings intakeSettings,
                               BagStagingProperties bagStagingProperties,
-                              APIHolder holder,
+                              BridgeAPI bridge,
+                              LocalAPI dpnLocal,
+                              BagService chronBags,
+                              StagingService chronStaging,
                               DataCollector collector) {
-        this.holder = holder;
+        this.bridge = bridge;
+        this.dpnLocal = dpnLocal;
+        this.chronBags = chronBags;
+        this.chronStaging = chronStaging;
         this.notifier = notifier;
         this.collector = collector;
         this.bagProperties = bagProperties;
@@ -105,7 +118,7 @@ public class SnapshotJobManager {
             // good enough for now to check that we aren't processing a snapshot multiple times
             if (processing.add(snapshotId)) {
                 BaggingTasklet bagger = new BaggingTasklet(snapshotId, data.depositor(),
-                        intakeSettings, bagProperties, bagStagingProperties, holder.bridge, notifier);
+                        intakeSettings, bagProperties, bagStagingProperties, bridge, notifier);
 
                 CompletableFuture.runAsync(bagger, executor)
                         .whenComplete((v, t) -> processing.remove(snapshotId));
@@ -145,23 +158,24 @@ public class SnapshotJobManager {
         }
 
         Checker check;
-        ServiceGenerator chronServices = holder.generator;
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, chronServices.bags(),
-                chronServices.staging(), settings, stagingProperties, ingestProperties);
+        Events eventsAPI = dpnLocal.getEventsAPI();
+        BalustradeBag bags = dpnLocal.getBagAPI();
+        BalustradeNode nodes = dpnLocal.getNodeAPI();
+        BalustradeTransfers transfers = dpnLocal.getTransfersAPI();
+
+        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, chronBags,
+                chronStaging, settings, stagingProperties, ingestProperties);
 
         // todo: if this all becomes async, we'll need to track that we're working on a snapshot
         // so... similar to the above
         if (settings.pushDPN()) {
-            BalustradeBag bagAPI = holder.dpn.getBagAPI();
-            BalustradeTransfers transfers = holder.dpn.getTransfersAPI();
-
             // only want to execute this once
-            DpnNodeWeighter weighter = new DpnNodeWeighter(holder.dpn, settings, details);
+            DpnNodeWeighter weighter = new DpnNodeWeighter(nodes, settings, details);
 
             // hmmm
             receipts.forEach(receipt -> {
-                DpnDigest dpnDigest = new DpnDigest(receipt, bagAPI, settings);
-                DpnIngest dpnIngest = new DpnIngest(data, receipt, bagAPI, settings,
+                DpnDigest dpnDigest = new DpnDigest(receipt, bags, settings);
+                DpnIngest dpnIngest = new DpnIngest(data, receipt, bags, settings,
                         stagingProperties);
                 DpnReplicate dpnReplicate = new DpnReplicate(data.depositor(), settings,
                         stagingProperties, transfers);
@@ -172,9 +186,9 @@ public class SnapshotJobManager {
                         .thenAcceptBoth(weights, dpnReplicate);
             });
 
-            check = new DpnCheck(data, receipts, holder.bridge, holder.dpn, cleaningManager);
+            check = new DpnCheck(data, receipts, bridge, bags, eventsAPI, cleaningManager);
         } else {
-            check = new ChronopolisCheck(data, receipts, holder.bridge, chronServices.bags(), cleaningManager);
+            check = new ChronopolisCheck(data, receipts, bridge, chronBags, cleaningManager);
         }
 
         // Might tie these to futures, not sure yet. That way we won't block here.

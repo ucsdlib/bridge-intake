@@ -8,6 +8,7 @@ import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -47,9 +48,14 @@ public class DpnDigest implements Function<Bag, Bag> {
         Call<Digest> call = bags.createDigest(uuid, digest);
 
         try {
-            // todo: we want to make sure this succeeds, either by checking this returned a 201
-            //       or by checking that a 409 was returned
-            call.execute();
+            Response<Digest> response = call.execute();
+
+            // hmm... better ways to do this I'm sure of it
+            if (response.isSuccessful() || response.code() == 409) {
+                log.info("[{}] Registered digest", uuid);
+            } else {
+                throw new RuntimeException("Unable to register digest");
+            }
         } catch (IOException e) {
             log.error("[{}] Unable to register digest", uuid);
             throw new RuntimeException("Unable to register digest");
@@ -57,4 +63,5 @@ public class DpnDigest implements Function<Bag, Bag> {
 
         return bag;
     }
+
 }

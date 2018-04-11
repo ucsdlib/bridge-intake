@@ -25,9 +25,11 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * First step in DPN Ingestion
- * <p>
- * Get the Bag from
+ * First step when doing DPN Ingestion.
+ *
+ * Attempt to get the {@link Bag} record from the DPN Registry with the given {@link BagData} and
+ * {@link BagReceipt} records. If no {@link Bag} record can be found, create a new record and save
+ * it with the DPN Registry.
  *
  * @author shake
  */
@@ -97,7 +99,6 @@ public class DpnIngest implements Supplier<Bag> {
         call.enqueue(cb);
 
         Optional<Bag> response = cb.getResponse();
-
         return response.orElseGet(this::register);
     }
 

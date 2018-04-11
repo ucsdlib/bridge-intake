@@ -1,7 +1,8 @@
 package org.chronopolis.intake.duracloud.cleaner;
 
 import org.chronopolis.common.storage.BagStagingProperties;
-import org.chronopolis.rest.api.ServiceGenerator;
+import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 
 import java.nio.file.Path;
@@ -14,11 +15,15 @@ import java.nio.file.Paths;
  */
 public class Bicarbonate {
 
-    private final ServiceGenerator generator;
+    private final DepositorAPI depositors;
+    private final StagingService stagingService;
     private final BagStagingProperties stagingProperties;
 
-    public Bicarbonate(ServiceGenerator generator, BagStagingProperties stagingProperties) {
-        this.generator = generator;
+    public Bicarbonate(DepositorAPI depositors,
+                       StagingService stagingService,
+                       BagStagingProperties stagingProperties) {
+        this.depositors = depositors;
+        this.stagingService = stagingService;
         this.stagingProperties = stagingProperties;
     }
 
@@ -41,7 +46,7 @@ public class Bicarbonate {
     public Cleaner forChronopolis(Bag bag) {
         // Note: the bag staging may not exist, so use the depositor and bag name to create the path
         Path relative = Paths.get(bag.getDepositor(), bag.getName());
-        return new ChronopolisCleaner(relative, stagingProperties, generator, bag);
+        return new ChronopolisCleaner(relative, depositors, stagingService, stagingProperties, bag);
     }
 
     /**
@@ -54,7 +59,8 @@ public class Bicarbonate {
      */
     public Cleaner forChronopolis(String depositor, String bag) {
         Path relative = Paths.get(depositor, bag);
-        return new ChronopolisCleaner(relative, stagingProperties, generator, depositor, bag);
+        return new ChronopolisCleaner(relative, depositors, stagingService,
+                stagingProperties, depositor, bag);
     }
 
 }

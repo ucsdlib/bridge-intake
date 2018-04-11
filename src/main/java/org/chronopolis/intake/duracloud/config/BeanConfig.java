@@ -31,7 +31,7 @@ public class BeanConfig {
     @Bean
     public Bicarbonate bicarbonate(ServiceGenerator generator,
                                    BagStagingProperties stagingProperties) {
-        return new Bicarbonate(generator, stagingProperties);
+        return new Bicarbonate(generator.depositorAPI(), generator.staging(), stagingProperties);
     }
 
     @Bean

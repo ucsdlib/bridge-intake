@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +69,8 @@ public class SnapshotJobManager {
     // need ThreadPools instead of executor
     // one for io, one for http?
     // Instantiated per manager
-    private ExecutorService executor;
+    private ThreadPoolExecutor longIO;
+    private ThreadPoolExecutor shortIO;
     private final ConcurrentSkipListSet<String> processing;
 
     public SnapshotJobManager(Notifier notifier,
@@ -94,15 +94,16 @@ public class SnapshotJobManager {
         this.cleaningManager = cleaningManager;
         this.bagStagingProperties = bagStagingProperties;
 
-        this.executor = new ThreadPoolExecutor(4, 4, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
         this.processing = new ConcurrentSkipListSet<>();
+        this.longIO = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        this.shortIO = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
     @SuppressWarnings("UnusedDeclaration")
     public void destroy() {
         log.debug("Shutting down thread pools");
-        executor.shutdownNow();
-        executor = null;
+        longIO.shutdownNow();
+        shortIO.shutdownNow();
     }
 
     /**
@@ -120,7 +121,7 @@ public class SnapshotJobManager {
                 BaggingTasklet bagger = new BaggingTasklet(snapshotId, data.depositor(),
                         intakeSettings, bagProperties, bagStagingProperties, bridge, notifier);
 
-                CompletableFuture.runAsync(bagger, executor)
+                CompletableFuture.runAsync(bagger, longIO)
                         .whenComplete((v, t) -> processing.remove(snapshotId));
             }
         } catch (IOException e) {
@@ -157,44 +158,74 @@ public class SnapshotJobManager {
             return;
         }
 
-        Checker check;
-        Events eventsAPI = dpnLocal.getEventsAPI();
-        BalustradeBag bags = dpnLocal.getBagAPI();
-        BalustradeNode nodes = dpnLocal.getNodeAPI();
-        BalustradeTransfers transfers = dpnLocal.getTransfersAPI();
-
-        ChronopolisIngest ingest = new ChronopolisIngest(data, receipts, chronBags,
-                chronStaging, settings, stagingProperties, ingestProperties);
-
-        // todo: if this all becomes async, we'll need to track that we're working on a snapshot
-        // so... similar to the above
-        if (settings.pushDPN()) {
-            // only want to execute this once
-            DpnNodeWeighter weighter = new DpnNodeWeighter(nodes, settings, details);
-
-            // hmmm
-            receipts.forEach(receipt -> {
-                DpnDigest dpnDigest = new DpnDigest(receipt, bags, settings);
-                DpnIngest dpnIngest = new DpnIngest(data, receipt, bags, settings,
-                        stagingProperties);
-                DpnReplicate dpnReplicate = new DpnReplicate(data.depositor(), settings,
-                        stagingProperties, transfers);
-
-                CompletableFuture<List<Weight>> weights = CompletableFuture.supplyAsync(weighter);
-                CompletableFuture.supplyAsync(dpnIngest)
-                        .thenApply(dpnDigest)
-                        .thenAcceptBoth(weights, dpnReplicate);
-            });
-
-            check = new DpnCheck(data, receipts, bridge, bags, eventsAPI, cleaningManager);
-        } else {
-            check = new ChronopolisCheck(data, receipts, bridge, chronBags, cleaningManager);
+        if (!processing.add(data.snapshotId())) {
+            return;
         }
 
-        // Might tie these to futures, not sure yet. That way we won't block here.
-        // TODO: If ingest fails, we probably won't want to run the check
-        ingest.run();
-        check.run();
+        Checker check;
+        BalustradeBag bags = dpnLocal.getBagAPI();
+        Events eventsAPI = dpnLocal.getEventsAPI();
+        final String snapshotId = data.snapshotId();
+
+        CompletableFuture<Void> ingestFuture;
+        ChronopolisIngest chronIngest = new ChronopolisIngest(data, receipts, chronBags,
+                chronStaging, settings, stagingProperties, ingestProperties);
+
+        if (settings.pushDPN()) {
+            check = new DpnCheck(data, receipts, bridge, bags, eventsAPI, cleaningManager);
+
+            // Also need to do DPN Ingest steps
+            CompletableFuture<Void> dpnIngest = dpnIngest(data, details, receipts,
+                    dpnLocal, settings, stagingProperties);
+            ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIO);
+        } else {
+            check = new ChronopolisCheck(data, receipts, bridge, chronBags, cleaningManager);
+            ingestFuture = CompletableFuture.runAsync(chronIngest, longIO);
+        }
+
+        ingestFuture.thenRunAsync(check, longIO)
+                .whenComplete((v, t) -> processing.remove(snapshotId));
+    }
+
+    /**
+     * Create a CompletableFuture for the steps required to ingest content into DPN
+     *
+     * @param data              the bag data
+     * @param details           the snapshot details
+     * @param receipts          the bag receipts
+     * @param localAPI          the DPN APIs
+     * @param settings          the intake settings
+     * @param stagingProperties the staging properties
+     * @return the CompletableFuture
+     */
+    private CompletableFuture<Void> dpnIngest(BagData data,
+                                              SnapshotDetails details,
+                                              List<BagReceipt> receipts,
+                                              LocalAPI localAPI,
+                                              IntakeSettings settings,
+                                              BagStagingProperties stagingProperties) {
+        String dep = data.depositor();
+        BalustradeBag bags = localAPI.getBagAPI();
+        BalustradeNode nodes = localAPI.getNodeAPI();
+        BalustradeTransfers transfers = localAPI.getTransfersAPI();
+
+        int i = 0;
+        CompletableFuture[] futures = new CompletableFuture[receipts.size()];
+        DpnNodeWeighter weighter = new DpnNodeWeighter(nodes, settings, details);
+
+        for (BagReceipt receipt : receipts) {
+            DpnDigest dpnDigest = new DpnDigest(receipt, bags, settings);
+            DpnIngest dpnIngest = new DpnIngest(data, receipt,
+                    bags, settings, stagingProperties);
+            DpnReplicate dpnReplicate = new DpnReplicate(dep, settings,
+                    stagingProperties, transfers);
+
+            CompletableFuture<List<Weight>> weights = CompletableFuture.supplyAsync(weighter);
+            futures[i++] = CompletableFuture.supplyAsync(dpnIngest, shortIO)
+                    .thenApplyAsync(dpnDigest, shortIO)
+                    .thenAcceptBothAsync(weights, dpnReplicate, shortIO);
+        }
+        return CompletableFuture.allOf(futures);
     }
 
 }

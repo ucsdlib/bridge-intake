@@ -14,7 +14,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * Created by shake on 12/4/15.
  */
 @SpringBootApplication
-@EnableConfigurationProperties({IntakeSettings.class, BagProperties.class, BagStagingProperties.class, IngestAPIProperties.class})
+@EnableConfigurationProperties({IntakeSettings.class,
+        BagProperties.class,
+        BagStagingProperties.class,
+        IngestAPIProperties.class})
 public class TestApplication {
 
     private static final String TEST_PROFILE = "test";

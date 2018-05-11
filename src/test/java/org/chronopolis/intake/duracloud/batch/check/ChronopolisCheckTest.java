@@ -21,10 +21,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.PageImpl;
 
-import java.util.Map;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,12 +84,12 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     @Test
     public void testIncompleteSnapshot() {
-        when(bagService.get(any(Map.class))).thenReturn(new CallWrapper<>(new PageImpl<>
+        when(bagService.get(anyMap())).thenReturn(new CallWrapper<>(new PageImpl<>
                 (ImmutableList.of(createChronBagPartialReplications()))));
 
         check = new ChronopolisCheck(data(), receipts(), bridge, bagService, cleaningManager);
         check.run();
-        verify(bagService, times(2)).get(any(Map.class));
+        verify(bagService, times(2)).get(anyMap());
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));
         verify(bridge, times(0)).completeSnapshot(any(String.class), any(AlternateIds.class));
     }

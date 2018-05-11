@@ -10,11 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Chron {
 
     /**
-     * Name of the local chronopolis user
-    private String node;
-     */
-
-    /**
      * Prefix to use when pushing to chronopolis
      */
     private String prefix = "";

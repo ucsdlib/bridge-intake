@@ -56,7 +56,6 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
 
     private List<String> loadNode(IntakeSettings settings) {
         DPN cfg = settings.getDpn();
-        // 5 nodes -> page size of 5
         List<String> nodes;
         Response<Node> response = null;
         Call<Node> call = nodeAPI.getNode(cfg.getUsername());

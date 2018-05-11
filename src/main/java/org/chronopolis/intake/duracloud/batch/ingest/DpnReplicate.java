@@ -10,12 +10,19 @@ import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Constraints;
+import org.chronopolis.intake.duracloud.constraint.BagSizePredicate;
+import org.chronopolis.intake.duracloud.constraint.MemberToNodePredicate;
+import org.chronopolis.intake.duracloud.constraint.ReplicationDoesNotExist;
 import retrofit2.Call;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -32,6 +39,9 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
     private final BagStagingProperties staging;
     private final BalustradeTransfers transfers;
 
+    private Map<String, Constraints.SizeLimit> bagSizeConstraints;
+    private Map<String, List<String>> memberConstraints;
+
     public DpnReplicate(String depositor,
                         IntakeSettings settings,
                         BagStagingProperties staging,
@@ -40,14 +50,27 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
         this.settings = settings;
         this.staging = staging;
         this.transfers = transfers;
+        buildConstraintMaps();
+    }
+
+    private void buildConstraintMaps() {
+        ImmutableMap.Builder<String, Constraints.SizeLimit> sizeBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, List<String>> memberBuilder = ImmutableMap.builder();
+        for (Constraints.Node node : settings.getConstraints().getNodes()) {
+            sizeBuilder.put(node.getName(), node.getSizeLimit());
+            memberBuilder.put(node.getName(), node.getMembers());
+        }
+
+        bagSizeConstraints = sizeBuilder.build();
+        memberConstraints = memberBuilder.build();
     }
 
     /**
      * Create replications for a bag
-     *
+     * <p>
      * Search for replications already created
-     *  -> if none exist, create both
-     *  -> if one exists, create the missing
+     * -> if none exist, create both
+     * -> if one exists, create the missing
      *
      * @param bag     the bag to replicate
      * @param weights the replicating nodes, weighted
@@ -55,6 +78,9 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
     @Override
     public void accept(Bag bag, List<Weight> weights) {
         final ImmutableMap<String, String> params = ImmutableMap.of("bag", bag.getUuid());
+        List<Predicate<Weight>> constraints = new ArrayList<>();
+        constraints.add(new BagSizePredicate(bag.getSize(), bagSizeConstraints));
+        constraints.add(new MemberToNodePredicate(bag.getMember(), memberConstraints));
 
         Call<Response<Replication>> call = transfers.getReplications(params);
         SimpleCallback<Response<Replication>> rcb = new SimpleCallback<>();
@@ -62,18 +88,30 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
 
         rcb.getResponse().ifPresent(response -> {
             if (response.getCount() == 0) {
-                pushReplication(bag, weights, 2, weight -> true);
+                pushReplication(bag, weights, 2, buildPredicate(constraints));
             } else if (response.getCount() == 1) {
                 Replication exists = response.getResults().get(0);
-                pushReplication(bag, weights, 1, doesNotExist(exists.getToNode()));
+                constraints.add(new ReplicationDoesNotExist(exists.getToNode()));
+                pushReplication(bag, weights, 1, buildPredicate(constraints));
             }
         });
     }
 
     /**
+     * Create a Predicate from combining multiple Predicates together through a reduction
+     *
+     * @param predicates the Predicates to reduce
+     * @return the reduced Predicate, or true if none are present
+     */
+    private <E> Predicate<E> buildPredicate(Collection<Predicate<E>> predicates) {
+        return predicates.stream()
+                .reduce(Predicate::and).orElse(entry -> true);
+    }
+
+    /**
      * Use the weighted list of nodes to create replications for a given bag. Before creating a
      * replication, use a {@link Predicate} to test if the node in the weight can be used.
-     *
+     * <p>
      * The filter (predicate) is run on the list of weights prior to invoking the limit so that we
      * have all options for replications available. e.g. if limit == 1 and our predicate matches the
      * first weight, we still want the next available weight to have a replication created for it.
@@ -92,16 +130,6 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
                 .limit(limit)
                 .map(weight -> call(bag, weight.getNode()))
                 .forEach(call -> call.enqueue(new SimpleCallback<>()));
-    }
-
-    /**
-     * {@link Predicate} to test that a node does not match an existing value
-     *
-     * @param existing the existing node name to test against
-     * @return if the node attributed to the weight does not equal the existing node name
-     */
-    private Predicate<Weight> doesNotExist(String existing) {
-        return (weight) -> !weight.getNode().equalsIgnoreCase(existing);
     }
 
     /**

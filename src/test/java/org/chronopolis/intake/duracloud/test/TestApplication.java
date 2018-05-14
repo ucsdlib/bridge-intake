@@ -6,6 +6,7 @@ import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
@@ -13,7 +14,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  *
  * Created by shake on 12/4/15.
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @EnableConfigurationProperties({IntakeSettings.class,
         BagProperties.class,
         BagStagingProperties.class,

@@ -1,4 +1,4 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -14,7 +14,6 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.IngestAPIProperties;
-import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
@@ -47,35 +46,40 @@ public class ChronopolisIngest implements Runnable {
     private final IngestAPIProperties ingestProperties;
     private final BagStagingProperties stagingProperties;
 
-    private BagData data;
-    private List<BagReceipt> receipts;
+    private final BagData data;
+    private final List<BagReceipt> receipts;
 
-    private BagService bags;
-    private StagingService staging;
+    private final BagService bags;
+    private final StagingService staging;
 
     public ChronopolisIngest(BagData data,
                              List<BagReceipt> receipts,
-                             ServiceGenerator generator,
+                             BagService bags,
+                             StagingService staging,
                              IntakeSettings settings,
-                             BagStagingProperties stagingProperties, IngestAPIProperties ingestProperties) {
-        this(data, receipts, generator, settings, stagingProperties, new IngestSupplierFactory(), ingestProperties);
+                             BagStagingProperties stagingProperties,
+                             IngestAPIProperties ingestProperties) {
+        this(data, receipts, bags, staging, settings,
+                stagingProperties, new IngestSupplierFactory(), ingestProperties);
     }
 
     @VisibleForTesting
     protected ChronopolisIngest(BagData data,
                                 List<BagReceipt> receipts,
-                                ServiceGenerator generator,
+                                BagService bags,
+                                StagingService staging,
                                 IntakeSettings settings,
                                 BagStagingProperties stagingProperties,
-                                IngestSupplierFactory supplierFactory, IngestAPIProperties ingestProperties) {
+                                IngestSupplierFactory supplierFactory,
+                                IngestAPIProperties ingestProperties) {
         this.data = data;
         this.receipts = receipts;
         this.settings = settings;
         this.stagingProperties = stagingProperties;
         this.factory = supplierFactory;
 
-        this.bags = generator.bags();
-        this.staging = generator.staging();
+        this.bags = bags;
+        this.staging = staging;
         this.ingestProperties = ingestProperties;
     }
 
@@ -131,7 +135,7 @@ public class ChronopolisIngest implements Runnable {
     private void registerFixity(Bag bag) {
         String resource = bag.getDepositor() + "::" + bag.getName();
         String tag = "tagmanifest-sha256.txt";
-        String algorithm = "sha-256";
+        String algorithm = "sha256";
         FixityCreate fixity = new FixityCreate();
 
         String root = stagingProperties.getPosix().getPath();
@@ -167,6 +171,8 @@ public class ChronopolisIngest implements Runnable {
 
     /**
      * Delegate class so that we can use a Mock supplier
+     *
+     * Let's try to DI the request supplier instead - need to make it an interface but that's easy
      */
     public static class IngestSupplierFactory {
         public IngestRequestSupplier supplier(Path location, Path stage, String depositor, String name) {

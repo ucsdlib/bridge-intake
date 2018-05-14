@@ -1,12 +1,12 @@
-package org.chronopolis.intake.duracloud.batch;
+package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
-import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.IngestRequest;
@@ -25,9 +25,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +46,6 @@ public class ChronopolisIngestTest extends BatchTestBase {
 
     @Mock BagService bags;
     @Mock StagingService staging;
-    @Mock ServiceGenerator generator;
     @Mock IngestRequestSupplier supplier;
     @Mock ChronopolisIngest.IngestSupplierFactory factory;
 
@@ -66,10 +65,9 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.setPushDPN(true);
         Bag bag = createChronBag();
         BagReceipt receipt = receipt();
-        when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
                 .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory, ingestProperties);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags, staging, settings, stagingProperties, factory, ingestProperties);
 
         IngestRequest request = request(receipt, data.depositor(), ".tar");
         when(factory.supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()))).thenReturn(supplier);
@@ -91,10 +89,9 @@ public class ChronopolisIngestTest extends BatchTestBase {
         Bag bag = createChronBag();
         BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
-        when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", prefix + data.depositor(), "name", receipt.getName()))))
                 .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), generator, settings, stagingProperties, factory, ingestProperties);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags, staging, settings, stagingProperties, factory, ingestProperties);
 
         String depositor = prefix + data.depositor();
         IngestRequest request = request(receipt, depositor, null);
@@ -119,7 +116,6 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.setPushDPN(false);
         Bag bag = createChronBag();
         BagReceipt receipt = receipt();
-        when(generator.bags()).thenReturn(bags);
         when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
                 .thenReturn(getBagExists(bag));
 

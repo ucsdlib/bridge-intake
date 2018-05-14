@@ -27,14 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class Checker implements Runnable {
     private final Logger log = LoggerFactory.getLogger(Checker.class);
 
-    private BagData data;
-    private List<BagReceipt> receipts;
-    private BridgeAPI bridge;
+    private final BagData data;
+    private final BridgeAPI bridge;
+    private final List<BagReceipt> receipts;
 
     public Checker(BagData data, List<BagReceipt> receipts, BridgeAPI bridge) {
         this.data = data;
-        this.receipts = receipts;
         this.bridge = bridge;
+        this.receipts = receipts;
     }
 
     @Override
@@ -43,7 +43,6 @@ public abstract class Checker implements Runnable {
         Map<String, ReplicationHistory> history = new HashMap<>();
         AlternateIds alternates = new AlternateIds();
         AtomicInteger accumulator = new AtomicInteger(0);
-
 
         /*
            Trying to come up with some ideas on how to rearrange this... what if...

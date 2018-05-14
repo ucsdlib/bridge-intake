@@ -123,7 +123,7 @@ public class Bridge {
                 History fromJson = gson.fromJson(item.getHistory(), History.class);
                 if (fromJson instanceof SnapshotStaged) {
                     log.info("Bagging snapshot {}", snapshotId);
-                    manager.startSnapshotTasklet(details);
+                    manager.bagSnapshot(details);
                 } else if (fromJson instanceof BaggingHistory) {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
                     manager.startReplicationTasklet(details, bHistory.getHistory(), settings, ingestProperties, stagingProperties);

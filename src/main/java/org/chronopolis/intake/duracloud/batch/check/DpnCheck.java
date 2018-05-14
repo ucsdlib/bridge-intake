@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.Events;
-import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
@@ -46,15 +45,23 @@ public class DpnCheck extends Checker {
     private final BalustradeBag bags;
     private final Bicarbonate cleaningManager;
 
-    public DpnCheck(BagData data, List<BagReceipt> receipts, BridgeAPI bridge, LocalAPI dpn, Bicarbonate cleaningManager) {
+    public DpnCheck(BagData data,
+                    List<BagReceipt> receipts,
+                    BridgeAPI bridge,
+                    BalustradeBag bags,
+                    Events eventsAPI,
+                    Bicarbonate cleaningManager) {
         super(data, receipts, bridge);
-        this.bags = dpn.getBagAPI();
-        this.events = dpn.getEventsAPI();
+        this.bags = bags;
+        this.events = eventsAPI;
         this.cleaningManager = cleaningManager;
     }
 
     @Override
-    protected void checkReceipts(BagReceipt receipt, BagData data, AtomicInteger accumulator, Map<String, ReplicationHistory> history) {
+    protected void checkReceipts(BagReceipt receipt,
+                                 BagData data,
+                                 AtomicInteger accumulator,
+                                 Map<String, ReplicationHistory> history) {
         String snapshot = data.snapshotId();
         log.info("[DPN Check] Checking {} for completion", snapshot);
 

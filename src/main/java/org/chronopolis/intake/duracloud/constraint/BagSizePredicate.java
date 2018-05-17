@@ -33,7 +33,8 @@ public class BagSizePredicate implements Predicate<Weight> {
     public boolean test(Weight weight) {
         Constraints.SizeLimit limit = constraintMap.getOrDefault(weight.getNode(),
                 new Constraints.SizeLimit());
+        // log.info("{} {}", (limit.getSize() < 0), (size < (limit.getSize() * limit.getUnit().size())));
         //     no limit               check against bag size
-        return limit.getSize() < 0 || (limit.getSize() * limit.getUnit().size()) < size;
+        return limit.getSize() < 0 || size < (limit.getSize() * limit.getUnit().size());
     }
 }

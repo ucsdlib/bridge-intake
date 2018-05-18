@@ -72,11 +72,17 @@ public class DpnReplicateTest extends BatchTestBase {
 
     @Test
     public void createFiltersOnBagSize() {
-        settings.getConstraints().setNodes(ImmutableList.of(new Constraints.Node()
-                .setName(weight0.getNode())
-                .setSizeLimit(new Constraints.SizeLimit()
-                        .setSize(10)
-                        .setUnit(Unit.BYTE))));
+        settings.getConstraints().setNodes(ImmutableList.of(
+                new Constraints.Node()
+                        .setName(weight0.getNode())
+                        .setSizeLimit(new Constraints.SizeLimit()
+                                .setSize(1)
+                                .setUnit(Unit.BYTE)),
+                new Constraints.Node()
+                        .setName(weight1.getNode())
+                        .setSizeLimit(new Constraints.SizeLimit()
+                                .setSize(15)
+                                .setUnit(Unit.BYTE))));
 
         // todo: we really should assert that the replication we're creating are the ones we
         //       are expecting. in the next version of the earth-core lib, we'll have better eq

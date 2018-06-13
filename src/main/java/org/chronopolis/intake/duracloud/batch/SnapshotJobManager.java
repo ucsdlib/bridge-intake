@@ -1,11 +1,13 @@
 package org.chronopolis.intake.duracloud.batch;
 
 import org.chronopolis.common.storage.BagStagingProperties;
+import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.Events;
 import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.earth.models.Member;
 import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
@@ -28,8 +30,10 @@ import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.DepositorAPI;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.StagingService;
+import org.chronopolis.rest.models.DepositorModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import retrofit2.Call;
 
 import java.io.IOException;
 import java.util.List;
@@ -191,6 +195,10 @@ public class SnapshotJobManager {
             return;
         }
 
+        if (!checkDepositor(data)) {
+            return;
+        }
+
         Checker check;
         Events events = dpnLocal.getEventsAPI();
         BalustradeBag bags = dpnLocal.getBagAPI();
@@ -256,6 +264,48 @@ public class SnapshotJobManager {
         }
 
         return CompletableFuture.allOf(futures);
+    }
+
+    /**
+     * Simple validation to ensure that a given depositor exists in Chronopolis and DPN if required
+     *
+     * @param bagData the BagData containing the name and uuid of the depositor
+     * @return true if the member if found in Chronopolis (and DPN if required)
+     */
+    private boolean checkDepositor(BagData bagData) {
+        // For verifying that a member exists in chronopolis and/or dpn
+        boolean exists = true;
+        StringBuilder message = new StringBuilder();
+        SimpleCallback<DepositorModel> chronCallback = new SimpleCallback<>();
+
+        String depositor = bagData.depositor();
+        Call<DepositorModel> chronDepositor = depositors.getDepositor(depositor);
+        chronDepositor.enqueue(chronCallback);
+
+        if (!chronCallback.getResponse().isPresent()) {
+            exists = false;
+            message.append("Chronopolis Depositor ")
+                    .append(depositor)
+                    .append(" is missing");
+        }
+
+        if (intakeSettings.pushDPN()) {
+            String member = bagData.member();
+            SimpleCallback<Member> dpnCallback = new SimpleCallback<>();
+            Call<Member> memberCall = dpnLocal.getMemberAPI().getMember(member);
+            memberCall.enqueue(dpnCallback);
+            if (!dpnCallback.getResponse().isPresent()) {
+                exists = false;
+                message.append("DPN Member ").append(member).append(" is missing");
+            }
+        }
+
+        if (!exists) {
+            log.warn(message.toString());
+            notifier.notify("Missing depositor " + depositor, message.toString());
+        }
+
+        return exists;
     }
 
 }

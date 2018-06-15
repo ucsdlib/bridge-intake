@@ -1,25 +1,37 @@
 package org.chronopolis.intake.duracloud.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.apache.activemq.artemis.api.core.TransportConfiguration;
+import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
+import org.apache.activemq.artemis.api.core.client.ServerLocator;
+import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnectorFactory;
+import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.chronopolis.common.ace.AceConfiguration;
 import org.chronopolis.common.concurrent.TrackingThreadPoolExecutor;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.ServiceGenerator;
-import org.chronopolis.rest.api.TokenService;
 import org.chronopolis.rest.models.Bag;
-import org.chronopolis.tokenize.batch.ChronopolisTokenRequestBatch;
+import org.chronopolis.rest.models.serializers.ZonedDateTimeDeserializer;
+import org.chronopolis.rest.models.serializers.ZonedDateTimeSerializer;
+import org.chronopolis.tokenize.ManifestEntry;
+import org.chronopolis.tokenize.ManifestEntryDeserializer;
+import org.chronopolis.tokenize.batch.ImsServiceWrapper;
+import org.chronopolis.tokenize.mq.artemis.ArtemisSupervisor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
-import java.util.concurrent.Executor;
+import java.time.ZonedDateTime;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
- * Beans required to spawn a TokenTask component
+ * Beans required for Tokenization
  *
- * Note: IngestAPI is created in the Application.java so we don't need it here
+ * This starts an ActiveMQ server and all consumers for the server
  *
  * @author shake
  */
@@ -27,29 +39,47 @@ import java.util.concurrent.TimeUnit;
 @EnableConfigurationProperties({IngestAPIProperties.class, AceConfiguration.class})
 public class TokenTaskConfig {
 
-    @Bean
-    public TokenService tokens(ServiceGenerator generator) {
-        return generator.tokens();
+    @Bean(destroyMethod = "stop")
+    public EmbeddedActiveMQ activeMQ() throws Exception {
+        return new EmbeddedActiveMQ().start();
+    }
+
+    @DependsOn("activeMQ")
+    @Bean(destroyMethod = "close")
+    public ServerLocator serverLocator() {
+        return ActiveMQClient.createServerLocatorWithoutHA(
+                new TransportConfiguration(InVMConnectorFactory.class.getName()));
     }
 
     @Bean
-    public Executor executorForBatch() {
-        return new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        // could have this as a separate bean but really not that important imo
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer());
+        module.addDeserializer(ZonedDateTime.class, new ZonedDateTimeDeserializer());
+        module.addDeserializer(ManifestEntry.class, new ManifestEntryDeserializer());
+        mapper.registerModule(module);
+        return mapper;
     }
 
     @Bean
-    public ChronopolisTokenRequestBatch batch(Executor executorForBatch,
-                                              AceConfiguration configuration,
-                                              TokenService tokens) {
-        ChronopolisTokenRequestBatch batch =
-                new ChronopolisTokenRequestBatch(configuration, tokens);
-        executorForBatch.execute(batch);
-        return batch;
+    public ImsServiceWrapper imsServiceWrapper(AceConfiguration configuration) {
+        return new ImsServiceWrapper(configuration.getIms());
     }
 
-    @Bean
+    @DependsOn("serverLocator")
+    @Bean(destroyMethod = "close")
+    public ArtemisSupervisor supervisor(ObjectMapper mapper,
+                                        ServerLocator serverLocator,
+                                        ServiceGenerator generator,
+                                        ImsServiceWrapper imsServiceWrapper) throws Exception {
+        return new ArtemisSupervisor(serverLocator, mapper, generator.tokens(), imsServiceWrapper);
+    }
+
+    @Bean(destroyMethod = "shutdownNow")
     public TrackingThreadPoolExecutor<Bag> executor() {
-        return new TrackingThreadPoolExecutor<>(4, 8, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>());
+        return new TrackingThreadPoolExecutor<>(4, 4, 1, MINUTES, new LinkedBlockingQueue<>());
     }
 
 }

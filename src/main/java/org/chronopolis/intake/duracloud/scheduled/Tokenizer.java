@@ -1,9 +1,9 @@
 package org.chronopolis.intake.duracloud.scheduled;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.chronopolis.common.concurrent.TrackingThreadPoolExecutor;
 import org.chronopolis.common.storage.BagStagingProperties;
-import org.chronopolis.common.util.Filter;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.ServiceGenerator;
@@ -11,9 +11,10 @@ import org.chronopolis.rest.api.TokenService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.BagStatus;
 import org.chronopolis.tokenize.BagProcessor;
-import org.chronopolis.tokenize.batch.ChronopolisTokenRequestBatch;
 import org.chronopolis.tokenize.filter.HttpFilter;
+import org.chronopolis.tokenize.filter.ProcessingFilter;
 import org.chronopolis.tokenize.scheduled.TokenTask;
+import org.chronopolis.tokenize.supervisor.TokenWorkSupervisor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
@@ -37,22 +38,21 @@ public class Tokenizer {
 
     private final BagService bags;
     private final TokenService tokens;
+    private final TokenWorkSupervisor supervisor;
     private final IngestAPIProperties ingestProperties;
     private final BagStagingProperties stagingProperties;
-    private final ChronopolisTokenRequestBatch batch;
     private final TrackingThreadPoolExecutor<Bag> executor;
 
-
     public Tokenizer(ServiceGenerator generator,
+                     TokenWorkSupervisor supervisor,
                      IngestAPIProperties ingestProperties,
                      BagStagingProperties stagingProperties,
-                     ChronopolisTokenRequestBatch batch,
                      TrackingThreadPoolExecutor<Bag> executor) {
         this.bags = generator.bags();
         this.tokens = generator.tokens();
+        this.supervisor = supervisor;
         this.ingestProperties = ingestProperties;
         this.stagingProperties = stagingProperties;
-        this.batch = batch;
         this.executor = executor;
     }
 
@@ -65,13 +65,21 @@ public class Tokenizer {
                 ImmutableMap.of("status", BagStatus.DEPOSITED,
                         "region_id", stagingProperties.getPosix().getId(),
                         "creator", ingestProperties.getUsername()));
+
+        ProcessingFilter processingFilter = new ProcessingFilter(supervisor);
         try {
             Response<PageImpl<Bag>> response = call.execute();
             if (response.isSuccessful()) {
+                // execute consumers here?
+
                 log.debug("Found {} bags for tokenization", response.body().getSize());
                 for (Bag bag : response.body()) {
-                    Filter<String> filter = new HttpFilter(bag.getId(), tokens);
-                    executor.submitIfAvailable(new BagProcessor(bag, filter, stagingProperties, batch), bag);
+                    HttpFilter httpFilter = new HttpFilter(bag.getId(), tokens);
+                    BagProcessor processor = new BagProcessor(bag,
+                            ImmutableSet.of(processingFilter, httpFilter),
+                            stagingProperties,
+                            supervisor);
+                    executor.submitIfAvailable(processor, bag);
                 }
             }
         } catch (IOException e) {

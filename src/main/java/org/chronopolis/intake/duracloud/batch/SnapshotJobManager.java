@@ -36,7 +36,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Start a Tasklet based on the type of request that comes in
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeUnit;
  * That way we aren't overrun with overly large constructors, and are able to keep functionality
  * more concise. i.e. BaggingBuilder, IngestBuilder, or something of the like.
  * <p>
+ * todo: we need some tests which interrupt tasks while they are running (i.e. a shutdown)
  * <p>
  * Created by shake on 7/29/14.
  */
@@ -69,10 +71,24 @@ public class SnapshotJobManager {
     // need ThreadPools instead of executor
     // one for io, one for http?
     // Instantiated per manager
-    private ThreadPoolExecutor longIO;
-    private ThreadPoolExecutor shortIO;
+    private final ThreadPoolExecutor longIo;
+    private final ThreadPoolExecutor shortIo;
     private final ConcurrentSkipListSet<String> processing;
 
+    /**
+     * Create a SnapshotJobManager
+     *
+     * @param notifier             the notification services on the event of failure
+     * @param cleaningManager      the class to clean staging areas
+     * @param bagProperties        configuration properties for BagIt
+     * @param intakeSettings       configuration properties for all intake
+     * @param bagStagingProperties configuration properties for local staging areas
+     * @param bridge               the API to access the Duracloud Bridge
+     * @param dpnLocal             the local DPN APIs
+     * @param chronBags            the API to access Bags in Chronopolis
+     * @param chronStaging         the API to access registered staging areas in Chronopolis
+     * @param collector            a data collector to read properties for bags
+     */
     public SnapshotJobManager(Notifier notifier,
                               Bicarbonate cleaningManager,
                               BagProperties bagProperties,
@@ -95,15 +111,18 @@ public class SnapshotJobManager {
         this.bagStagingProperties = bagStagingProperties;
 
         this.processing = new ConcurrentSkipListSet<>();
-        this.longIO = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-        this.shortIO = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        this.longIo = new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>());
+        this.shortIo = new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
+    /**
+     * Shutdown all resources associated with this ${@link SnapshotJobManager}
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void destroy() {
         log.debug("Shutting down thread pools");
-        longIO.shutdownNow();
-        shortIO.shutdownNow();
+        longIo.shutdownNow();
+        shortIo.shutdownNow();
     }
 
     /**
@@ -118,14 +137,19 @@ public class SnapshotJobManager {
 
             // good enough for now to check that we aren't processing a snapshot multiple times
             if (processing.add(snapshotId)) {
-                BaggingTasklet bagger = new BaggingTasklet(snapshotId, data.depositor(),
-                        intakeSettings, bagProperties, bagStagingProperties, bridge, notifier);
+                BaggingTasklet bagger = new BaggingTasklet(snapshotId,
+                        data.depositor(),
+                        intakeSettings,
+                        bagProperties,
+                        bagStagingProperties,
+                        bridge,
+                        notifier);
 
-                CompletableFuture.runAsync(bagger, longIO)
+                CompletableFuture.runAsync(bagger, longIo)
                         .whenComplete((v, t) -> processing.remove(snapshotId));
             }
         } catch (IOException e) {
-            log.error("Error reading from properties file for snapshot {}", details.getSnapshotId());
+            log.error("Error reading properties file for snapshot {}", details.getSnapshotId());
         }
     }
 
@@ -141,20 +165,20 @@ public class SnapshotJobManager {
      * @param ingestProperties  the properties for chronopolis Ingest API configuration
      * @param stagingProperties the properties defining the bag staging area
      */
-    public void startReplicationTasklet(SnapshotDetails details,
-                                        List<BagReceipt> receipts,
-                                        IntakeSettings settings,
-                                        IngestAPIProperties ingestProperties,
-                                        BagStagingProperties stagingProperties) {
+    public void startReplicationTasklet(final SnapshotDetails details,
+                                        final List<BagReceipt> receipts,
+                                        final IntakeSettings settings,
+                                        final IngestAPIProperties ingestProperties,
+                                        final BagStagingProperties stagingProperties) {
         // If we're pushing to dpn, let's make the differences here
-        // -> Always push to chronopolis so have a separate tasklet for that (NotifyChron or something)
+        // -> Always push to chronopolis so we have a separate tasklet (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
         BagData data;
         try {
             data = collector.collectBagData(details.getSnapshotId());
         } catch (IOException e) {
-            log.error("Error reading from properties file for snapshot {}", details.getSnapshotId());
+            log.error("Error from properties file for snapshot {}", details.getSnapshotId());
             return;
         }
 
@@ -163,8 +187,8 @@ public class SnapshotJobManager {
         }
 
         Checker check;
+        Events events = dpnLocal.getEventsAPI();
         BalustradeBag bags = dpnLocal.getBagAPI();
-        Events eventsAPI = dpnLocal.getEventsAPI();
         final String snapshotId = data.snapshotId();
 
         CompletableFuture<Void> ingestFuture;
@@ -172,18 +196,18 @@ public class SnapshotJobManager {
                 chronStaging, settings, stagingProperties, ingestProperties);
 
         if (settings.pushDPN()) {
-            check = new DpnCheck(data, receipts, bridge, bags, eventsAPI, cleaningManager);
+            check = new DpnCheck(data, receipts, bridge, bags, events, cleaningManager);
 
             // Also need to do DPN Ingest steps
-            CompletableFuture<Void> dpnIngest = dpnIngest(data, details, receipts,
-                    dpnLocal, settings, stagingProperties);
-            ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIO);
+            CompletableFuture<Void> dpnIngest = dpnIngest(data, details, receipts, dpnLocal,
+                    settings, stagingProperties);
+            ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIo);
         } else {
             check = new ChronopolisCheck(data, receipts, bridge, chronBags, cleaningManager);
-            ingestFuture = CompletableFuture.runAsync(chronIngest, longIO);
+            ingestFuture = CompletableFuture.runAsync(chronIngest, longIo);
         }
 
-        ingestFuture.thenRunAsync(check, longIO)
+        ingestFuture.thenRunAsync(check, longIo)
                 .whenComplete((v, t) -> processing.remove(snapshotId));
     }
 
@@ -221,10 +245,11 @@ public class SnapshotJobManager {
                     stagingProperties, transfers);
 
             CompletableFuture<List<Weight>> weights = CompletableFuture.supplyAsync(weighter);
-            futures[i++] = CompletableFuture.supplyAsync(dpnIngest, shortIO)
-                    .thenApplyAsync(dpnDigest, shortIO)
-                    .thenAcceptBothAsync(weights, dpnReplicate, shortIO);
+            futures[i++] = CompletableFuture.supplyAsync(dpnIngest, shortIo)
+                    .thenApplyAsync(dpnDigest, shortIo)
+                    .thenAcceptBothAsync(weights, dpnReplicate, shortIo);
         }
+
         return CompletableFuture.allOf(futures);
     }
 

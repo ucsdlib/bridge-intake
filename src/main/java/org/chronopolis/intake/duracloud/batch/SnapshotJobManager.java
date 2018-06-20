@@ -25,6 +25,7 @@ import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.rest.api.BagService;
+import org.chronopolis.rest.api.DepositorAPI;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.StagingService;
 import org.slf4j.Logger;
@@ -64,6 +65,7 @@ public class SnapshotJobManager {
     private final BridgeAPI bridge;
     private final LocalAPI dpnLocal;
     private final BagService chronBags;
+    private final DepositorAPI depositors;
     private final StagingService chronStaging;
 
     // do we want an overseer TP which we use to say: job(x, y) is already running, REJECTED!
@@ -87,6 +89,7 @@ public class SnapshotJobManager {
      * @param dpnLocal             the local DPN APIs
      * @param chronBags            the API to access Bags in Chronopolis
      * @param chronStaging         the API to access registered staging areas in Chronopolis
+     * @param depositors           the API to access Depositors in Chronopolis
      * @param collector            a data collector to read properties for bags
      */
     public SnapshotJobManager(Notifier notifier,
@@ -98,6 +101,7 @@ public class SnapshotJobManager {
                               LocalAPI dpnLocal,
                               BagService chronBags,
                               StagingService chronStaging,
+                              DepositorAPI depositors,
                               DataCollector collector) {
         this.bridge = bridge;
         this.dpnLocal = dpnLocal;
@@ -109,6 +113,7 @@ public class SnapshotJobManager {
         this.intakeSettings = intakeSettings;
         this.cleaningManager = cleaningManager;
         this.bagStagingProperties = bagStagingProperties;
+        this.depositors = depositors;
 
         this.processing = new ConcurrentSkipListSet<>();
         this.longIo = new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>());
@@ -196,14 +201,14 @@ public class SnapshotJobManager {
                 chronStaging, settings, stagingProperties, ingestProperties);
 
         if (settings.pushDPN()) {
-            check = new DpnCheck(data, receipts, bridge, bags, events, cleaningManager);
+            check = new DpnCheck(data, receipts, bridge, bags, events, depositors, cleaningManager, settings);
 
             // Also need to do DPN Ingest steps
             CompletableFuture<Void> dpnIngest = dpnIngest(data, details, receipts, dpnLocal,
                     settings, stagingProperties);
             ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIo);
         } else {
-            check = new ChronopolisCheck(data, receipts, bridge, chronBags, cleaningManager);
+            check = new ChronopolisCheck(data, receipts, bridge, depositors, cleaningManager);
             ingestFuture = CompletableFuture.runAsync(chronIngest, longIo);
         }
 

@@ -67,6 +67,7 @@ public class BeanConfig {
                 dpn,
                 generator.bags(),
                 generator.staging(),
+                generator.depositorAPI(),
                 new PropertiesDataCollector(settings));
     }
 

@@ -18,6 +18,7 @@
 # User to execute as
 CHRON_USER="chronopolis"
 
+DATA_DIR="/var/lib/chronopolis/data"
 INTAKE_DIR="/usr/local/chronopolis/intake/dc"
 INTAKE_JAR="bridge-intake.jar"
 
@@ -35,26 +36,35 @@ lockfile="/var/lock/subsys/bridge-intake"
 export SPRING_PID_FILE="$pidfile"
 export SPRING_CONFIG_LOCATION="$INTAKE_DIR/"
 
+function check_dir(){
+    dir=$1
+
+    # directory exists
+    if [ ! -d "$dir" ]; then
+        echo "Creating $dir"
+        mkdir -p "$dir"
+    fi
+
+    # permissions for dir
+    uname="$(stat --format '%U' "$dir")"
+    if [ "x${uname}" != "x${CHRON_USER}" ]; then
+        echo "Updating permissions for $dir"
+        chown "$CHRON_USER":"$CHRON_USER" "$dir"
+    fi
+
+    return 0
+}
+
 start(){
     # check user exists
-    if ! getent passwd $CHRON_USER > /dev/null 2>&1; then
+    if ! getent passwd ${CHRON_USER} > /dev/null 2>&1; then
         echo "User $CHRON_USER does not exist; unable to start bridge-intake service"
         action $"Starting $prog: " /bin/false
         return 2
     fi
 
-    # log directory exists
-    if [ ! -d "$logdir" ]; then
-        echo "Creating $logdir"
-        mkdir "$logdir"
-    fi
-
-    # permissions for logging
-    uname="$(stat --format '%U' "$logdir")"
-    if [ "x${uname}" != "x${CHRON_USER}" ]; then
-        echo "Updating permissions for $logdir"
-        chown "$CHRON_USER":"$CHRON_USER" "$logdir"
-    fi
+    check_dir ${logdir}
+    check_dir ${DATA_DIR}
 
     # check already running
     RUNNING=0
@@ -70,12 +80,12 @@ start(){
     fi
 
     # If we're running return early
-    if [ $RUNNING = 1 ]; then
+    if [ ${RUNNING} = 1 ]; then
         action $"Starting $prog: " /bin/true
         return 0
     fi
 
-    daemon --user "$CHRON_USER" --pidfile "$pidfile" $JAVA_CMD
+    daemon --user "$CHRON_USER" --pidfile "$pidfile" ${JAVA_CMD}
     RC=$?
 
     # Should clean this up a bit, but sleep an arbitrary amount before checking the state
@@ -93,7 +103,7 @@ start(){
         action $"Starting $prog: " /bin/false
     fi
 
-    return $RC
+    return ${RC}
 }
 
 stop(){
@@ -102,7 +112,7 @@ stop(){
     # check if the pidfile exists
     if [ ! -f "$pidfile" ]; then
         action $"Stopping $prog: " /bin/true
-        return $RC
+        return ${RC}
     fi
 
     # get the pid and attempt to kill
@@ -111,8 +121,8 @@ stop(){
         /bin/kill "$PID" > /dev/null 2>&1 || break
         if [ $? -eq 0 ]; then
             action $"Stopping $prog: " /bin/true
-            rm -f $lockfile
-            rm -f "$pidfile"
+            rm -f ${lockfile}
+            rm -f ${pidfile}
         else
             action $"Stopping $prog: " /bin/false
             RC=4
@@ -122,7 +132,7 @@ stop(){
         RC=4
     fi
 
-    return $RC
+    return ${RC}
 }
 
 case "$1" in

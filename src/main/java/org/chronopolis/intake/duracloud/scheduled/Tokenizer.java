@@ -34,7 +34,7 @@ import java.io.IOException;
 @Component
 @EnableScheduling
 public class Tokenizer {
-    private final Logger log = LoggerFactory.getLogger("tokenizer-log");
+    private final Logger log = LoggerFactory.getLogger(Tokenizer.class);
 
     private final BagService bags;
     private final TokenService tokens;

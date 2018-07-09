@@ -286,7 +286,7 @@ public class SnapshotJobManager {
             exists = false;
             message.append("Chronopolis Depositor ")
                     .append(depositor)
-                    .append(" is missing");
+                    .append(" is missing\n");
         }
 
         if (intakeSettings.pushDPN()) {
@@ -296,7 +296,7 @@ public class SnapshotJobManager {
             memberCall.enqueue(dpnCallback);
             if (!dpnCallback.getResponse().isPresent()) {
                 exists = false;
-                message.append("DPN Member ").append(member).append(" is missing");
+                message.append("DPN Member ").append(member).append(" is missing\n");
             }
         }
 

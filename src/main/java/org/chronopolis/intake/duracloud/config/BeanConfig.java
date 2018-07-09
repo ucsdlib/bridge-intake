@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties({BagStagingProperties.class,
+        IngestAPIProperties.class,
         IntakeSettings.class,
         BagProperties.class})
 public class BeanConfig {

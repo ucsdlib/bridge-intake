@@ -17,6 +17,7 @@ import org.chronopolis.tokenize.scheduled.TokenTask;
 import org.chronopolis.tokenize.supervisor.TokenWorkSupervisor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,6 +34,7 @@ import java.io.IOException;
  */
 @Component
 @EnableScheduling
+@Profile("!disable-tokenizer")
 public class Tokenizer {
     private final Logger log = LoggerFactory.getLogger(Tokenizer.class);
 
@@ -56,7 +58,7 @@ public class Tokenizer {
         this.executor = executor;
     }
 
-    @Scheduled(cron = "${ingest.cron.tokens:0/30 * * * * *}")
+    @Scheduled(cron = "${ingest.cron.tokens:0 0/10 * * * *}")
     public void tokenize() {
         log.info("Searching for bags to tokenize");
 

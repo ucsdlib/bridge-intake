@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 
 import java.time.ZonedDateTime;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,6 +37,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  * @author shake
  */
 @Configuration
+@Profile("!disable-tokenizer")
 @EnableConfigurationProperties({IngestAPIProperties.class, AceConfiguration.class})
 public class TokenTaskConfig {
 

@@ -35,7 +35,7 @@ systemctl disable bridge-intake
 %__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{service}"
 %__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
 %__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
-%__install -D -m0644 "%{SOURCE3}" "%{buildroot}%{_prefix}/%{prep}"
+%__install -D -m0755 "%{SOURCE3}" "%{buildroot}%{_prefix}/%{prep}"
 
 %files
 

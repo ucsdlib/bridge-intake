@@ -9,10 +9,14 @@ import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
+import org.chronopolis.intake.duracloud.cleaner.Cleaner;
+import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.models.BagStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -22,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,20 +46,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DpnCheck extends Checker {
     private final Logger log = LoggerFactory.getLogger(DpnCheck.class);
 
+    private static final int EXPECTED_REPLICATIONS = 3;
+
     private final Events events;
     private final BalustradeBag bags;
+    private final DepositorAPI depositors;
     private final Bicarbonate cleaningManager;
+    private final IntakeSettings settings;
 
     public DpnCheck(BagData data,
                     List<BagReceipt> receipts,
                     BridgeAPI bridge,
                     BalustradeBag bags,
                     Events eventsAPI,
-                    Bicarbonate cleaningManager) {
+                    DepositorAPI depositors,
+                    Bicarbonate cleaningManager,
+                    IntakeSettings settings) {
         super(data, receipts, bridge);
         this.bags = bags;
         this.events = eventsAPI;
+        this.depositors = depositors;
         this.cleaningManager = cleaningManager;
+        this.settings = settings;
     }
 
     @Override
@@ -75,10 +88,11 @@ public class DpnCheck extends Checker {
 
         // not sure how much I like chaining 4 filters together but 
         List<String> replications = cb.getResponse()
-                .filter(bag -> bag.getReplicatingNodes().size() == 3)
+                .map(bag -> isChronopolisPreserved(data, bag))
+                // A good way to get the expected replications? Maybe in the future
+                .filter(bag -> bag.getReplicatingNodes().size() == EXPECTED_REPLICATIONS)
                 .filter(this::ingestRecordExists)
                 .filter(bag -> cleaningManager.cleaner(dpn).call())
-                .filter(bag -> cleaningManager.forChronopolis(depositor, uuid).call())
                 .map(Bag::getReplicatingNodes).orElse(ImmutableList.of());
 
         for (String node : replications) {
@@ -88,6 +102,50 @@ public class DpnCheck extends Checker {
             h.addReceipt(uuid);
             history.put(node, h);
         }
+    }
+
+    /**
+     * Check if Chronopolis has replicated a DPN Bag
+     *
+     * @param data the BagData containing depositor information
+     * @param bag  the DPN Bag
+     * @return the DPN Bag, potentially updated if Chronopolis was added as a replicating node
+     */
+    private Bag isChronopolisPreserved(BagData data, Bag bag) {
+        if (bag.getReplicatingNodes().contains(settings.getDpn().getUsername())) {
+            return bag;
+        }
+
+        log.info("[DPN Check] {} querying for chronopolis replication", bag.getUuid());
+        Call<org.chronopolis.rest.models.Bag> call =
+                depositors.getDepositorBag(data.depositor(), bag.getUuid());
+        SimpleCallback<org.chronopolis.rest.models.Bag> cb = new SimpleCallback<>();
+        call.enqueue(cb);
+
+        Cleaner cleaner = cleaningManager.forChronopolis(data.depositor(), bag.getUuid());
+        return cb.getResponse()
+                .filter(chronBag -> chronBag.getStatus() == BagStatus.PRESERVED)
+                .flatMap(ignored -> addChronopolisReplication(bag))
+                .filter(ignored -> cleaner.call())
+                .orElse(bag);
+    }
+
+    /**
+     * Update a Bag in DPN to include Chronopolis as a replicating node
+     *
+     * @param bag the Bag to update
+     * @return the updated Bag
+     */
+    private Optional<Bag> addChronopolisReplication(Bag bag) {
+        log.info("[DPN Check] {} adding chronopolis as replicating node", bag.getUuid());
+        SimpleCallback<Bag> callback = new SimpleCallback<>();
+        bag.setReplicatingNodes(new ImmutableList.Builder<String>()
+                .addAll(bag.getReplicatingNodes())
+                .add(settings.getDpn().getUsername()).build());
+        Call<Bag> updateCall = bags.updateBag(bag.getUuid(), bag);
+        updateCall.enqueue(callback);
+
+        return callback.getResponse();
     }
 
     /**

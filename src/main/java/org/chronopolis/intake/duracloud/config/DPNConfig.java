@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.dpn.OkTokenInterceptor;
 import org.chronopolis.earth.api.BalustradeBag;
+import org.chronopolis.earth.api.BalustradeMember;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.api.Events;
@@ -144,6 +145,7 @@ public class DPNConfig {
                 .setEventsAPI(adapter.create(Events.class))
                 .setBagAPI(adapter.create(BalustradeBag.class))
                 .setNodeAPI(adapter.create(BalustradeNode.class))
+                .setMemberAPI(adapter.create(BalustradeMember.class))
                 .setTransfersAPI(adapter.create(BalustradeTransfers.class));
     }
 

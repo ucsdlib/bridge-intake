@@ -15,12 +15,11 @@ import java.util.concurrent.TimeUnit;
  * Created by shake on 3/1/16.
  */
 @Component
-@Profile("default")
+@Profile("!develop")
 public class ProductionService implements ChronService {
     private final Logger log = LoggerFactory.getLogger(ProductionService.class);
 
-    private final
-    ApplicationContext context;
+    private final ApplicationContext context;
 
     @Autowired
     public ProductionService(ApplicationContext context) {

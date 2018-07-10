@@ -35,6 +35,7 @@ public class DpnDigest implements Function<Bag, Bag> {
 
     @Override
     public Bag apply(Bag bag) {
+        // if we wanted we could verify that the bag uuid == receipt name
         final String uuid = bag.getUuid();
         final String algorithm = "sha256";
 

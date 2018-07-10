@@ -5,7 +5,7 @@
     <springProfile name="default">
         <property name="TOKENIZER_LOG_FILENAME" value="/var/log/chronopolis/tokenizer.log"/>
 
-        <appender name="TOKENIZER_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <appender name="tokenizer-log" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${TOKENIZER_LOG_FILENAME}</file>
             <encoder>
                 <pattern>%d{yyyy/MM/dd HH:mm:ss} - %m%n</pattern>
@@ -19,8 +19,8 @@
             </triggeringPolicy>
         </appender>
 
-        <logger name="tokenizer-log" level="INFO" additivity="false">
-            <appender-ref ref="TOKENIZER_LOG"/>
+        <logger name="org.chronopolis.tokenize" level="INFO" additivity="false">
+            <appender-ref ref="tokenizer-log"/>
         </logger>
     </springProfile>
 </configuration>

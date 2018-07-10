@@ -35,7 +35,7 @@ systemctl disable bridge-intake
 %__install -D -m0644 "%{SOURCE0}" "%{buildroot}%{service}"
 %__install -D -m0644 "%{SOURCE1}" "%{buildroot}%{_prefix}/%{jar}"
 %__install -D -m0644 "%{SOURCE2}" "%{buildroot}%{_prefix}/%{yaml}"
-%__install -D -m0644 "%{SOURCE3}" "%{buildroot}%{_prefix}/%{prep}"
+%__install -D -m0755 "%{SOURCE3}" "%{buildroot}%{_prefix}/%{prep}"
 
 %files
 
@@ -51,7 +51,7 @@ systemctl disable bridge-intake
 
 * Thu Nov 09 2017 Mike Ritter <shake@umiacs.umd.edu> 2.0.2-20171109
 - Remove /var/log/chronopolis directory creation
-- Add aabridge-prepare script to create logging directory if it does not exist
+- Add bridge-prepare script to create logging directory if it does not exist
 
 * Tue Oct 17 2017 Mike Ritter <shake@umiacs.umd.edu> 1.6.0-20171017
 - Update spec to be consistent with other chronopolis rpm builds

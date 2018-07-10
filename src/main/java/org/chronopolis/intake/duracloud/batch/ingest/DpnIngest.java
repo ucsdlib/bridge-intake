@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
@@ -122,7 +121,7 @@ public class DpnIngest implements Supplier<Bag> {
             DpnInfoReader reader = readerFactory.reader(save, name);
 
             Bag bag = new Bag();
-            bag.setAdminNode("chron")
+            bag.setAdminNode(settings.getDpn().getUsername())
                     .setUuid(name)
                     .setBagType(type)
                     .setMember(data.member())
@@ -134,8 +133,8 @@ public class DpnIngest implements Supplier<Bag> {
                     .setVersion(reader.getVersionNumber())
                     .setIngestNode(settings.getDpn().getUsername())
                     .setInterpretive(reader.getInterpretiveIds())
-                    .setFirstVersionUuid(reader.getFirstVersionUUID())
-                    .setReplicatingNodes(ImmutableList.of("chron"));
+                    .setFirstVersionUuid(reader.getFirstVersionUUID());
+                    // .setReplicatingNodes(ImmutableList.of("chron"));
 
             Call<Bag> call = bags.createBag(bag);
             call.enqueue(cb);

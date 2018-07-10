@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties({BagStagingProperties.class,
+        IngestAPIProperties.class,
         IntakeSettings.class,
         BagProperties.class})
 public class BeanConfig {
@@ -67,6 +68,7 @@ public class BeanConfig {
                 dpn,
                 generator.bags(),
                 generator.staging(),
+                generator.depositorAPI(),
                 new PropertiesDataCollector(settings));
     }
 

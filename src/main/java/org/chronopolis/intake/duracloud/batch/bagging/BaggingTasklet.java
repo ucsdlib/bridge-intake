@@ -119,14 +119,17 @@ public class BaggingTasklet implements Runnable {
                 .includeMissingTags(true)
                 .withInfo(BagInfo.Tag.INFO_SOURCE_ORGANIZATION, depositor);
 
+        Path duracloudManifest = snapshotBase.resolve(SNAPSHOT_MD5);
+        Path contentProperties = snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES);
+        Path collectionProperties = snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES);
         Bagger bagger = new Bagger()
                 .withBagInfo(info)
                 .withBagit(new BagIt())
                 .withPayloadManifest(manifest)
                 .withMaxSize(bagProperties.getMaxSize(), bagProperties.getUnit())
-                .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
-                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
-                .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)));
+                .withTagFile(new DuracloudMD5(duracloudManifest))
+                .withTagFile(new OnDiskTagFile(contentProperties))
+                .withTagFile(new OnDiskTagFile(collectionProperties));
         bagger = configurePartitioner(bagger, settings.pushDPN());
 
         BaggingResult partition = bagger.partition();
@@ -136,8 +139,10 @@ public class BaggingTasklet implements Runnable {
             updateBridge(results);
         } else {
             // do some logging of the failed bags
-            log.error("{} - unable to partition bags! {} Invalid Files", snapshotId, partition.getRejected());
-            String message = "Snapshot was not able to be partitioned." + partition.getRejected().size() + " Rejected Files";
+            log.error("{} - unable to partition bags! {} Invalid Files",
+                    snapshotId, partition.getRejected());
+            String message = "Snapshot was not able to be partitioned."
+                    + partition.getRejected().size() + " Rejected Files";
             notifier.notify(String.format(TITLE, snapshotId), message);
         }
     }
@@ -151,6 +156,7 @@ public class BaggingTasklet implements Runnable {
      * @param results The results from writing the bags
      * @return the response from communicating with the bridge
      */
+    @SuppressWarnings("UnusedReturnValue")
     private Optional<HistorySummary> updateBridge(List<WriteResult> results) {
         Optional<HistorySummary> response = Optional.empty();
         SimpleCallback<HistorySummary> summaryCB = new SimpleCallback<>();
@@ -197,7 +203,10 @@ public class BaggingTasklet implements Runnable {
     }
 
     private void logMetric(Logger log, String bag, String type, Metric metric) {
-        log.info("{},{},{},{},{}", bag, type, metric.getElapsed(), metric.getFilesWritten(), metric.getBytesWritten());
+        log.info("{},{},{},{},{}", bag, type,
+                metric.getElapsed(),
+                metric.getFilesWritten(),
+                metric.getBytesWritten());
     }
 
     /**

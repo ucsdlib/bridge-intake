@@ -282,6 +282,7 @@ public class SnapshotJobManager {
         Call<DepositorModel> chronDepositor = depositors.getDepositor(depositor);
         chronDepositor.enqueue(chronCallback);
 
+        message.append("Snapshot Id: ").append(bagData.snapshotId()).append("\n");
         if (!chronCallback.getResponse().isPresent()) {
             exists = false;
             message.append("Chronopolis Depositor ")

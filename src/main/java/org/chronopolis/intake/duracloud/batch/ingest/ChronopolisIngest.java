@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
@@ -9,7 +8,6 @@ import com.google.common.io.Files;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
@@ -91,10 +89,8 @@ public class ChronopolisIngest implements Runnable {
     }
 
     private BagReceipt chronopolis(BagReceipt receipt) {
-        Chron chronSettings = settings.getChron();
         String name = receipt.getName();
-        String prefix = chronSettings.getPrefix();
-        String depositor = Strings.isNullOrEmpty(prefix) ? data.depositor() : prefix + data.depositor();
+        String depositor = data.depositor();
 
         // I'm sure there's a better way to handle this... but for now this should be ok
         String bag = settings.pushDPN() ? name + ".tar" : name;
@@ -146,7 +142,8 @@ public class ChronopolisIngest implements Runnable {
             hash = Files.asByteSource(manifest.toFile())
                                  .hash(Hashing.sha256());
         } catch (IOException e) {
-            log.error("[{}] Unable to digest tagmanifest! Not registering fixity for bag!", resource);
+            log.error("[{}] Unable to digest tagmanifest! Not registering fixity for bag!",
+                    resource);
             return;
         }
 
@@ -175,7 +172,10 @@ public class ChronopolisIngest implements Runnable {
      * Let's try to DI the request supplier instead - need to make it an interface but that's easy
      */
     public static class IngestSupplierFactory {
-        public IngestRequestSupplier supplier(Path location, Path stage, String depositor, String name) {
+        public IngestRequestSupplier supplier(Path location,
+                                              Path stage,
+                                              String depositor,
+                                              String name) {
             return new IngestRequestSupplier(location, stage, depositor, name);
         }
     }

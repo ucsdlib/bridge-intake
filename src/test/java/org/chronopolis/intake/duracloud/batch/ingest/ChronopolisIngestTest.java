@@ -34,10 +34,10 @@ import static org.mockito.Mockito.when;
 
 /**
  * todo: we need to verify the fixity value is created in certain cases
- *       unfortunately at the moment the ChronopolisIngest class simply tries to read the tagmanifest
- *       off disk which makes it hard to check... unless we can generate it. That would require
- *       some more setup and basically this is something we need to dig a bit more in to.
- *
+ * unfortunately at the moment the ChronopolisIngest class simply tries to read the tagmanifest
+ * off disk which makes it hard to check... unless we can generate it. That would require
+ * some more setup and basically this is something we need to dig a bit more in to.
+ * <p>
  * Created by shake on 6/2/16.
  */
 @SuppressWarnings("ALL")
@@ -65,48 +65,70 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.setPushDPN(true);
         Bag bag = createChronBag();
         BagReceipt receipt = receipt();
-        when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
+        when(bags.get(eq(
+                ImmutableMap.of(
+                        "depositor", data.depositor(),
+                        "name", receipt.getName()))))
                 .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags, staging, settings, stagingProperties, factory, ingestProperties);
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
+                staging, settings, stagingProperties, factory, ingestProperties);
 
         IngestRequest request = request(receipt, data.depositor(), ".tar");
-        when(factory.supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()))).thenReturn(supplier);
+        when(factory.supplier(
+                any(Path.class),
+                any(Path.class),
+                eq(data.depositor()),
+                eq(receipt.getName()))).thenReturn(supplier);
         when(supplier.get()).thenReturn(Optional.of(request));
         when(bags.deposit(eq(request))).thenReturn(new CallWrapper<Bag>(bag));
-        // when(staging.createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class))).thenReturn(new CallWrapper<>(null));
 
         ingest.run();
 
-        verify(factory, times(1)).supplier(any(Path.class), any(Path.class), eq(data.depositor()), eq(receipt.getName()));
+        verify(factory, times(1)).supplier(any(Path.class),
+                any(Path.class),
+                eq(data.depositor()),
+                eq(receipt.getName()));
         verify(supplier, times(1)).get();
         verify(bags, times(1)).deposit(eq(request));
-        // verify(staging, times(1)).createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class));
     }
 
     @Test
     public void withPrefix() throws Exception {
         settings.setPushDPN(false);
-        Bag bag = createChronBag();
-        BagReceipt receipt = receipt();
         settings.getChron().setPrefix(prefix);
-        when(bags.get(eq(ImmutableMap.of("depositor", prefix + data.depositor(), "name", receipt.getName()))))
-                .thenReturn(getNoBag());
-        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags, staging, settings, stagingProperties, factory, ingestProperties);
 
-        String depositor = prefix + data.depositor();
+        Bag bag = createChronBag();
+        BagData data = data();
+        BagReceipt receipt = receipt();
+        String depositor = data.depositor();
+
+        when(bags.get(
+                eq(ImmutableMap.of(
+                        "depositor", depositor,
+                        "name", receipt.getName()))))
+                .thenReturn(getNoBag());
+        ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
+                staging, settings, stagingProperties, factory, ingestProperties);
+
         IngestRequest request = request(receipt, depositor, null);
 
-        when(factory.supplier(any(Path.class), any(Path.class), eq(depositor), eq(receipt.getName()))).thenReturn(supplier);
+        when(factory.supplier(
+                any(Path.class),
+                any(Path.class),
+                eq(depositor),
+                eq(receipt.getName()))).thenReturn(supplier);
         when(supplier.get()).thenReturn(Optional.of(request));
         when(bags.deposit(eq(request))).thenReturn(new CallWrapper<>(bag));
-        // when(staging.createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class))).thenReturn(new CallWrapper<>(null));
 
         ingest.run();
 
-        verify(factory, times(1)).supplier(any(Path.class), any(Path.class), eq(depositor), eq(receipt.getName()));
+        verify(factory, times(1)).supplier(
+                any(Path.class),
+                any(Path.class),
+                eq(depositor),
+                eq(receipt.getName()));
         verify(supplier, times(1)).get();
         verify(bags, times(1)).deposit(eq(request));
-        // verify(staging, times(1)).createFixityForBag(eq(bag.getId()), eq("BAG"), any(FixityCreate.class));
 
         settings.getChron().setPrefix("");
     }
@@ -116,10 +138,17 @@ public class ChronopolisIngestTest extends BatchTestBase {
         settings.setPushDPN(false);
         Bag bag = createChronBag();
         BagReceipt receipt = receipt();
-        when(bags.get(eq(ImmutableMap.of("depositor", data.depositor(), "name", receipt.getName()))))
+        when(bags.get(eq(
+                ImmutableMap.of(
+                        "depositor", data.depositor(),
+                        "name", receipt.getName()))))
                 .thenReturn(getBagExists(bag));
 
-        verify(factory, times(0)).supplier(any(Path.class), any(Path.class), anyString(), anyString());
+        verify(factory, times(0)).supplier(
+                any(Path.class),
+                any(Path.class),
+                anyString(),
+                anyString());
         verify(supplier, times(0)).get();
         verify(bags, times(0)).deposit(any(IngestRequest.class));
     }

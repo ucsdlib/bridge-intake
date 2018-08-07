@@ -1,5 +1,7 @@
 package org.chronopolis.intake.duracloud.model;
 
+import com.google.common.base.Strings;
+
 /**
  * Class to encapsulate some of the data we need when making bags
  *
@@ -7,12 +9,14 @@ package org.chronopolis.intake.duracloud.model;
  */
 public class BagData {
 
+    private final String prefix;
     private String snapshotId;
     private String name;
     private String depositor;
     private String member;
 
-    public BagData() {
+    public BagData(String prefix) {
+        this.prefix = prefix;
     }
 
     public String snapshotId() {
@@ -38,7 +42,9 @@ public class BagData {
     }
 
     public BagData setDepositor(String depositor) {
-        this.depositor = depositor;
+        this.depositor = Strings.isNullOrEmpty(prefix)
+                ? depositor
+                : prefix + depositor;
         return this;
     }
 

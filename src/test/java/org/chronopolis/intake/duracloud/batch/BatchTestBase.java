@@ -42,7 +42,7 @@ public class BatchTestBase {
     @Autowired public BagStagingProperties stagingProperties;
 
     protected BagData data() {
-        BagData data = new BagData();
+        BagData data = new BagData("");
         data.setMember(MEMBER);
         data.setName(NAME);
         data.setDepositor(DEPOSITOR);

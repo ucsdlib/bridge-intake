@@ -34,7 +34,7 @@ public class PropertiesDataCollector implements DataCollector {
 
     @Override
     public BagData collectBagData(String snapshotId) throws IOException {
-        BagData data = new BagData();
+        BagData data = new BagData(settings.getChron().getPrefix());
         Duracloud dc = settings.getDuracloud();
         Properties properties = new Properties();
         Path propertiesPath = Paths.get(dc.getSnapshots(), snapshotId, FILE);

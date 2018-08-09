@@ -8,7 +8,6 @@ import org.chronopolis.rest.models.serializers.ZonedDateTimeSerializer;
 import org.chronopolis.rest.models.storage.Fixity;
 import org.chronopolis.rest.models.storage.StagingStorageModel;
 import org.chronopolis.tokenize.ManifestEntry;
-import org.chronopolis.tokenize.ManifestEntryDeserializer;
 import org.junit.Assert;
 import org.junit.Test;
 

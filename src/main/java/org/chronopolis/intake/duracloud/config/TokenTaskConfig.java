@@ -9,13 +9,15 @@ import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnectorFactory;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.chronopolis.common.ace.AceConfiguration;
 import org.chronopolis.common.concurrent.TrackingThreadPoolExecutor;
+import org.chronopolis.intake.duracloud.model.FixityDeserializer;
+import org.chronopolis.intake.duracloud.model.ManifestEntryDeserializer;
 import org.chronopolis.rest.api.IngestAPIProperties;
 import org.chronopolis.rest.api.ServiceGenerator;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.serializers.ZonedDateTimeDeserializer;
 import org.chronopolis.rest.models.serializers.ZonedDateTimeSerializer;
+import org.chronopolis.rest.models.storage.Fixity;
 import org.chronopolis.tokenize.ManifestEntry;
-import org.chronopolis.tokenize.ManifestEntryDeserializer;
 import org.chronopolis.tokenize.batch.ImsServiceWrapper;
 import org.chronopolis.tokenize.mq.artemis.ArtemisSupervisor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -61,6 +63,7 @@ public class TokenTaskConfig {
         module.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer());
         module.addDeserializer(ZonedDateTime.class, new ZonedDateTimeDeserializer());
         module.addDeserializer(ManifestEntry.class, new ManifestEntryDeserializer());
+        module.addDeserializer(Fixity.class, new FixityDeserializer());
         mapper.registerModule(module);
         return mapper;
     }

@@ -11,7 +11,6 @@ import org.chronopolis.rest.api.TokenService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.BagStatus;
 import org.chronopolis.tokenize.BagProcessor;
-import org.chronopolis.tokenize.filter.HttpFilter;
 import org.chronopolis.tokenize.filter.ProcessingFilter;
 import org.chronopolis.tokenize.scheduled.TokenTask;
 import org.chronopolis.tokenize.supervisor.TokenWorkSupervisor;
@@ -76,9 +75,9 @@ public class Tokenizer {
 
                 log.debug("Found {} bags for tokenization", response.body().getSize());
                 for (Bag bag : response.body()) {
-                    HttpFilter httpFilter = new HttpFilter(bag.getId(), tokens);
+                    // HttpFilter httpFilter = new HttpFilter(bag.getId(), tokens);
                     BagProcessor processor = new BagProcessor(bag,
-                            ImmutableSet.of(processingFilter, httpFilter),
+                            ImmutableSet.of(processingFilter), //, httpFilter),
                             stagingProperties,
                             supervisor);
                     executor.submitIfAvailable(processor, bag);

@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.batch.check;
 
 import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.cleaner.TrueCleaner;
 import org.chronopolis.intake.duracloud.model.BagData;
@@ -12,8 +11,9 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
-import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Bag;
+import org.chronopolis.test.support.CallWrapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -39,7 +39,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
     @Mock private BridgeAPI bridge;
-    @Mock private DepositorAPI depositors;
+    @Mock private DepositorService depositors;
     @Mock private Bicarbonate cleaningManager;
 
     private ChronopolisCheck check;
@@ -78,6 +78,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         check.run();
 
         verify(depositors, times(1)).getDepositorBag(eq(depositor), eq(receiptName));
+        verify(cleaningManager, times(1)).forChronopolis(eq(bag));
         verify(bridge, times(3)).postHistory(any(String.class), any(History.class));
         verify(bridge, times(1)).completeSnapshot(any(String.class), any(AlternateIds.class));
     }

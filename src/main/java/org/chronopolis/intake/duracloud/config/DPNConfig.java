@@ -22,8 +22,7 @@ import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
-import org.chronopolis.rest.api.ErrorLogger;
-import org.chronopolis.rest.support.OkBasicInterceptor;
+import org.chronopolis.rest.api.OkBasicInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -50,11 +49,6 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class DPNConfig {
     private final Logger log = LoggerFactory.getLogger(DPNConfig.class);
-
-    @Bean
-    public ErrorLogger logger() {
-        return new ErrorLogger();
-    }
 
     @Bean
     public Optional<String> checkSNI(IntakeSettings settings) throws GeneralSecurityException {

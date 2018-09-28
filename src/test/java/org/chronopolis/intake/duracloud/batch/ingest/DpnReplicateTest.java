@@ -15,9 +15,7 @@ import org.chronopolis.test.support.ErrorCallWrapper;
 import org.chronopolis.test.support.ExceptingCallWrapper;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.springframework.test.context.junit4.SpringRunner;
 import retrofit2.Call;
 
 import java.util.List;
@@ -32,7 +30,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(SpringRunner.class)
+/**
+ * Tests for {@link DpnReplicate}
+ *
+ * @author shake
+ */
 public class DpnReplicateTest extends BatchTestBase {
 
     @Mock

@@ -18,7 +18,7 @@ import org.chronopolis.intake.duracloud.remote.model.SnapshotStaged;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStagedDeserializer;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStatus;
 import org.chronopolis.intake.duracloud.remote.model.Snapshots;
-import org.chronopolis.rest.api.IngestAPIProperties;
+import org.chronopolis.rest.api.IngestApiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,14 +46,14 @@ public class Bridge {
     private final BridgeAPI bridge;
     private final IntakeSettings settings;
     private final SnapshotJobManager manager;
-    private final IngestAPIProperties ingestProperties;
+    private final IngestApiProperties ingestProperties;
     private final BagStagingProperties stagingProperties;
 
     @Autowired
     public Bridge(IntakeSettings settings,
                   SnapshotJobManager manager,
                   BridgeAPI bridge,
-                  IngestAPIProperties ingestProperties,
+                  IngestApiProperties ingestProperties,
                   BagStagingProperties stagingProperties) {
         this.settings = settings;
         this.manager = manager;
@@ -126,7 +126,7 @@ public class Bridge {
                     manager.bagSnapshot(details);
                 } else if (fromJson instanceof BaggingHistory) {
                     BaggingHistory bHistory = (BaggingHistory) fromJson;
-                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings, ingestProperties, stagingProperties);
+                    manager.startReplicationTasklet(details, bHistory.getHistory(), settings, stagingProperties);
                 }
             } else {
                 log.warn("Snapshot {} has no history, ignoring", snapshotId);

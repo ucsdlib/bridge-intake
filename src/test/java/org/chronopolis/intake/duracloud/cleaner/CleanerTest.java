@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,8 +23,9 @@ public class CleanerTest {
     private final String FROM_TAR = "5309da6f-c1cc-40ad-be42-e67e722cce04";
 
     @Before
-    public void setup() throws IOException, URISyntaxException {
+    public void setup() throws IOException {
         tmp = Files.createTempDirectory("cleanertest");
+        tmp.toFile().deleteOnExit();
         stagingProperties = new BagStagingProperties()
                 .setPosix(new Posix().setPath(tmp.toString()));
     }
@@ -67,6 +67,9 @@ public class CleanerTest {
         Assert.assertTrue(Files.exists(depositorLevel));
         Assert.assertTrue(Files.exists(extra));
         Assert.assertTrue(Files.exists(tmp));
+
+        Files.delete(extra);
+        Files.delete(depositorLevel);
     }
 
     @Test

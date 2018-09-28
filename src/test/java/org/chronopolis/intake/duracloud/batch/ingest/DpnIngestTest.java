@@ -5,17 +5,15 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
+import org.chronopolis.test.support.CallWrapper;
 import org.chronopolis.test.support.ErrorCallWrapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,14 +24,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(SpringRunner.class)
+/**
+ * Tests for {@link DpnIngest}
+ *
+ * @author shake
+ */
 public class DpnIngestTest extends BatchTestBase {
 
     private DpnIngest ingest;
     private final Long VERSION = 1L;
     private final String LOCAL_ID = "dpn-ingest-test";
 
-    // Mocks
     @Mock private BalustradeBag bags;
     @Mock private DpnInfoReader dpnInfoReader;
     @Mock private DpnIngest.ReaderFactory readerFactory;

@@ -5,12 +5,15 @@ import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.chronopolis.rest.models.storage.Fixity;
+import org.chronopolis.rest.models.Fixity;
+import org.chronopolis.rest.models.enums.FixityAlgorithm;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
 
 /**
+ * Not sure if this is necessary anymore
+ *
  * @author shake
  */
 public class FixityDeserializer extends JsonDeserializer<Fixity> {
@@ -22,10 +25,11 @@ public class FixityDeserializer extends JsonDeserializer<Fixity> {
         JsonNode treeNode = codec.readTree(jsonParser);
 
         JsonNode value = treeNode.get("value");
-        JsonNode algorithm = treeNode.get("algorithm");
+        JsonNode algNode = treeNode.get("algorithm");
+        FixityAlgorithm algorithm = codec.readValue(algNode.traverse(codec), FixityAlgorithm.class);
         JsonNode createdAt = treeNode.get("createdAt");
         ZonedDateTime zdt = codec.readValue(createdAt.traverse(), ZonedDateTime.class);
 
-        return new Fixity(algorithm.asText(), value.asText(), zdt);
+        return new Fixity(value.asText(), algorithm, zdt);
     }
 }

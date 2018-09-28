@@ -27,10 +27,10 @@ import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.rest.api.BagService;
-import org.chronopolis.rest.api.DepositorAPI;
-import org.chronopolis.rest.api.IngestAPIProperties;
+import org.chronopolis.rest.api.DepositorService;
+import org.chronopolis.rest.api.FileService;
 import org.chronopolis.rest.api.StagingService;
-import org.chronopolis.rest.models.DepositorModel;
+import org.chronopolis.rest.models.Depositor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -69,7 +69,8 @@ public class SnapshotJobManager {
     private final BridgeAPI bridge;
     private final LocalAPI dpnLocal;
     private final BagService chronBags;
-    private final DepositorAPI depositors;
+    private final FileService chronFiles;
+    private final DepositorService depositors;
     private final StagingService chronStaging;
 
     // do we want an overseer TP which we use to say: job(x, y) is already running, REJECTED!
@@ -104,8 +105,9 @@ public class SnapshotJobManager {
                               BridgeAPI bridge,
                               LocalAPI dpnLocal,
                               BagService chronBags,
+                              FileService chronFiles,
                               StagingService chronStaging,
-                              DepositorAPI depositors,
+                              DepositorService depositors,
                               DataCollector collector) {
         this.bridge = bridge;
         this.dpnLocal = dpnLocal;
@@ -118,6 +120,7 @@ public class SnapshotJobManager {
         this.cleaningManager = cleaningManager;
         this.bagStagingProperties = bagStagingProperties;
         this.depositors = depositors;
+        this.chronFiles = chronFiles;
 
         this.processing = new ConcurrentSkipListSet<>();
         this.longIo = new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>());
@@ -171,13 +174,11 @@ public class SnapshotJobManager {
      * @param details           the details of the snapshot
      * @param receipts          the bag receipts for the snapshot
      * @param settings          the settings for our intake service
-     * @param ingestProperties  the properties for chronopolis Ingest API configuration
      * @param stagingProperties the properties defining the bag staging area
      */
     public void startReplicationTasklet(final SnapshotDetails details,
                                         final List<BagReceipt> receipts,
                                         final IntakeSettings settings,
-                                        final IngestAPIProperties ingestProperties,
                                         final BagStagingProperties stagingProperties) {
         // If we're pushing to dpn, let's make the differences here
         // -> Always push to chronopolis so we have a separate tasklet (NotifyChron or something)
@@ -206,7 +207,7 @@ public class SnapshotJobManager {
 
         CompletableFuture<Void> ingestFuture;
         ChronopolisIngest chronIngest = new ChronopolisIngest(data, receipts, chronBags,
-                chronStaging, settings, stagingProperties, ingestProperties);
+                chronStaging, settings, stagingProperties, chronFiles, depositors);
 
         if (settings.pushDPN()) {
             check = new DpnCheck(data, receipts, bridge, bags, events, depositors, cleaningManager, settings);
@@ -276,10 +277,10 @@ public class SnapshotJobManager {
         // For verifying that a member exists in chronopolis and/or dpn
         boolean exists = true;
         StringBuilder message = new StringBuilder();
-        SimpleCallback<DepositorModel> chronCallback = new SimpleCallback<>();
+        SimpleCallback<Depositor> chronCallback = new SimpleCallback<>();
 
         String depositor = bagData.depositor();
-        Call<DepositorModel> chronDepositor = depositors.getDepositor(depositor);
+        Call<Depositor> chronDepositor = depositors.getDepositor(depositor);
         chronDepositor.enqueue(chronCallback);
 
         message.append("Snapshot Id: ").append(bagData.snapshotId()).append("\n");

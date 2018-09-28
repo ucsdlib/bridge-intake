@@ -6,40 +6,31 @@ import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
-import org.chronopolis.intake.duracloud.test.TestApplication;
-import org.chronopolis.rest.api.IngestAPIProperties;
-import org.chronopolis.rest.entities.Node;
 import org.chronopolis.rest.models.Bag;
-import org.chronopolis.rest.models.BagStatus;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.chronopolis.rest.models.enums.BagStatus;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Base class for our tests under this package
- *
+ * <p>
  * Has basic methods to create test data and holds
  * our mocked interfaces
- *
- * Todo: don't really need spring for these...
- *
- * Created by shake on 6/2/16.
+ * <p>
+ * @author shake
  */
-@SuppressWarnings("ALL")
-@SpringBootTest(classes = TestApplication.class)
 public class BatchTestBase {
-    protected final String MEMBER = "test-member";
-    protected final String NAME = "test-name";
-    protected final String DEPOSITOR = "test-depositor";
-    protected final String SNAPSHOT_ID = "test-snapshot-id";
+    private static final String MEMBER = "test-member";
+    private static final String NAME = "5309da6f-c1cc-40ad-be42-e67e722cce04";
+    private static final String SNAPSHOT_ID = "test-snapshot-id";
+    protected static final String DEPOSITOR = "test-depositor";
 
-    @Autowired public IntakeSettings settings;
-    @Autowired public IngestAPIProperties ingestProperties;
-    @Autowired public BagStagingProperties stagingProperties;
+    protected IntakeSettings settings = new IntakeSettings();
+    protected BagStagingProperties stagingProperties = new BagStagingProperties();
 
     protected BagData data() {
         BagData data = new BagData("");
@@ -62,33 +53,22 @@ public class BatchTestBase {
     }
 
     // Chronopolis Entities
-    protected Node createChronNode() {
-        return new Node(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-    }
 
-    protected Bag createChronBag() {
-        Bag b = new Bag();
-        b.setName(NAME)
-         .setDepositor(DEPOSITOR)
-         .setStatus(BagStatus.REPLICATING)
-         .setId(UUID.randomUUID().getMostSignificantBits());
-        return b;
+    protected Bag createChronBag(BagStatus status, Set<String> replications) {
+        long bits = UUID.randomUUID().getMostSignificantBits();
+        return new Bag(bits, bits, bits, null, null, ZonedDateTime.now(), ZonedDateTime.now(),
+                NAME, DEPOSITOR, DEPOSITOR, status, replications);
     }
 
     protected Bag createChronBagPartialReplications() {
-        Bag b = createChronBag();
-        b.setReplicatingNodes(ImmutableSet.of(UUID.randomUUID().toString()));
-        return b;
+        return createChronBag(BagStatus.REPLICATING, ImmutableSet.of(UUID.randomUUID().toString()));
     }
 
     protected Bag createChronBagFullReplications() {
-        Bag b = createChronBag();
-        b.setStatus(BagStatus.PRESERVED);
-        b.setReplicatingNodes(ImmutableSet.of(
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString()));
-        return b;
+        return createChronBag(BagStatus.PRESERVED,
+                ImmutableSet.of(UUID.randomUUID().toString(),
+                        UUID.randomUUID().toString(),
+                        UUID.randomUUID().toString()));
     }
 
     // DPN Entities

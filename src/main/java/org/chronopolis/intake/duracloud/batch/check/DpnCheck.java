@@ -15,8 +15,8 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.rest.api.DepositorAPI;
-import org.chronopolis.rest.models.BagStatus;
+import org.chronopolis.rest.api.DepositorService;
+import org.chronopolis.rest.models.enums.BagStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -50,7 +50,7 @@ public class DpnCheck extends Checker {
 
     private final Events events;
     private final BalustradeBag bags;
-    private final DepositorAPI depositors;
+    private final DepositorService depositors;
     private final Bicarbonate cleaningManager;
     private final IntakeSettings settings;
 
@@ -59,7 +59,7 @@ public class DpnCheck extends Checker {
                     BridgeAPI bridge,
                     BalustradeBag bags,
                     Events eventsAPI,
-                    DepositorAPI depositors,
+                    DepositorService depositors,
                     Bicarbonate cleaningManager,
                     IntakeSettings settings) {
         super(data, receipts, bridge);

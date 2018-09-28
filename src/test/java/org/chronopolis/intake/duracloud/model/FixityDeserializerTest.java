@@ -2,11 +2,15 @@ package org.chronopolis.intake.duracloud.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.chronopolis.rest.models.Bag;
+import org.chronopolis.rest.models.Fixity;
+import org.chronopolis.rest.models.StagingStorage;
+import org.chronopolis.rest.models.enums.FixityAlgorithm;
+import org.chronopolis.rest.models.serializers.FixityAlgorithmDeserializer;
+import org.chronopolis.rest.models.serializers.FixityAlgorithmSerializer;
 import org.chronopolis.rest.models.serializers.ZonedDateTimeDeserializer;
 import org.chronopolis.rest.models.serializers.ZonedDateTimeSerializer;
-import org.chronopolis.rest.models.storage.Fixity;
-import org.chronopolis.rest.models.storage.StagingStorageModel;
 import org.chronopolis.tokenize.ManifestEntry;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,20 +18,28 @@ import org.junit.Test;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 
+import static com.google.common.collect.ImmutableSet.of;
+
 public class FixityDeserializerTest {
 
     @Test
     public void testSerializer() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule module = new SimpleModule();
+        module.addSerializer(FixityAlgorithm.class, new FixityAlgorithmSerializer());
+        module.addDeserializer(FixityAlgorithm.class, new FixityAlgorithmDeserializer());
         module.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer());
         module.addDeserializer(ZonedDateTime.class, new ZonedDateTimeDeserializer());
         module.addDeserializer(Fixity.class, new FixityDeserializer());
         module.addDeserializer(ManifestEntry.class, new ManifestEntryDeserializer());
+        mapper.registerModule(new KotlinModule());
         mapper.registerModule(module);
 
         // Base fixity
-        Fixity fixity = new Fixity("test-algorithm", "test-value", ZonedDateTime.now());
+        Fixity fixity = new Fixity(
+                "1a32a4aea4183129725087980d0574b336d8e308fbf29c94e21b473a8ba2d541",
+                FixityAlgorithm.SHA_256,
+                ZonedDateTime.now());
         String json = mapper.writeValueAsString(fixity);
         Fixity readFixity = mapper.readValue(json, Fixity.class);
 
@@ -36,15 +48,9 @@ public class FixityDeserializerTest {
         Assert.assertEquals(fixity.getValue(), readFixity.getValue());
 
         // Storage + Fixity
-        StagingStorageModel storage = new StagingStorageModel()
-                .setSize(1L)
-                .setRegion(1L)
-                .setActive(true)
-                .setTotalFiles(1L)
-                .setPath("test-path")
-                .addFixity(fixity);
+        StagingStorage storage = new StagingStorage(true, 1L, 1L, 1L, "test-path", of(fixity));
         String storageJson = mapper.writeValueAsString(storage);
-        StagingStorageModel readStorage = mapper.readValue(storageJson, StagingStorageModel.class);
+        StagingStorage readStorage = mapper.readValue(storageJson, StagingStorage.class);
 
         Assert.assertNotNull(readStorage);
 
@@ -61,7 +67,7 @@ public class FixityDeserializerTest {
                 "    \"path\" : \"tdl-sfa-dcloud/sfa-dcloud_22_aug8.2018-oh1.to.oh69_2018-08-08-20-08-20\",\n" +
                 "    \"fixities\" : [ {\n" +
                 "      \"value\" : \"1a32a4aea4183129725087980d0574b336d8e308fbf29c94e21b473a8ba2d541\",\n" +
-                "      \"algorithm\" : \"sha256\",\n" +
+                "      \"algorithm\" : \"SHA-256\",\n" +
                 "      \"createdAt\" : \"2018-08-09T08:45:01.81Z\"\n" +
                 "    } ]\n" +
                 "  },\n" +
@@ -71,7 +77,6 @@ public class FixityDeserializerTest {
                 "  \"creator\" : \"tdl-bridge\",\n" +
                 "  \"depositor\" : \"tdl-sfa-dcloud\",\n" +
                 "  \"status\" : \"DEPOSITED\",\n" +
-                "  \"requiredReplications\" : 3,\n" +
                 "  \"replicatingNodes\" : [ ]\n" +
                 "}";
 

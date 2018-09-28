@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch.support;
 
 import org.chronopolis.bag.core.OnDiskTagFile;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +99,7 @@ public class DuracloudMD5 extends OnDiskTagFile {
         }
 
         @Override
-        public int read(byte[] b) throws IOException {
+        public int read(@NotNull byte[] b) throws IOException {
            current.get(b);
            return b.length;
         }

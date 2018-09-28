@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.batch.bagging;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.config.props.Chron;
@@ -11,6 +10,7 @@ import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
+import org.chronopolis.test.support.CallWrapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -73,7 +73,8 @@ public class BaggingTaskletTest {
         String depositor = "test-depositor";
 
         tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
-        when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
+        when(bridge.postHistory(eq("test-snapshot"), any(History.class)))
+                .thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
             tasklet.run();

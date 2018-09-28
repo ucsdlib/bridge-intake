@@ -1,28 +1,32 @@
 package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okio.BufferedSink;
+import okio.Okio;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
-import org.chronopolis.rest.api.IngestAPIProperties;
+import org.chronopolis.rest.api.DepositorService;
+import org.chronopolis.rest.api.FileService;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
-import org.chronopolis.rest.models.IngestRequest;
-import org.chronopolis.rest.models.storage.Fixity;
-import org.chronopolis.rest.models.storage.FixityCreate;
+import org.chronopolis.rest.models.File;
+import org.chronopolis.rest.models.Fixity;
+import org.chronopolis.rest.models.StagingStorage;
+import org.chronopolis.rest.models.create.BagCreate;
+import org.chronopolis.rest.models.create.StagingCreate;
+import org.chronopolis.rest.models.enums.BagStatus;
+import org.chronopolis.rest.models.enums.FixityAlgorithm;
+import org.chronopolis.rest.service.BagFileCsvGenerator;
 import org.chronopolis.rest.service.IngestRequestSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageImpl;
 import retrofit2.Call;
-import retrofit2.Response;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,7 +37,7 @@ import java.util.Optional;
 
 /**
  * Ingest a bag into Chronopolis
- *
+ * <p>
  * Created by shake on 5/31/16.
  */
 public class ChronopolisIngest implements Runnable {
@@ -41,14 +45,17 @@ public class ChronopolisIngest implements Runnable {
 
     private final IntakeSettings settings;
     private final IngestSupplierFactory factory;
-    private final IngestAPIProperties ingestProperties;
     private final BagStagingProperties stagingProperties;
 
+    // todo: it might be better to pass these as parameters to run (maybe as a BiFunction?)
     private final BagData data;
     private final List<BagReceipt> receipts;
 
+    // Chronopolis API
     private final BagService bags;
     private final StagingService staging;
+    private final FileService files;
+    private final DepositorService depositorService;
 
     public ChronopolisIngest(BagData data,
                              List<BagReceipt> receipts,
@@ -56,20 +63,22 @@ public class ChronopolisIngest implements Runnable {
                              StagingService staging,
                              IntakeSettings settings,
                              BagStagingProperties stagingProperties,
-                             IngestAPIProperties ingestProperties) {
-        this(data, receipts, bags, staging, settings,
-                stagingProperties, new IngestSupplierFactory(), ingestProperties);
+                             FileService fileService,
+                             DepositorService depositorService) {
+        this(data, receipts, bags, fileService, staging, depositorService, settings,
+                stagingProperties, new IngestSupplierFactory());
     }
 
     @VisibleForTesting
     protected ChronopolisIngest(BagData data,
                                 List<BagReceipt> receipts,
                                 BagService bags,
+                                FileService files,
                                 StagingService staging,
+                                DepositorService depositors,
                                 IntakeSettings settings,
                                 BagStagingProperties stagingProperties,
-                                IngestSupplierFactory supplierFactory,
-                                IngestAPIProperties ingestProperties) {
+                                IngestSupplierFactory supplierFactory) {
         this.data = data;
         this.receipts = receipts;
         this.settings = settings;
@@ -77,8 +86,9 @@ public class ChronopolisIngest implements Runnable {
         this.factory = supplierFactory;
 
         this.bags = bags;
+        this.files = files;
         this.staging = staging;
-        this.ingestProperties = ingestProperties;
+        this.depositorService = depositors;
     }
 
     @Override
@@ -92,86 +102,142 @@ public class ChronopolisIngest implements Runnable {
         String name = receipt.getName();
         String depositor = data.depositor();
 
-        // I'm sure there's a better way to handle this... but for now this should be ok
-        String bag = settings.pushDPN() ? name + ".tar" : name;
-        Path stage = Paths.get(stagingProperties.getPosix().getPath());
-        Path location = stage.resolve(data.depositor()).resolve(bag);
+        // ok similar to dpn intake, but... a bit more streamlined I guess
+        // query the bag
+        //   !exists -> deposit
+        // bag optional
+        //   exists && status == DEPOSITED -> create files
+        //   exists && status == INITIALIZED -> create staging
+        getBag(depositor, name).ifPresent(bag -> {
+            if (bag.getStatus() == BagStatus.DEPOSITED) {
+                createFiles(bag);
+            } else {
+                createStaging(bag);
+            }
+        });
 
-        Optional<PageImpl<Bag>> bagPage = getBag(depositor, name);
-        Boolean create = bagPage.map(page -> page.getTotalElements() == 0)
-                .orElse(false);
-        if (create) {
-            log.info("[{}] Building ingest request for chronopolis", name);
-            log.info("[depositor, {}]", depositor);
-            IngestRequestSupplier supplier = factory.supplier(location, stage, depositor, name);
-            supplier.get().ifPresent(this::pushRequest);
-        }
         return receipt;
     }
 
-    private Optional<PageImpl<Bag>> getBag(String depositor, String name) {
-        SimpleCallback<PageImpl<Bag>> cb = new SimpleCallback<>();
-        Call<PageImpl<Bag>> call = bags.get(ImmutableMap.of("depositor", depositor, "name", name));
-        call.enqueue(cb);
-        return cb.getResponse();
-    }
-
-    private void pushRequest(IngestRequest ingestRequest) {
-        List<String> replicatingNodes = ingestProperties.getReplicateTo();
-        ingestRequest.setStorageRegion(stagingProperties.getPosix().getId());
-        ingestRequest.setRequiredReplications(replicatingNodes.size());
-        ingestRequest.setReplicatingNodes(replicatingNodes);
-
-        SimpleCallback<Bag> cb = new SimpleCallback<>();
-        Call<Bag> stageCall = bags.deposit(ingestRequest);
-        stageCall.enqueue(cb);
-        cb.getResponse().ifPresent(this::registerFixity);
-    }
-
-    private void registerFixity(Bag bag) {
-        String resource = bag.getDepositor() + "::" + bag.getName();
-        String tag = "tagmanifest-sha256.txt";
-        String algorithm = "sha256";
-        FixityCreate fixity = new FixityCreate();
-
-        String root = stagingProperties.getPosix().getPath();
-        Path manifest = Paths.get(root, bag.getDepositor(), bag.getName(), tag);
-        HashCode hash;
-
-        try {
-            hash = Files.asByteSource(manifest.toFile())
-                                 .hash(Hashing.sha256());
-        } catch (IOException e) {
-            log.error("[{}] Unable to digest tagmanifest! Not registering fixity for bag!",
-                    resource);
-            return;
+    /**
+     * Attempt to get a {@link Bag} and if it is not found attempt to register
+     *
+     * @param depositor the namespace of the depositor who 'owns' the {@link Bag}
+     * @param name      the name given to the {@link Bag}
+     * @return an Optional encapsulating if the {@link Bag} was found/created
+     */
+    private Optional<Bag> getBag(String depositor, String name) {
+        Call<Bag> call = depositorService.getDepositorBag(depositor, name);
+        SimpleCallback<Bag> callback = enqueueCallback(call);
+        // must be a better way to handle this...
+        if (!callback.getResponse().isPresent()) {
+            return deposit(depositor, name);
         }
 
-        fixity.setAlgorithm(algorithm);
-        fixity.setValue(hash.toString());
-        Call<Fixity> call = staging.createFixityForBag(bag.getId(), "BAG", fixity);
+        return callback.getResponse();
+    }
 
-        try {
-            Response<Fixity> response = call.execute();
-            if (response.isSuccessful()) {
-                log.info("[{}] Successfully registered bag + fixity with Chronopolis", resource);
-            } else {
-                log.warn("[{}] Unable to register fixity! code={}, message={}", resource,
-                        response.code(),
-                        response.errorBody().string());
-            }
-        } catch (IOException e) {
-            log.error("[{}] Error communicating with the ingest server!", resource, e);
-        }
+    /**
+     * Attempt to create a {@link Bag} in Chronopolis
+     *
+     * @param depositor the namespace of the Depositor for the Bag
+     * @param name      the name for the Bag
+     * @return an Optional encapsulating the result of the operation
+     */
+    private Optional<Bag> deposit(String depositor, String name) {
+        log.info("[{}] Building ingest request for chronopolis", name);
+        String bag = settings.pushDPN() ? name + ".tar" : name;
+        Path stage = Paths.get(stagingProperties.getPosix().getPath());
+        Path location = stage.resolve(data.depositor()).resolve(bag);
+        return factory.supplier(location, stage, depositor, name)
+                .get().map(bags::deposit)
+                .map(this::enqueueCallback)
+                .flatMap(SimpleCallback::getResponse);
+    }
+
+    /**
+     * Just combine some calls so we make things a bit nicer
+     *
+     * @param call the call to enqueue a callback for
+     * @param <T>  the type of the ResponseEntity of the Call
+     * @return a freshly generated callback
+     */
+    private <T> SimpleCallback<T> enqueueCallback(Call<T> call) {
+        SimpleCallback<T> callback = new SimpleCallback<>();
+        call.enqueue(callback);
+        return callback;
+    }
+
+    /**
+     * Generate and upload a CSV containing the {@link File}s and {@link Fixity} for the given
+     * {@link Bag}. This will block while creating the CSV and while uploading the file to the
+     * Chronopolis Ingest Server.
+     *
+     * @param bag the Bag to create files for
+     */
+    private void createFiles(Bag bag) {
+        log.info("[{}] Building csv file ingest request for chronopolis", bag.getName());
+        Path stage = Paths.get(stagingProperties.getPosix().getPath());
+        Path root = stage.resolve(bag.getDepositor()).resolve(bag.getName());
+        Path output = Paths.get(settings.getChron().getWorkDirectory());
+        FixityAlgorithm algorithm = FixityAlgorithm.SHA_256;
+        factory.generator(output, root, algorithm)
+                .call()
+                .getCsv()
+                .map(csv -> files.createBatch(bag.getId(), new RequestBody() {
+                    @Override
+                    public MediaType contentType() {
+                        return MediaType.parse("text/csv");
+                    }
+
+                    @Override
+                    public void writeTo(BufferedSink sink) throws IOException {
+                        sink.writeAll(Okio.source(csv));
+                    }
+                })).ifPresent(this::enqueueCallback);
 
     }
 
     /**
-     * Delegate class so that we can use a Mock supplier
+     * Create a {@link StagingStorage} resource for a {@link Bag} if it does not already have one
+     * <p>
+     * Since this is the initial distribution, we can use the fields from the {@link Bag} in order
+     * to determine the size and number of files which are staged (we passed them earlier during the
+     * {@link BagCreate}).
      *
+     * @param bag the Bag to create a {@link StagingStorage} resource for
+     */
+    private void createStaging(Bag bag) {
+        Path stage = Paths.get(stagingProperties.getPosix().getPath());
+        Path bagPath = stage.resolve(bag.getDepositor()).resolve(bag.getName());
+
+        if (!bagPath.toFile().exists()) {
+            log.error("[{}/{}] Unable to find bag in staging area {}!",
+                   bag.getDepositor(), bag.getName(), stage);
+        } else if (bag.getBagStorage() == null) {
+            log.info("[{}] Creating staging resource", bag.getName());
+            StagingCreate create = new StagingCreate();
+            create.setSize(bag.getSize());
+            create.setTotalFiles(bag.getTotalFiles());
+            create.setLocation(stage.relativize(bagPath).toString());
+            create.setStorageRegion(stagingProperties.getPosix().getId());
+
+            Call<StagingStorage> createCall =
+                    staging.createStorageForBag(bag.getId(), "BAG", create);
+            enqueueCallback(createCall);
+        }
+    }
+
+    /**
+     * Delegate class so that we can use a Mock supplier
+     * <p>
      * Let's try to DI the request supplier instead - need to make it an interface but that's easy
      */
     public static class IngestSupplierFactory {
+        public BagFileCsvGenerator generator(Path output, Path root, FixityAlgorithm algorithm) {
+            return new BagFileCsvGenerator(output, root, algorithm);
+        }
+
         public IngestRequestSupplier supplier(Path location,
                                               Path stage,
                                               String depositor,

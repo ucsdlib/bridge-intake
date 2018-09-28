@@ -14,7 +14,7 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
-import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.test.support.CallWrapper;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class DpnCheckTest extends BatchTestBase {
     @Mock private Events events;
     @Mock private BridgeAPI bridge;
     @Mock private BalustradeBag bags;
-    @Mock private DepositorAPI depositors;
+    @Mock private DepositorService depositors;
     @Mock private Bicarbonate cleaningManager;
 
     // And our test object

@@ -1,16 +1,14 @@
 # General chron configuration
 chron:
   node: chron
-  ingest:
-    endpoint: http://localhost:8081/
-    username: ingest-admin
-    password: replace-me
-  replicatingTo:
-    - ucsd
-    - umiacs
   stage.bags:
     posix.path: /export/bags
     posix.id: 1
+
+ingest.api:
+  endpoint: http://localhost:8000/
+  username: replace-me
+  password: replace-me
 
 ace.ims:
   port: 8080
@@ -23,19 +21,23 @@ dpn:
   api-key: replace-me
 
 duracloud:
-  snapshots: /export/snapshots/
-  restores: /export/restore/
-  bridge: 
-    username: bridge
-    password: replace-me
-    endpoint: http://localhost:8080/
+  bridge:
+    - snapshots: /bridge-0/snapshots/
+      restores: /bridge-0/restore/
+      username: replace-me
+      password: replace-me
+      endpoint: http://localhost:8080/
+      push: DPN
+    - snapshots: /bridge-1/snapshots/
+      restores: /bridge-1/restore/
+      username: replace-me
+      password: replace-me
+      endpoint: http://localhost:8081/
 
 spring.pid.file: /var/run/bridge-intake.pid
 
 disableSNI: false
 dpnReplicationServer: dpn-staging.ucsd.edu
-pushDPN: false
-pushChronopolis: false
 
 bridge:
   poll: 0 0 0 * * *

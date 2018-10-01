@@ -26,20 +26,10 @@ public class IntakeSettings {
     private final Logger log = LoggerFactory.getLogger(IntakeSettings.class);
 
     private DPN dpn = new DPN();
+    private Smtp smtp = new Smtp();
     private Chron chron = new Chron();
     private Duracloud duracloud = new Duracloud();
     private Constraints constraints = new Constraints();
-    private Smtp smtp = new Smtp();
-
-    /**
-     * Boolean used to push snapshots to DPN
-     */
-    private Boolean pushDPN = true;
-
-    /**
-     * Boolean used to push snapshots to Chronopolis
-     */
-    private Boolean pushChronopolis = true;
 
     /**
      * Boolean to configure SNI for https connections
@@ -56,24 +46,6 @@ public class IntakeSettings {
      * String value representing the server used for dpn replicating nodes
      */
     private String dpnReplicationServer;
-
-    public Boolean pushChronopolis() {
-        return pushChronopolis;
-    }
-
-    public IntakeSettings setPushChronopolis(Boolean pushChronopolis) {
-        this.pushChronopolis = pushChronopolis;
-        return this;
-    }
-
-    public Boolean pushDPN() {
-        return pushDPN;
-    }
-
-    public IntakeSettings setPushDPN(Boolean pushDPN) {
-        this.pushDPN = pushDPN;
-        return this;
-    }
 
     public String getMemberUUID() {
         return memberUUID;

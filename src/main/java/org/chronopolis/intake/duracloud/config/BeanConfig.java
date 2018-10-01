@@ -1,22 +1,39 @@
 package org.chronopolis.intake.duracloud.config;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import okhttp3.OkHttpClient;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.LocalAPI;
-import org.chronopolis.intake.duracloud.PropertiesDataCollector;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
+import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
+import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.config.validator.ChronValidator;
+import org.chronopolis.intake.duracloud.model.BaggingHistory;
+import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
+import org.chronopolis.intake.duracloud.model.HistorySerializer;
+import org.chronopolis.intake.duracloud.model.ReplicationHistory;
+import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
 import org.chronopolis.intake.duracloud.notify.MailNotifier;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.rest.api.IngestApiProperties;
 import org.chronopolis.rest.api.IngestGenerator;
+import org.chronopolis.rest.api.OkBasicInterceptor;
 import org.chronopolis.rest.api.ServiceGenerator;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.Validator;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Config for our beans
@@ -57,21 +74,54 @@ public class BeanConfig {
                                                  BagStagingProperties bagStagingProperties,
                                                  Bicarbonate cleaningManager,
                                                  ServiceGenerator generator,
-                                                 BridgeAPI bridgeAPI,
-                                                 LocalAPI dpn,
-                                                 IntakeSettings settings) {
+                                                 LocalAPI dpn) {
         return new SnapshotJobManager(notifier,
                 cleaningManager,
                 bagProperties,
-                settings,
                 bagStagingProperties,
-                bridgeAPI,
                 dpn,
                 generator.bags(),
                 generator.files(),
                 generator.staging(),
-                generator.depositors(),
-                new PropertiesDataCollector(settings));
+                generator.depositors());
+    }
+
+    @Bean
+    public List<BridgeContext> bridgeContexts(IntakeSettings settings) {
+        List<Duracloud.Bridge> bridges = settings.getDuracloud().getBridge();
+
+        return bridges.stream()
+                .map(bridge -> new BridgeContext(
+                        apiFor(bridge),
+                        bridge.getPrefix(),
+                        bridge.getManifest(),
+                        bridge.getRestores(),
+                        bridge.getSnapshots(),
+                        bridge.getPush()))
+                .collect(Collectors.toList());
+    }
+
+    private BridgeAPI apiFor(Duracloud.Bridge bridge) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(History.class, new HistorySerializer())
+                .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
+                .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
+                .disableHtmlEscaping()
+                .create();
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new HttpTraceInterceptor())
+                .addInterceptor(new OkBasicInterceptor(bridge.getUsername(), bridge.getPassword()))
+                .readTimeout(2, TimeUnit.MINUTES)
+                .build();
+
+        Retrofit adapter = new Retrofit.Builder()
+                .baseUrl(bridge.getEndpoint())
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .client(client)
+                .build();
+
+        return adapter.create(BridgeAPI.class);
     }
 
 }

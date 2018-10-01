@@ -7,7 +7,9 @@ import okio.BufferedSink;
 import okio.Okio;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.rest.api.BagService;
@@ -37,12 +39,16 @@ import java.util.Optional;
 
 /**
  * Ingest a bag into Chronopolis
- * <p>
- * Created by shake on 5/31/16.
+ *
+ * As we have added more operations to ingesting content, the constructor has continued to grow. It
+ * might be good to look into splitting up operations similar to the DPN operations.
+ *
+ * @author shake
  */
 public class ChronopolisIngest implements Runnable {
     private final Logger log = LoggerFactory.getLogger(ChronopolisIngest.class);
 
+    private final BridgeContext bridgeContext;
     private final IntakeSettings settings;
     private final IngestSupplierFactory factory;
     private final BagStagingProperties stagingProperties;
@@ -53,8 +59,8 @@ public class ChronopolisIngest implements Runnable {
 
     // Chronopolis API
     private final BagService bags;
-    private final StagingService staging;
     private final FileService files;
+    private final StagingService staging;
     private final DepositorService depositorService;
 
     public ChronopolisIngest(BagData data,
@@ -64,9 +70,10 @@ public class ChronopolisIngest implements Runnable {
                              IntakeSettings settings,
                              BagStagingProperties stagingProperties,
                              FileService fileService,
-                             DepositorService depositorService) {
+                             DepositorService depositorService,
+                             BridgeContext bridgeContext) {
         this(data, receipts, bags, fileService, staging, depositorService, settings,
-                stagingProperties, new IngestSupplierFactory());
+                stagingProperties, bridgeContext, new IngestSupplierFactory());
     }
 
     @VisibleForTesting
@@ -78,12 +85,14 @@ public class ChronopolisIngest implements Runnable {
                                 DepositorService depositors,
                                 IntakeSettings settings,
                                 BagStagingProperties stagingProperties,
+                                BridgeContext bridgeContext,
                                 IngestSupplierFactory supplierFactory) {
         this.data = data;
         this.receipts = receipts;
         this.settings = settings;
         this.stagingProperties = stagingProperties;
         this.factory = supplierFactory;
+        this.bridgeContext = bridgeContext;
 
         this.bags = bags;
         this.files = files;
@@ -93,7 +102,7 @@ public class ChronopolisIngest implements Runnable {
 
     @Override
     public void run() {
-        if (settings.pushChronopolis()) {
+        if (bridgeContext.getPush() != Push.NONE) {
             receipts.forEach(this::chronopolis);
         }
     }
@@ -146,7 +155,7 @@ public class ChronopolisIngest implements Runnable {
      */
     private Optional<Bag> deposit(String depositor, String name) {
         log.info("[{}] Building ingest request for chronopolis", name);
-        String bag = settings.pushDPN() ? name + ".tar" : name;
+        String bag = name + bridgeContext.getPush().getPostfix();
         Path stage = Paths.get(stagingProperties.getPosix().getPath());
         Path location = stage.resolve(data.depositor()).resolve(bag);
         return factory.supplier(location, stage, depositor, name)

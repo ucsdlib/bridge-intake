@@ -6,7 +6,7 @@ import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.DPN;
-import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.intake.duracloud.model.BagData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -33,23 +33,21 @@ import static java.util.Comparator.reverseOrder;
 public class DpnNodeWeighter implements Supplier<List<Weight>> {
     private final Logger log = LoggerFactory.getLogger(DpnNodeWeighter.class);
 
+    private final BagData data;
     private final BalustradeNode nodeAPI;
     private final IntakeSettings settings;
-    private final SnapshotDetails details;
 
-    public DpnNodeWeighter(BalustradeNode nodeAPI,
-                           IntakeSettings settings,
-                           SnapshotDetails details) {
+    public DpnNodeWeighter(BagData data, BalustradeNode nodeAPI, IntakeSettings settings) {
+        this.data = data;
         this.nodeAPI = nodeAPI;
         this.settings = settings;
-        this.details = details;
     }
 
     @Override
     public List<Weight> get() {
         List<String> replicatingNodes = loadNode(settings);
         return replicatingNodes.stream()
-                .map(node -> new Weight(node, details.getSnapshotId()))
+                .map(node -> new Weight(node, data.snapshotId()))
                 .sorted(comparing(w -> w.getCode().asLong(), reverseOrder()))
                 .collect(Collectors.toList());
     }

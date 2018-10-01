@@ -4,8 +4,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.chronopolis.common.storage.Posix;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.api.FileService;
@@ -59,20 +62,22 @@ public class ChronopolisIngestTest extends BatchTestBase {
     private final BagFileCsvGenerator generator = mock(BagFileCsvGenerator.class);
     private final IngestRequestSupplier supplier = mock(IngestRequestSupplier.class);
     private final ChronopolisIngest.IngestSupplierFactory factory = new ChronIngestFactory();
+    private final BridgeContext bridgeContext = new BridgeContext(mock(BridgeAPI.class),
+             "", "manifest-sha256", "restores", "snapshots", Push.CHRONOPOLIS);
+
 
     private BagData data;
 
     @Before
     public void setup() {
-        settings.setPushChronopolis(true);
         data = data();
     }
 
     @Test
     public void depositBagNoPrefix() {
         BagReceipt receipt = receipt();
-        Bag bag = createChronBag(BagStatus.DEPOSITED, ImmutableSet.of());
         BagCreate create = new BagCreate();
+        Bag bag = createChronBag(BagStatus.DEPOSITED, ImmutableSet.of());
 
         when(depositorService.getDepositorBag(eq(data.depositor()), eq(receipt.getName())))
                 .thenReturn(new ErrorCallWrapper<>(null, 404, "bag-not-found"));
@@ -82,7 +87,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
         when(generator.call()).thenReturn(new BagFileCsvResult(new IOException("ioexception")));
 
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
-                fileService, staging, depositorService, settings, stagingProperties, factory);
+                fileService, staging, depositorService, settings, stagingProperties, bridgeContext,
+                factory);
         ingest.run();
 
         verify(supplier, times(1)).get();
@@ -113,7 +119,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
         when(fileService.createBatch(eq(bag.getId()), any())).thenReturn(voidWrap);
 
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
-                fileService, staging, depositorService, settings, stagingProperties, factory);
+                fileService, staging, depositorService, settings, stagingProperties, bridgeContext,
+                factory);
         ingest.run();
 
         verify(supplier, never()).get();
@@ -131,7 +138,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
         Assert.assertNotNull(bagsResource);
         stagingProperties.setPosix(new Posix()
                 .setPath(bagsResource.getPath())
-            );
+        );
 
         BagReceipt receipt = receipt();
         Bag bag = createChronBag(BagStatus.INITIALIZED, ImmutableSet.of());
@@ -151,7 +158,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
                 any())).thenReturn(storageWrap);
 
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
-                fileService, staging, depositorService, settings, stagingProperties, factory);
+                fileService, staging, depositorService, settings, stagingProperties, bridgeContext,
+                factory);
         ingest.run();
 
         verify(supplier, never()).get();
@@ -179,7 +187,8 @@ public class ChronopolisIngestTest extends BatchTestBase {
         when(bags.deposit(eq(create))).thenReturn(badRequest);
 
         ChronopolisIngest ingest = new ChronopolisIngest(data, ImmutableList.of(receipt), bags,
-                fileService, staging, depositorService, settings, stagingProperties, factory);
+                fileService, staging, depositorService, settings, stagingProperties, bridgeContext,
+                factory);
         ingest.run();
 
         verify(supplier, times(1)).get();

@@ -14,15 +14,6 @@ import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.earth.serializers.ZonedDateTimeDeserializer;
 import org.chronopolis.earth.serializers.ZonedDateTimeSerializer;
 import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
-import org.chronopolis.intake.duracloud.config.props.Bridge;
-import org.chronopolis.intake.duracloud.model.BaggingHistory;
-import org.chronopolis.intake.duracloud.model.BaggingHistorySerializer;
-import org.chronopolis.intake.duracloud.model.HistorySerializer;
-import org.chronopolis.intake.duracloud.model.ReplicationHistory;
-import org.chronopolis.intake.duracloud.model.ReplicationHistorySerializer;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.intake.duracloud.remote.model.History;
-import org.chronopolis.rest.api.OkBasicInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -79,33 +70,6 @@ public class DPNConfig {
         }
 
         return Optional.of("checked");
-    }
-
-    @Bean
-    public BridgeAPI bridgeAPI(IntakeSettings settings) {
-        Bridge bridge = settings.getDuracloud().getBridge();
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(History.class, new HistorySerializer())
-                .registerTypeAdapter(BaggingHistory.class, new BaggingHistorySerializer())
-                .registerTypeAdapter(ReplicationHistory.class, new ReplicationHistorySerializer())
-                .disableHtmlEscaping()
-                .create();
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new HttpTraceInterceptor())
-                .addInterceptor(new OkBasicInterceptor(
-                        bridge.getUsername(),
-                        bridge.getPassword()))
-                .readTimeout(2, TimeUnit.MINUTES)
-                .build();
-
-        Retrofit adapter = new Retrofit.Builder()
-                .baseUrl(bridge.getEndpoint())
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .client(client)
-                .build();
-
-        return adapter.create(BridgeAPI.class);
     }
 
     @Bean

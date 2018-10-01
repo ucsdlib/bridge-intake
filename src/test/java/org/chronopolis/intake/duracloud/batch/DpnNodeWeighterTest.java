@@ -6,7 +6,7 @@ import org.chronopolis.earth.models.Node;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.DPN;
-import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.test.support.CallWrapper;
 import org.chronopolis.test.support.ErrorCallWrapper;
 import org.chronopolis.test.support.ExceptingCallWrapper;
@@ -44,10 +44,9 @@ public class DpnNodeWeighterTest {
 
         // And setup the snapshot details
         final String id = "TEST-SNAPSHOT-ID";
-        SnapshotDetails details = new SnapshotDetails();
-        details.setSnapshotId(id);
+        BagData data = new BagData(id);
 
-        weighter = new DpnNodeWeighter(nodes, settings, details);
+        weighter = new DpnNodeWeighter(data, nodes, settings);
     }
 
     private Node response() {

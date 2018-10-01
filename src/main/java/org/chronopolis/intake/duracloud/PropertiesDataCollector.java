@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud;
 
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 
 import java.io.IOException;
@@ -18,10 +17,10 @@ import java.util.Properties;
  */
 public class PropertiesDataCollector implements DataCollector {
 
-    private IntakeSettings settings;
+    private BridgeContext bridgeContext;
 
-    public PropertiesDataCollector(IntakeSettings settings) {
-        this.settings = settings;
+    public PropertiesDataCollector(BridgeContext bridgeContext) {
+        this.bridgeContext = bridgeContext;
     }
 
     @Override
@@ -31,13 +30,12 @@ public class PropertiesDataCollector implements DataCollector {
         String PROPERTY_OWNER_ID = "owner-id";
         String PROPERTY_MEMBER_ID = "member-id";
 
-        BagData data = new BagData(settings.getChron().getPrefix());
-        Duracloud dc = settings.getDuracloud();
+        BagData data = new BagData(bridgeContext.getChronopolisPrefix());
         Properties properties = new Properties();
-        Path propertiesPath = Paths.get(dc.getSnapshots(), snapshotId, FILE);
-        InputStream is = Files.newInputStream(propertiesPath);
-        properties.load(is);
-        is.close();
+        Path propertiesPath = Paths.get(bridgeContext.getSnapshots(), snapshotId, FILE);
+        try (InputStream is = Files.newInputStream(propertiesPath)) {
+            properties.load(is);
+        }
 
         data.setSnapshotId(snapshotId);
         data.setName(properties.getProperty(PROPERTY_SPACE_ID, "NAME_PLACEHOLDER"));

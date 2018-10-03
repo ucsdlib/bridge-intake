@@ -27,7 +27,6 @@ import org.chronopolis.rest.models.enums.FixityAlgorithm;
 import org.chronopolis.rest.service.BagFileCsvGenerator;
 import org.chronopolis.rest.service.IngestRequestSupplier;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -46,7 +45,7 @@ import java.util.Optional;
  * @author shake
  */
 public class ChronopolisIngest implements Runnable {
-    private final Logger log = LoggerFactory.getLogger(ChronopolisIngest.class);
+    private final Logger log;
 
     private final BridgeContext bridgeContext;
     private final IntakeSettings settings;
@@ -87,12 +86,14 @@ public class ChronopolisIngest implements Runnable {
                                 BagStagingProperties stagingProperties,
                                 BridgeContext bridgeContext,
                                 IngestSupplierFactory supplierFactory) {
+        this.log = bridgeContext.getLogger();
+
         this.data = data;
         this.receipts = receipts;
         this.settings = settings;
-        this.stagingProperties = stagingProperties;
         this.factory = supplierFactory;
         this.bridgeContext = bridgeContext;
+        this.stagingProperties = stagingProperties;
 
         this.bags = bags;
         this.files = files;

@@ -76,7 +76,10 @@ public class Bridge {
      * @param bridgeContext the {@link BridgeContext} to retrieve the {@link BridgeAPI} to query
      */
     private void checkBridge(BridgeContext bridgeContext) {
+        log.info("[{}] Querying for snapshots", bridgeContext.getName());
         Response<Snapshots> response;
+
+        Logger contextLogger = bridgeContext.getLogger();
         BridgeAPI bridge = bridgeContext.getApi();
 
         Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
@@ -85,7 +88,7 @@ public class Bridge {
         try {
             response = snapshotCall.execute();
         } catch (IOException e) {
-            log.warn("[{}] Unable to query Bridge API", requestUrl, e);
+            contextLogger.warn("[{}] Unable to query Bridge API", requestUrl, e);
             return;
         }
 
@@ -96,7 +99,8 @@ public class Bridge {
                     .forEach(snapshot -> processSnapshot(bridgeContext, collector, snapshot));
         } else {
             String message = response != null ? response.message() : "";
-            log.warn("[{}] Error in query to bridge api: Bridge API {}", requestUrl, message);
+            contextLogger.warn("[{}] Error in query to bridge api: Bridge API {}",
+                    requestUrl, message);
         }
     }
 
@@ -114,6 +118,7 @@ public class Bridge {
     private void processSnapshot(BridgeContext bridgeContext,
                                  DataCollector collector,
                                  Snapshot snapshot) {
+        Logger contextLogger = bridgeContext.getLogger();
         BridgeAPI bridge = bridgeContext.getApi();
         String snapshotId = snapshot.getSnapshotId();
 
@@ -126,7 +131,7 @@ public class Bridge {
             historyResponse = historyCall.execute();
             data = collector.collectBagData(snapshotId);
         } catch (IOException e) {
-            log.error("Error getting information for snapshot {}", snapshotId, e);
+            contextLogger.error("Error getting information for snapshot {}", snapshotId, e);
             return;
         }
 
@@ -149,10 +154,8 @@ public class Bridge {
             // If we're at STAGED, then the snapshot is ready to be bagged
             // If we're at BAGGED, then the snapshot needs to be replicated/closed
             HistoryItem item = history.get(0);
-            log.debug("Processing line {}", item.getHistory());
             History fromJson = gson.fromJson(item.getHistory(), History.class);
             if (fromJson instanceof SnapshotStaged) {
-                log.info("Bagging snapshot {}", snapshotId);
                 manager.bagSnapshot(data, bridgeContext);
             } else if (fromJson instanceof BaggingHistory) {
                 BaggingHistory baggingHistory = (BaggingHistory) fromJson;
@@ -164,7 +167,7 @@ public class Bridge {
                         stagingProperties);
             }
         } else {
-            log.warn("Snapshot {} has no history, ignoring", snapshotId);
+            contextLogger.info("Snapshot {} has no history, ignoring", snapshotId);
         }
     }
 

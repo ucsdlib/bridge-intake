@@ -8,11 +8,11 @@ import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class DpnIngest implements Supplier<Bag> {
     /**
      * static factory for testing
      *
-     * todo: we might be able to get rid of this and simplify testing by passing in the DpnInfoReader
+     * todo: simplify testing by passing in the DpnInfoReader instead of a Factory
      */
     static class ReaderFactory {
         DpnInfoReader reader(Path save, String name) throws IOException {
@@ -47,7 +47,7 @@ public class DpnIngest implements Supplier<Bag> {
         }
     }
 
-    private final Logger log = LoggerFactory.getLogger(DpnIngest.class);
+    private final Logger log;
 
     private final BagData data;
     private final BagReceipt receipt;
@@ -58,6 +58,7 @@ public class DpnIngest implements Supplier<Bag> {
 
     public DpnIngest(BagData data,
                      BagReceipt receipt,
+                     BridgeContext context,
                      BalustradeBag bags,
                      IntakeSettings settings,
                      BagStagingProperties staging) {
@@ -67,11 +68,14 @@ public class DpnIngest implements Supplier<Bag> {
         this.settings = settings;
         this.readerFactory = new ReaderFactory();
         this.staging = staging;
+
+        this.log = context.getLogger();
     }
 
     @VisibleForTesting
     public DpnIngest(BagData data,
                      BagReceipt receipt,
+                     BridgeContext context,
                      BalustradeBag bags,
                      IntakeSettings settings,
                      BagStagingProperties staging,
@@ -82,6 +86,8 @@ public class DpnIngest implements Supplier<Bag> {
         this.settings = settings;
         this.readerFactory = readerFactory;
         this.staging = staging;
+
+        this.log = context.getLogger();
     }
 
     /**

@@ -6,8 +6,6 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -20,7 +18,6 @@ import java.util.Map;
  * Created by shake on 2/23/16.
  */
 public class BaggingHistoryDeserializer implements JsonDeserializer<BaggingHistory> {
-    private final Logger log = LoggerFactory.getLogger(BaggingHistoryDeserializer.class);
 
     @Override
     public BaggingHistory deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {

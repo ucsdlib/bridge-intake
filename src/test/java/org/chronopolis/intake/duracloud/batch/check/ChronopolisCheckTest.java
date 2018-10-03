@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.cleaner.TrueCleaner;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
@@ -14,14 +16,13 @@ import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.test.support.CallWrapper;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,21 +39,19 @@ import static org.mockito.Mockito.when;
 public class ChronopolisCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
-    @Mock private BridgeAPI bridge;
-    @Mock private DepositorService depositors;
-    @Mock private Bicarbonate cleaningManager;
+    @Mock private BridgeAPI bridge = mock(BridgeAPI.class);
+    @Mock private Bicarbonate cleaningManager = mock(Bicarbonate.class);
+    @Mock private DepositorService depositors = mock(DepositorService.class);
 
+    private BridgeContext context = new BridgeContext(bridge, "pre", "manifest", "restores",
+            "snapshots", Push.CHRONOPOLIS, "chronopolis-check-test");
     private ChronopolisCheck check;
-
-    @Before
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void testCompleteSnapshot() {
         BagData bagData = data();
         BagReceipt receipt = receipt();
+
         ImmutableList<BagReceipt> receipts = ImmutableList.of(receipt);
         Bag bag = createChronBagFullReplications();
 
@@ -74,7 +73,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class)))
                 .thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
-        check = new ChronopolisCheck(bagData, receipts, bridge, depositors, cleaningManager);
+        check = new ChronopolisCheck(bagData, receipts, context, bridge, depositors, cleaningManager);
         check.run();
 
         verify(depositors, times(1)).getDepositorBag(eq(depositor), eq(receiptName));
@@ -88,7 +87,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(depositors.getDepositorBag(anyString(), anyString()))
                 .thenReturn(new CallWrapper<>(createChronBagPartialReplications()));
 
-        check = new ChronopolisCheck(data(), receipts(), bridge, depositors, cleaningManager);
+        check = new ChronopolisCheck(data(), receipts(), context, bridge, depositors, cleaningManager);
         check.run();
         verify(depositors, times(2)).getDepositorBag(anyString(), anyString());
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));

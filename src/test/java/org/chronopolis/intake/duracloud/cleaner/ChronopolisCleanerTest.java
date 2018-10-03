@@ -50,7 +50,7 @@ public class ChronopolisCleanerTest {
 
     @Before
     public void setup() throws IOException {
-        Path tmp = Files.createTempDirectory("cleanertest");
+        Path tmp = Files.createTempDirectory("cleaner-test");
         tmp.toFile().deleteOnExit();
         properties = new BagStagingProperties().setPosix(new Posix().setPath(tmp.toString()));
     }
@@ -76,6 +76,7 @@ public class ChronopolisCleanerTest {
 
     private void runCleanerForBag(StagingStorage model, Boolean expected) {
         Bag bag = generateBag(model, BagStatus.PRESERVED);
+
         when(staging.toggleStorage(eq(bag.getId()), eq(BAG_PATH), eq(TOGGLE)))
                 .thenReturn(new CallWrapper<>(model));
 
@@ -95,8 +96,8 @@ public class ChronopolisCleanerTest {
         when(staging.toggleStorage(eq(bag.getId()), eq(BAG_PATH), eq(TOGGLE)))
                 .thenReturn(new CallWrapper<>(INACTIVE_STORAGE));
 
-        Cleaner cleaner =
-                new ChronopolisCleaner(RELATIVE, depositors, staging, properties, DEPOSITOR, BAG_NAME);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, depositors, staging,
+                properties, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertTrue(clean);
@@ -113,8 +114,8 @@ public class ChronopolisCleanerTest {
         when(staging.toggleStorage(eq(bag.getId()), eq(BAG_PATH), eq(TOGGLE)))
                 .thenReturn(new CallWrapper<>(ACTIVE_STORAGE));
 
-        Cleaner cleaner
-                = new ChronopolisCleaner(RELATIVE, depositors, staging, properties, DEPOSITOR, BAG_NAME);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, depositors, staging,
+                properties, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);
@@ -128,8 +129,8 @@ public class ChronopolisCleanerTest {
         ErrorCallWrapper<Bag> wrapper = new ErrorCallWrapper<>(bag, 404, "not-found");
         when(depositors.getDepositorBag(eq(DEPOSITOR), eq(bag.getName()))).thenReturn(wrapper);
 
-        Cleaner cleaner =
-                new ChronopolisCleaner(RELATIVE, depositors, staging, properties, DEPOSITOR, BAG_NAME);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, depositors, staging,
+                properties, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);
@@ -143,8 +144,8 @@ public class ChronopolisCleanerTest {
         CallWrapper<Bag> wrapper = new CallWrapper<>(bag);
         when(depositors.getDepositorBag(eq(DEPOSITOR), eq(bag.getName()))).thenReturn(wrapper);
 
-        Cleaner cleaner =
-                new ChronopolisCleaner(RELATIVE, depositors, staging, properties, DEPOSITOR, BAG_NAME);
+        Cleaner cleaner = new ChronopolisCleaner(RELATIVE, depositors, staging,
+                properties, DEPOSITOR, BAG_NAME);
         Boolean clean = cleaner.call();
 
         Assert.assertFalse(clean);

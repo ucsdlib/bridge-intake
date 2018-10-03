@@ -8,8 +8,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -17,8 +15,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import java.io.File;
 
 public class ChronValidatorTest {
-
-    private final Logger log = LoggerFactory.getLogger(ChronValidatorTest.class);
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
@@ -79,15 +75,6 @@ public class ChronValidatorTest {
 
         context.register(TinyApplication.class);
         TestPropertyValues.of("chron.workDirectory:" + tmp.toString())
-                .applyTo(context);
-        thrown.expect(BeanCreationException.class);
-        context.refresh();
-    }
-
-    @Test
-    public void bindNull() {
-        context.register(TinyApplication.class);
-        TestPropertyValues.of()
                 .applyTo(context);
         thrown.expect(BeanCreationException.class);
         context.refresh();

@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMultimap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +21,6 @@ import java.util.List;
  * Created by shake on 11/12/15.
  */
 public class DpnInfoReader {
-    private static final Logger log = LoggerFactory.getLogger(DpnInfoReader.class);
     private static final String DPN_INFO = "dpn-tags/dpn-info.txt";
 
     private final ImmutableMultimap<Tag, String> tags;
@@ -51,11 +48,9 @@ public class DpnInfoReader {
             }
         }
 
-        // Empty dpninfo?
         return new DpnInfoReader(ImmutableMultimap.of());
     }
 
-    // TODO: autoclose/close br
     private static DpnInfoReader read(BufferedReader r) throws IOException {
         ImmutableMultimap.Builder<Tag, String> builder = ImmutableMultimap.builder();
         String line;

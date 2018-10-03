@@ -22,13 +22,15 @@ dpn:
 
 duracloud:
   bridge:
-    - snapshots: /bridge-0/snapshots/
+    - name: bridge-0
+      snapshots: /bridge-0/snapshots/
       restores: /bridge-0/restore/
       username: replace-me
       password: replace-me
       endpoint: http://localhost:8080/
       push: DPN
-    - snapshots: /bridge-1/snapshots/
+    - name: bridge-1
+      snapshots: /bridge-1/snapshots/
       restores: /bridge-1/restore/
       username: replace-me
       password: replace-me

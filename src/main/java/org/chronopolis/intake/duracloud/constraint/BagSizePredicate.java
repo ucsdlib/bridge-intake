@@ -2,8 +2,6 @@ package org.chronopolis.intake.duracloud.constraint;
 
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.props.Constraints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.function.Predicate;
@@ -19,8 +17,6 @@ import java.util.function.Predicate;
  */
 public class BagSizePredicate implements Predicate<Weight> {
 
-    private final Logger log = LoggerFactory.getLogger(BagSizePredicate.class);
-
     private final Double size;
     private final Map<String, Constraints.SizeLimit> constraintMap;
 
@@ -33,7 +29,6 @@ public class BagSizePredicate implements Predicate<Weight> {
     public boolean test(Weight weight) {
         Constraints.SizeLimit limit = constraintMap.getOrDefault(weight.getNode(),
                 new Constraints.SizeLimit());
-        // log.info("{} {}", (limit.getSize() < 0), (size < (limit.getSize() * limit.getUnit().size())));
         //     no limit               check against bag size
         return limit.getSize() < 0 || size < (limit.getSize() * limit.getUnit().size());
     }

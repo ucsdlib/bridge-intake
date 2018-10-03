@@ -9,13 +9,15 @@ import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.Constraints;
+import org.chronopolis.intake.duracloud.config.props.Push;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.test.support.CallWrapper;
 import org.chronopolis.test.support.ErrorCallWrapper;
 import org.chronopolis.test.support.ExceptingCallWrapper;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import retrofit2.Call;
 
 import java.util.List;
@@ -37,7 +39,6 @@ import static org.mockito.Mockito.when;
  */
 public class DpnReplicateTest extends BatchTestBase {
 
-    @Mock
     private BalustradeTransfers transfers;
 
     private Bag bag;
@@ -46,6 +47,7 @@ public class DpnReplicateTest extends BatchTestBase {
     private Weight weight2;
     private List<Weight> weights;
     private DpnReplicate replicate;
+    private BridgeContext context;
 
     @Before
     public void setup() {
@@ -57,7 +59,11 @@ public class DpnReplicateTest extends BatchTestBase {
         weight1 = new Weight(UUID.randomUUID().toString(), "snapshot");
         weight2 = new Weight(UUID.randomUUID().toString(), "snapshot");
         weights = ImmutableList.of(weight0, weight1, weight2);
-        replicate = new DpnReplicate(DEPOSITOR, settings, stagingProperties, transfers);
+
+        context = new BridgeContext(mock(BridgeAPI.class), "prefix", "manifest",
+                "restores", "snapshots", Push.DPN, "short-name");
+
+        replicate = new DpnReplicate(DEPOSITOR, context, settings, stagingProperties, transfers);
     }
 
     @Test
@@ -95,7 +101,7 @@ public class DpnReplicateTest extends BatchTestBase {
                 .thenReturn(new CallWrapper<>(replication(weight1.getNode())),
                         new CallWrapper<>(replication(weight2.getNode())));
 
-        replicate = new DpnReplicate(DEPOSITOR, settings, stagingProperties, transfers);
+        replicate = new DpnReplicate(DEPOSITOR, context, settings, stagingProperties, transfers);
         replicate.accept(bag, weights);
         verify(transfers, times(1)).getReplications(eq(ImmutableMap.of("bag", bag.getUuid())));
         verify(transfers, times(1)).createReplication(
@@ -116,7 +122,7 @@ public class DpnReplicateTest extends BatchTestBase {
                 .thenReturn(new CallWrapper<>(replication(weight1.getNode())),
                         new CallWrapper<>(replication(weight2.getNode())));
 
-        replicate = new DpnReplicate(DEPOSITOR, settings, stagingProperties, transfers);
+        replicate = new DpnReplicate(DEPOSITOR, context, settings, stagingProperties, transfers);
         replicate.accept(bag, weights);
 
         verify(transfers, times(1)).getReplications(ImmutableMap.of("bag", bag.getUuid()));

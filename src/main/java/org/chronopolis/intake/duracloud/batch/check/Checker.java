@@ -1,6 +1,7 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
 import org.chronopolis.earth.SimpleCallback;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
@@ -9,7 +10,6 @@ import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotComplete;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.util.HashMap;
@@ -25,16 +25,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by shake on 6/1/16.
  */
 public abstract class Checker implements Runnable {
-    private final Logger log = LoggerFactory.getLogger(Checker.class);
+    private final Logger log;
 
     private final BagData data;
     private final BridgeAPI bridge;
     private final List<BagReceipt> receipts;
 
-    public Checker(BagData data, List<BagReceipt> receipts, BridgeAPI bridge) {
+    public Checker(BagData data,
+                   List<BagReceipt> receipts,
+                   BridgeContext context,
+                   BridgeAPI bridge) {
         this.data = data;
         this.bridge = bridge;
         this.receipts = receipts;
+        this.log = context.getLogger();
     }
 
     @Override
@@ -49,7 +53,8 @@ public abstract class Checker implements Runnable {
            - instead of an AtomicInteger accumulator we use a CompletableFuture
            - Map each receipt to a CF
            - CFs should return a Map<String, ReplicationHistory>
-           - Same idea toward the end - check total replications wanted against how many history items we have
+           - Same idea toward the end - check total replications wanted against how many
+             history items we have
          */
         // Might revisit this but for now it seems ok
         receipts.forEach(r -> {
@@ -58,7 +63,8 @@ public abstract class Checker implements Runnable {
         });
 
         int totalReplications = receipts.size() * 3;
-        log.info("{} - found {}/{} completed replications", snapshot, accumulator.get(), totalReplications);
+        log.info("{} - found {}/{} completed replications",
+                snapshot, accumulator.get(), totalReplications);
         if (accumulator.get() == totalReplications) {
             for (ReplicationHistory val: history.values()) {
                 Call<HistorySummary> call = bridge.postHistory(snapshot, val);
@@ -70,6 +76,9 @@ public abstract class Checker implements Runnable {
         }
     }
 
-    protected abstract void checkReceipts(BagReceipt receipt, BagData data, AtomicInteger accumulator, Map<String, ReplicationHistory> history);
+    protected abstract void checkReceipts(BagReceipt receipt,
+                                          BagData data,
+                                          AtomicInteger accumulator,
+                                          Map<String, ReplicationHistory> history);
 
 }

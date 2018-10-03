@@ -30,6 +30,11 @@ public class Duracloud {
         private String prefix = "";
 
         /**
+         * Name to refer to this Bridge by
+         */
+        private String name = "bridge-default";
+
+        /**
          * Directory of duracloud snapshots
          */
         private String snapshots = "/dc/snapshots";
@@ -133,6 +138,14 @@ public class Duracloud {
             return this;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public Bridge setName(String name) {
+            this.name = name;
+            return this;
+        }
     }
 
 }

@@ -7,9 +7,9 @@ import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.SimpleBagWriter;
 import org.chronopolis.bag.writer.WriteJob;
 import org.chronopolis.bag.writer.WriteResult;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,20 +22,28 @@ import java.util.stream.Collectors;
  * Created by shake on 2/19/16.
  */
 public class DpnWriter extends SimpleBagWriter {
-    private final Logger log = LoggerFactory.getLogger(DpnWriter.class);
+    private final Logger log;
 
     private final String depositor;
     private final String snapshotId;
+    private final BridgeContext context;
     private final BagProperties properties;
+
     private boolean validate;
     private Packager packager;
 
-    public DpnWriter(String depositor, String snapshotId, BagProperties properties) {
+    public DpnWriter(String depositor,
+                     String snapshotId,
+                     BagProperties properties,
+                     BridgeContext context) {
         super();
 
         this.depositor = depositor;
         this.snapshotId = snapshotId;
+        this.context = context;
         this.properties = properties;
+
+        this.log = context.getLogger();
     }
 
     @Override
@@ -64,18 +72,18 @@ public class DpnWriter extends SimpleBagWriter {
         return job.get();
     }
 
-    private void updateMd5s(Bag b) {
+    private void updateMd5s(Bag bag) {
         // This is kind of obnoxious, it would be nice to extend bag
         // so that we can simply get the value after
-        log.debug("Updating md5 manifest for {}", b.getName());
+        log.debug("Updating md5 manifest for {}", bag.getName());
         Path md5 = Paths.get("manifest-md5.txt");
-        TagFile dura = b.getTags().get(md5);
-        if (dura != null && dura instanceof DuracloudMD5) {
-            ifPresent(b, (DuracloudMD5) dura);
+        TagFile dura = bag.getTags().get(md5);
+        if (dura instanceof DuracloudMD5) {
+            ifPresent(bag, (DuracloudMD5) dura);
         }
     }
 
-    private void ifPresent(Bag b, DuracloudMD5 md5) {
+    private void ifPresent(Bag bag, DuracloudMD5 md5) {
         md5.setPredicate(s -> {
             String[] split = s.split("\\s+", 2);
             if (split.length != 2) {
@@ -83,14 +91,14 @@ public class DpnWriter extends SimpleBagWriter {
             }
 
             String path = split[1];
-            return b.getFiles().containsKey(Paths.get(path));
+            return bag.getFiles().containsKey(Paths.get(path));
        });
     }
 
     private TagFile createDpnInfo(Bag b) {
         log.debug("Adding dpn-info for {}", b.getName());
         BagProperties.Dpn infoProperties = properties.getDpn();
-        DpnInfo dpnInfo = new DpnInfo();
+        DpnInfo dpnInfo = new DpnInfo(context);
 
         // ex: chron://ucsd/some-ucsd-dpn-snapshot/0
         String local = "chron://" + depositor + "/" + snapshotId + "/" + b.getNumber();

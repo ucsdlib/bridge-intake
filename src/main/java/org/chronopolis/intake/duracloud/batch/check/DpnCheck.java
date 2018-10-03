@@ -10,6 +10,7 @@ import org.chronopolis.earth.models.Ingest;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.cleaner.Cleaner;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
@@ -18,7 +19,6 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.enums.BagStatus;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.nio.file.Path;
@@ -35,19 +35,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  * replications for a Bag (given by its receipt).
  * <p>
  * When all replications complete, there are a few operations left to do:
- * - push ingest records to the DPN Registry (records of when nodes were marked as having stored the Bag)
+ * - push ingest records to the DPN Registry (records of when nodes were marked as having stored
+ * the Bag)
  * - remove the Bag from staging
  * - check the Chronopolis Ingest server to see if the staged data can be removed
  * <p>
  * Note that if any of these fail, the accumulator will be reset
  * <p>
- * Created by shake on 6/1/16.
+ * The constructor for this class has grown quite a bit - is it time to reduce the scope of its
+ * operations?
+ *
+ * @author shake
  */
 public class DpnCheck extends Checker {
-    private final Logger log = LoggerFactory.getLogger(DpnCheck.class);
-
     private static final int EXPECTED_REPLICATIONS = 3;
 
+    private final Logger log;
     private final Events events;
     private final BalustradeBag bags;
     private final DepositorService depositors;
@@ -56,14 +59,16 @@ public class DpnCheck extends Checker {
 
     public DpnCheck(BagData data,
                     List<BagReceipt> receipts,
+                    BridgeContext context,
                     BridgeAPI bridge,
                     BalustradeBag bags,
                     Events eventsAPI,
                     DepositorService depositors,
                     Bicarbonate cleaningManager,
                     IntakeSettings settings) {
-        super(data, receipts, bridge);
+        super(data, receipts, context, bridge);
         this.bags = bags;
+        this.log = context.getLogger();
         this.events = eventsAPI;
         this.depositors = depositors;
         this.cleaningManager = cleaningManager;
@@ -92,7 +97,7 @@ public class DpnCheck extends Checker {
                 // A good way to get the expected replications? Maybe in the future
                 .filter(bag -> bag.getReplicatingNodes().size() == EXPECTED_REPLICATIONS)
                 .filter(this::ingestRecordExists)
-                .filter(bag -> cleaningManager.cleaner(dpn).call())
+                .filter(bag -> cleaningManager.cleaner(dpn).apply(log))
                 .map(Bag::getReplicatingNodes).orElse(ImmutableList.of());
 
         for (String node : replications) {
@@ -126,7 +131,7 @@ public class DpnCheck extends Checker {
         return cb.getResponse()
                 .filter(chronBag -> chronBag.getStatus() == BagStatus.PRESERVED)
                 .flatMap(ignored -> addChronopolisReplication(bag))
-                .filter(ignored -> cleaner.call())
+                .filter(ignored -> cleaner.apply(log))
                 .orElse(bag);
     }
 

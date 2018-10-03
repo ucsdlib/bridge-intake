@@ -190,15 +190,16 @@ public class SnapshotJobManager {
                 chronStaging, settings, stagingProperties, chronFiles, depositors, bridgeContext);
 
         if (bridgeContext.getPush() == Push.DPN) {
-            check = new DpnCheck(data, receipts, bridge,
+            check = new DpnCheck(data, receipts, bridgeContext, bridge,
                     bags, events, depositors, cleaningManager, settings);
 
             // Also need to do DPN Ingest steps
-            CompletableFuture<Void> dpnIngest = dpnIngest(data, receipts, dpnLocal,
+            CompletableFuture<Void> dpnIngest = dpnIngest(data, receipts, dpnLocal, bridgeContext,
                     settings, stagingProperties);
             ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIo);
         } else {
-            check = new ChronopolisCheck(data, receipts, bridge, depositors, cleaningManager);
+            check = new ChronopolisCheck(data, receipts, bridgeContext,
+                    bridge, depositors, cleaningManager);
             ingestFuture = CompletableFuture.runAsync(chronIngest, longIo);
         }
 
@@ -219,6 +220,7 @@ public class SnapshotJobManager {
     private CompletableFuture<Void> dpnIngest(BagData data,
                                               List<BagReceipt> receipts,
                                               LocalAPI localAPI,
+                                              BridgeContext context,
                                               IntakeSettings settings,
                                               BagStagingProperties properties) {
         String dep = data.depositor();
@@ -231,11 +233,13 @@ public class SnapshotJobManager {
         DpnNodeWeighter weighter = new DpnNodeWeighter(data, nodes, settings);
 
         for (BagReceipt receipt : receipts) {
-            DpnDigest dpnDigest = new DpnDigest(receipt, bags, settings);
-            DpnIngest dpnIngest = new DpnIngest(data, receipt, bags, settings, properties);
-            DpnReplicate dpnReplicate = new DpnReplicate(dep, settings, properties, transfers);
+            DpnDigest dpnDigest = new DpnDigest(receipt, context, bags, settings);
+            DpnIngest dpnIngest = new DpnIngest(data, receipt, context, bags, settings, properties);
+            DpnReplicate dpnReplicate = new DpnReplicate(dep, context,
+                    settings, properties, transfers);
 
-            CompletableFuture<List<Weight>> weights = CompletableFuture.supplyAsync(weighter);
+            CompletableFuture<List<Weight>> weights =
+                    CompletableFuture.supplyAsync(() -> weighter.get(context.getLogger()));
             futures[i++] = CompletableFuture.supplyAsync(dpnIngest, shortIo)
                     .thenApplyAsync(dpnDigest, shortIo)
                     .thenAcceptBothAsync(weights, dpnReplicate, shortIo);

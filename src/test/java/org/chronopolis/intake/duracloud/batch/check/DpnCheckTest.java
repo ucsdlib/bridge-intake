@@ -8,7 +8,9 @@ import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.cleaner.TrueCleaner;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.History;
@@ -19,11 +21,11 @@ import org.chronopolis.test.support.CallWrapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -42,20 +44,22 @@ import static org.mockito.Mockito.when;
 public class DpnCheckTest extends BatchTestBase {
 
     // Mocks for our http apis
-    @Mock private Events events;
-    @Mock private BridgeAPI bridge;
-    @Mock private BalustradeBag bags;
-    @Mock private DepositorService depositors;
-    @Mock private Bicarbonate cleaningManager;
+    @Mock private Events events = mock(Events.class);
+    @Mock private BridgeAPI bridge = mock(BridgeAPI.class);
+    @Mock private BalustradeBag bags = mock(BalustradeBag.class);
+    @Mock private DepositorService depositors = mock(DepositorService.class);
+    @Mock private Bicarbonate cleaningManager = mock(Bicarbonate.class);
+
+    private BridgeContext context = new BridgeContext(bridge, "pre", "manifest", "restores",
+            "snapshots", Push.DPN, "dpn-check-test");
 
     // And our test object
     private DpnCheck check;
 
     @Before
     public void setup() {
-        MockitoAnnotations.initMocks(this);
         settings = new IntakeSettings();
-        check = new DpnCheck(data(), receipts(), bridge, bags, events, depositors,
+        check = new DpnCheck(data(), receipts(), context, bridge, bags, events, depositors,
                 cleaningManager, settings);
     }
 

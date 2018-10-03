@@ -31,7 +31,6 @@ public class DpnNodeWeighterTest {
     private final String node = "WEIGHT-TEST";
 
     private DpnNodeWeighter weighter;
-
     private BalustradeNode nodes = mock(BalustradeNode.class);
 
     @Before
@@ -45,7 +44,6 @@ public class DpnNodeWeighterTest {
         // And setup the snapshot details
         final String id = "TEST-SNAPSHOT-ID";
         BagData data = new BagData(id);
-
         weighter = new DpnNodeWeighter(data, nodes, settings);
     }
 

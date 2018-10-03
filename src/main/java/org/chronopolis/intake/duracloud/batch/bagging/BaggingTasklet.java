@@ -47,7 +47,7 @@ import java.util.Optional;
  */
 public class BaggingTasklet implements Runnable {
 
-    private final Logger log = LoggerFactory.getLogger(BaggingTasklet.class);
+    private final Logger log;
 
     public static final String SNAPSHOT_CONTENT_PROPERTIES = "content-properties.json";
     public static final String SNAPSHOT_COLLECTION_PROPERTIES = ".collection-snapshot.properties";
@@ -75,6 +75,7 @@ public class BaggingTasklet implements Runnable {
         this.bridgeContext = bridgeContext;
         this.bagProperties = bagProperties;
         this.stagingProperties = stagingProperties;
+        this.log = bridgeContext.getLogger();
     }
 
     @Override
@@ -123,7 +124,7 @@ public class BaggingTasklet implements Runnable {
                 .withBagit(new BagIt())
                 .withPayloadManifest(manifest)
                 .withMaxSize(bagProperties.getMaxSize(), bagProperties.getUnit())
-                .withTagFile(new DuracloudMD5(duracloudManifest))
+                .withTagFile(new DuracloudMD5(duracloudManifest, bridgeContext))
                 .withTagFile(new OnDiskTagFile(contentProperties))
                 .withTagFile(new OnDiskTagFile(collectionProperties));
         bagger = configurePartitioner(bagger, pushToDpn);
@@ -244,7 +245,7 @@ public class BaggingTasklet implements Runnable {
      * @return the DpnWriter
      */
     private BagWriter buildDpnWriter(Path out) {
-        return new DpnWriter(depositor, snapshotId, bagProperties)
+        return new DpnWriter(depositor, snapshotId, bagProperties, bridgeContext)
                 .validate(true)
                 .withPackager(new TarPackager(out));
     }

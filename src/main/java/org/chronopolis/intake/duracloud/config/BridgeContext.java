@@ -3,6 +3,8 @@ package org.chronopolis.intake.duracloud.config;
 import org.chronopolis.intake.duracloud.config.props.Duracloud.Bridge;
 import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contextual information for a Duracloud Bridge so that we know:
@@ -18,7 +20,8 @@ public class BridgeContext {
 
     private final BridgeAPI api;
 
-    private Push push;
+    private final Push push;
+    private final String name;
     private final String manifest;
     private final String restores;
     private final String snapshots;
@@ -29,13 +32,15 @@ public class BridgeContext {
                          String manifest,
                          String restores,
                          String snapshots,
-                         Push push) {
+                         Push push,
+                         String name) {
         this.api = api;
         this.push = push;
         this.manifest = manifest;
         this.restores = restores;
         this.snapshots = snapshots;
         this.chronopolisPrefix = chronopolisPrefix;
+        this.name = name;
     }
 
     /**
@@ -46,6 +51,15 @@ public class BridgeContext {
      */
     public BridgeAPI getApi() {
         return api;
+    }
+
+    /**
+     * Get the {@link Logger} to be used for operations executed under this context
+     *
+     * @return the {@link Logger}
+     */
+    public Logger getLogger() {
+        return LoggerFactory.getLogger(name);
     }
 
     /**
@@ -95,8 +109,8 @@ public class BridgeContext {
         return push;
     }
 
-    public BridgeContext setPush(Push push) {
-        this.push = push;
-        return this;
+    public String getName() {
+        return name;
     }
+
 }

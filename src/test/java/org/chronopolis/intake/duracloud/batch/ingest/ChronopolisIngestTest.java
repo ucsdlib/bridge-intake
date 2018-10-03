@@ -55,6 +55,12 @@ public class ChronopolisIngestTest extends BatchTestBase {
     private final String filePath =
             "5309da6f-c1cc-40ad-be42-e67e722cce04/.collection-snapshot.properties";
 
+    private final String prefix = "";
+    private final String shortName = "bridge";
+    private final String manifest = "manifest-sha256";
+    private final String restores = "restores";
+    private final String snapshots = "snapshots";
+
     private final BagService bags = mock(BagService.class);
     private final StagingService staging = mock(StagingService.class);
     private final FileService fileService = mock(FileService.class);
@@ -63,7 +69,7 @@ public class ChronopolisIngestTest extends BatchTestBase {
     private final IngestRequestSupplier supplier = mock(IngestRequestSupplier.class);
     private final ChronopolisIngest.IngestSupplierFactory factory = new ChronIngestFactory();
     private final BridgeContext bridgeContext = new BridgeContext(mock(BridgeAPI.class),
-             "", "manifest-sha256", "restores", "snapshots", Push.CHRONOPOLIS);
+             prefix, manifest, restores, snapshots, Push.CHRONOPOLIS, shortName);
 
 
     private BagData data;

@@ -53,8 +53,6 @@ public class BaggingTasklet implements Runnable {
     public static final String SNAPSHOT_COLLECTION_PROPERTIES = ".collection-snapshot.properties";
     public static final String SNAPSHOT_MD5 = "manifest-md5.txt";
 
-    private final String TITLE = "Unable to create bag for %s";
-
     private String snapshotId;
     private String depositor;
     private BagProperties bagProperties;
@@ -80,7 +78,6 @@ public class BaggingTasklet implements Runnable {
 
     @Override
     public void run() {
-        final String errorMsg = "Snapshot contains no files and is unable to be bagged";
         Posix posix = stagingProperties.getPosix();
 
         Path out = Paths.get(posix.getPath(), depositor);
@@ -93,7 +90,10 @@ public class BaggingTasklet implements Runnable {
             PayloadManifest manifest = PayloadManifest.loadFromStream(input, snapshotBase);
             if (manifest.getFiles().isEmpty()) {
                 log.warn("{} - snapshot is empty!", snapshotId);
-                notifier.notify(String.format(TITLE, snapshotId), errorMsg);
+
+                String title = "Snapshot Error %s: No Files";
+                String errorMsg = "Snapshot contains no files and is unable to be bagged";
+                notifier.notify(String.format(title, snapshotId), errorMsg);
             } else {
                 prepareBags(snapshotBase, out, manifest);
             }
@@ -138,9 +138,11 @@ public class BaggingTasklet implements Runnable {
             // do some logging of the failed bags
             log.error("{} - unable to partition bags! {} Invalid Files",
                     snapshotId, partition.getRejected());
+
+            String title = "Snapshot Error %s: Unable to partition";
             String message = "Snapshot was not able to be partitioned."
                     + partition.getRejected().size() + " Rejected Files";
-            notifier.notify(String.format(TITLE, snapshotId), message);
+            notifier.notify(String.format(title, snapshotId), message);
         }
     }
 
@@ -174,11 +176,12 @@ public class BaggingTasklet implements Runnable {
             response = summaryCB.getResponse();
         } else {
             log.error("Error writing bags for {}", snapshotId);
+            String title = "Unable to create bag for %s";
             String message = "Unable to write bags for snapshot, "
                     + history.getHistory().size()
                     + " out of " + results.size()
                     + " succeeded";
-            notifier.notify(String.format(TITLE, snapshotId), message);
+            notifier.notify(String.format(title, snapshotId), message);
         }
 
         return response;

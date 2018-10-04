@@ -12,7 +12,7 @@
 
     <groupId>org.chronopolis.intake</groupId>
     <artifactId>duracloud-backend</artifactId>
-    <version>2.3.3-RELEASE</version>
+    <version>2.3.4-RELEASE</version>
 
     <properties>
         <chron.version>2.3.0-RELEASE</chron.version>
@@ -58,11 +58,17 @@
             <url>https://scm.umiacs.umd.edu/adapt/repository/maven-releases/</url>
             <id>adapt-releases</id>
             <name>Adapt Releases</name>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
         <repository>
             <url>https://scm.umiacs.umd.edu/adapt/repository/maven-snapshots/</url>
             <id>adapt-snapshots</id>
             <name>Adapt Snapshots</name>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
         </repository>
     </repositories>
 

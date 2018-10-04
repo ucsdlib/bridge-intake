@@ -17,6 +17,7 @@ import java.util.function.Predicate;
  *
  * @author shake
  */
+@Deprecated
 public class BagSizePredicate implements Predicate<Weight> {
 
     private final Logger log = LoggerFactory.getLogger(BagSizePredicate.class);

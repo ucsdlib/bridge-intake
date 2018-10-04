@@ -2,14 +2,12 @@ package org.chronopolis.intake.duracloud.batch.ingest;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.chronopolis.bag.core.Unit;
 import org.chronopolis.earth.api.BalustradeTransfers;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
-import org.chronopolis.intake.duracloud.config.props.Constraints;
 import org.chronopolis.test.support.CallWrapper;
 import org.chronopolis.test.support.ErrorCallWrapper;
 import org.chronopolis.test.support.ExceptingCallWrapper;
@@ -24,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -68,60 +65,6 @@ public class DpnReplicateTest extends BatchTestBase {
         replicate.accept(bag, weights);
         verify(transfers, times(1)).getReplications(ImmutableMap.of("bag", bag.getUuid()));
         verify(transfers, never()).createReplication(any());
-    }
-
-    @Test
-    public void createFiltersOnBagSize() {
-        settings.getConstraints().setNodes(ImmutableList.of(
-                new Constraints.Node()
-                        .setName(weight0.getNode())
-                        .setSizeLimit(new Constraints.SizeLimit()
-                                .setSize(1)
-                                .setUnit(Unit.BYTE)),
-                new Constraints.Node()
-                        .setName(weight1.getNode())
-                        .setSizeLimit(new Constraints.SizeLimit()
-                                .setSize(15)
-                                .setUnit(Unit.BYTE))));
-
-        // todo: we really should assert that the replication we're creating are the ones we
-        //       are expecting. in the next version of the earth-core lib, we'll have better eq
-        //       functionality, though maybe we can write our own and use it?
-        when(transfers.getReplications(eq(ImmutableMap.of("bag", bag.getUuid()))))
-                .thenReturn(response(ImmutableList.of()));
-        when(transfers.createReplication(any()))
-                .thenReturn(new CallWrapper<>(replication(weight1.getNode())),
-                        new CallWrapper<>(replication(weight2.getNode())));
-
-        replicate = new DpnReplicate(DEPOSITOR, settings, stagingProperties, transfers);
-        replicate.accept(bag, weights);
-        verify(transfers, times(1)).getReplications(eq(ImmutableMap.of("bag", bag.getUuid())));
-        verify(transfers, times(1)).createReplication(
-                argThat(r -> r.getToNode().equals(weight1.getNode())));
-        verify(transfers, times(1)).createReplication(
-                argThat(r -> r.getToNode().equals(weight2.getNode())));
-    }
-
-    @Test
-    public void createFiltersOnMemberUUID() {
-        settings.getConstraints().setNodes(ImmutableList.of(new Constraints.Node()
-                .setName(weight0.getNode())
-                .setMembers(ImmutableList.of(bag.getMember()))));
-
-        when(transfers.getReplications(eq(ImmutableMap.of("bag", bag.getUuid()))))
-                .thenReturn(response(ImmutableList.of()));
-        when(transfers.createReplication(any()))
-                .thenReturn(new CallWrapper<>(replication(weight1.getNode())),
-                        new CallWrapper<>(replication(weight2.getNode())));
-
-        replicate = new DpnReplicate(DEPOSITOR, settings, stagingProperties, transfers);
-        replicate.accept(bag, weights);
-
-        verify(transfers, times(1)).getReplications(ImmutableMap.of("bag", bag.getUuid()));
-        verify(transfers, times(1)).createReplication(
-                argThat(r -> r.getToNode().equals(weight1.getNode())));
-        verify(transfers, times(1)).createReplication(
-                argThat(r -> r.getToNode().equals(weight2.getNode())));
     }
 
     @Test

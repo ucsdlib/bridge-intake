@@ -26,6 +26,7 @@ import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.rest.api.BagService;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.api.FileService;
@@ -163,6 +164,7 @@ public class SnapshotJobManager {
      * @param stagingProperties the properties defining the bag staging area
      */
     public void startReplicationTasklet(final BagData data,
+                                        final SnapshotDetails details,
                                         final List<BagReceipt> receipts,
                                         final IntakeSettings settings,
                                         final BridgeContext bridgeContext,
@@ -194,7 +196,8 @@ public class SnapshotJobManager {
                     bags, events, depositors, cleaningManager, settings);
 
             // Also need to do DPN Ingest steps
-            CompletableFuture<Void> dpnIngest = dpnIngest(data, receipts, dpnLocal, bridgeContext,
+            CompletableFuture<Void> dpnIngest = dpnIngest(data, details,
+                    receipts, dpnLocal, bridgeContext,
                     settings, stagingProperties);
             ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIo);
         } else {
@@ -218,6 +221,7 @@ public class SnapshotJobManager {
      * @return the CompletableFuture
      */
     private CompletableFuture<Void> dpnIngest(BagData data,
+                                              SnapshotDetails details,
                                               List<BagReceipt> receipts,
                                               LocalAPI localAPI,
                                               BridgeContext context,
@@ -230,7 +234,7 @@ public class SnapshotJobManager {
 
         int i = 0;
         CompletableFuture[] futures = new CompletableFuture[receipts.size()];
-        DpnNodeWeighter weighter = new DpnNodeWeighter(data, nodes, settings);
+        DpnNodeWeighter weighter = new DpnNodeWeighter(nodes, settings, details);
 
         for (BagReceipt receipt : receipts) {
             DpnDigest dpnDigest = new DpnDigest(receipt, context, bags, settings);

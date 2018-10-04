@@ -15,6 +15,7 @@ import java.util.function.Predicate;
  *
  * @author shake
  */
+@Deprecated
 public class BagSizePredicate implements Predicate<Weight> {
 
     private final Double size;

@@ -18,6 +18,7 @@ import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistoryItem;
 import org.chronopolis.intake.duracloud.remote.model.Snapshot;
+import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotHistory;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStaged;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotStagedDeserializer;
@@ -123,11 +124,15 @@ public class Bridge {
         String snapshotId = snapshot.getSnapshotId();
 
         BagData data;
+        SnapshotDetails details;
         List<HistoryItem> history;
+        Response<SnapshotDetails> detailsResponse;
         Response<SnapshotHistory> historyResponse;
+        Call<SnapshotDetails> detailsCall = bridge.getSnapshotDetails(snapshotId);
         Call<SnapshotHistory> historyCall = bridge.getSnapshotHistory(snapshotId, new HashMap<>());
 
         try {
+            detailsResponse = detailsCall.execute();
             historyResponse = historyCall.execute();
             data = collector.collectBagData(snapshotId);
         } catch (IOException e) {
@@ -135,11 +140,14 @@ public class Bridge {
             return;
         }
 
+        details = detailsResponse != null && detailsResponse.body() != null
+                ? detailsResponse.body()
+                : null;
         history = historyResponse != null && historyResponse.body() != null
                 ? historyResponse.body().getHistoryItems()
                 : ImmutableList.of();
 
-        if (!history.isEmpty() && data != null) {
+        if (details != null && !history.isEmpty() && data != null) {
             // todo: create this from the initial query... no need to make a new one for each bridge
             // try to deserialize the history
             Gson gson = new GsonBuilder()
@@ -161,6 +169,7 @@ public class Bridge {
                 BaggingHistory baggingHistory = (BaggingHistory) fromJson;
                 manager.startReplicationTasklet(
                         data,
+                        details,
                         baggingHistory.getHistory(),
                         settings,
                         bridgeContext,

@@ -11,7 +11,6 @@ import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Constraints;
 import org.chronopolis.intake.duracloud.constraint.ReplicationDoesNotExist;
 import org.slf4j.Logger;
 import retrofit2.Call;
@@ -38,9 +37,6 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
     private final BagStagingProperties staging;
     private final BalustradeTransfers transfers;
 
-    private ImmutableMap<String, List<String>> memberConstraints;
-    private ImmutableMap<String, Constraints.SizeLimit> bagSizeConstraints;
-
     public DpnReplicate(String depositor,
                         BridgeContext context,
                         IntakeSettings settings,
@@ -51,19 +47,6 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
         this.depositor = depositor;
         this.transfers = transfers;
         this.log = context.getLogger();
-        buildConstraintMaps();
-    }
-
-    private void buildConstraintMaps() {
-        ImmutableMap.Builder<String, Constraints.SizeLimit> sizeBuilder = ImmutableMap.builder();
-        ImmutableMap.Builder<String, List<String>> memberBuilder = ImmutableMap.builder();
-        for (Constraints.Node node : settings.getConstraints().getNodes()) {
-            sizeBuilder.put(node.getName(), node.getSizeLimit());
-            memberBuilder.put(node.getName(), node.getMembers());
-        }
-
-        bagSizeConstraints = sizeBuilder.build();
-        memberConstraints = memberBuilder.build();
     }
 
     /**

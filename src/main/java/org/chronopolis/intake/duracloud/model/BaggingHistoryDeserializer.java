@@ -14,13 +14,16 @@ import java.util.Map;
 
 /**
  * [{snapshot-action}, {snapshot-id}, {bag-ids}, {manifest-checksums}]
- *
+ * <p>
  * Created by shake on 2/23/16.
  */
 public class BaggingHistoryDeserializer implements JsonDeserializer<BaggingHistory> {
 
     @Override
-    public BaggingHistory deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+    public BaggingHistory deserialize(JsonElement jsonElement,
+                                      Type type,
+                                      JsonDeserializationContext context)
+            throws JsonParseException {
         JsonArray asArray = jsonElement.getAsJsonArray();
         // initialize everything so teh ide doesn't complain
         String snapshotId = null;
@@ -32,13 +35,14 @@ public class BaggingHistoryDeserializer implements JsonDeserializer<BaggingHisto
             // This should only have one entry
             for (Map.Entry<String, JsonElement> entry : asObject.entrySet()) {
                 switch (entry.getKey()) {
-                    case "snapshot-id": snapshotId = entry.getValue().getAsString();
+                    case "snapshot-id":
+                        snapshotId = entry.getValue().getAsString();
                         break;
                     case "bag-ids":
-                        ids = jsonDeserializationContext.deserialize(entry.getValue(), List.class);
+                        ids = context.deserialize(entry.getValue(), List.class);
                         break;
                     case "manifest-checksums":
-                        checksums = jsonDeserializationContext.deserialize(entry.getValue(), List.class);
+                        checksums = context.deserialize(entry.getValue(), List.class);
                         break;
                     default:
                         break;
@@ -52,7 +56,7 @@ public class BaggingHistoryDeserializer implements JsonDeserializer<BaggingHisto
         }
 
         BaggingHistory history = new BaggingHistory(snapshotId, false);
-        for (int i=0; i < ids.size(); i++) {
+        for (int i = 0; i < ids.size(); i++) {
             String bagId = ids.get(i);
             String checksum = checksums.get(i);
             history.addBaggingData(bagId, checksum);

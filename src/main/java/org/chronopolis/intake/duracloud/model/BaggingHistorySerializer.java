@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 
@@ -18,11 +16,10 @@ import java.lang.reflect.Type;
  */
 public class BaggingHistorySerializer implements JsonSerializer<BaggingHistory> {
 
-    private final Logger log = LoggerFactory.getLogger(BaggingHistorySerializer.class);
-
     @Override
-    public JsonElement serialize(BaggingHistory baggingHistory, Type type, JsonSerializationContext jsonSerializationContext) {
-        log.info("Serializing bagging history");
+    public JsonElement serialize(BaggingHistory baggingHistory,
+                                 Type type,
+                                 JsonSerializationContext context) {
         JsonObject snapshotAction = new JsonObject();
         JsonObject snapshotId = new JsonObject();
         JsonObject bagIds = new JsonObject();
@@ -49,7 +46,7 @@ public class BaggingHistorySerializer implements JsonSerializer<BaggingHistory> 
         historyArray.add(snapshotId);
         historyArray.add(bagIds);
         historyArray.add(checksums);
-        // We don't need to escape with the charsequence replace
+
         String history = historyArray.toString()
                                      .replace("\"", "'");
 

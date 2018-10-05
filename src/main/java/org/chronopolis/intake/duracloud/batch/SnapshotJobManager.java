@@ -158,6 +158,7 @@ public class SnapshotJobManager {
      * part of the batch stuff
      *
      * @param data              additional details about the snapshot
+     * @param details           the {@link SnapshotDetails} containing snapshot information
      * @param receipts          the bag receipts for the snapshot
      * @param settings          the settings for our intake service
      * @param bridgeContext     the Bridge which is currently being operated on
@@ -173,11 +174,7 @@ public class SnapshotJobManager {
         // -> Always push to chronopolis so we have a separate tasklet (NotifyChron or something)
         // -> If we're pushing to dpn, do a DPNReplication Tasklet
         // -> Else have a Tasklet for checking status in chronopolis
-        if (!processing.add(data.snapshotId())) {
-            return;
-        }
-
-        if (!checkDepositor(data, bridgeContext)) {
+        if (!checkDepositor(data, bridgeContext) || !processing.add(data.snapshotId())) {
             return;
         }
 
@@ -213,10 +210,11 @@ public class SnapshotJobManager {
     /**
      * Create a CompletableFuture for the steps required to ingest content into DPN
      *
-     * @param data              the bag data
-     * @param receipts          the bag receipts
-     * @param localAPI          the DPN APIs
-     * @param settings          the intake settings
+     * @param data       the {@link BagData} for this snapshot
+     * @param details    the {@link SnapshotDetails} for this snapshot
+     * @param receipts   the {@link BagReceipt} list for this snapshot
+     * @param localAPI   the DPN APIs
+     * @param settings   the intake settings
      * @param properties the staging properties
      * @return the CompletableFuture
      */

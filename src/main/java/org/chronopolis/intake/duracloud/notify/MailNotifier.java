@@ -1,5 +1,6 @@
 package org.chronopolis.intake.duracloud.notify;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import org.chronopolis.intake.duracloud.config.props.Smtp;
@@ -19,10 +20,18 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public class MailNotifier implements Notifier {
 
     private final Smtp smtp;
+    private final JavaMailSender sender;
     private final Set<String> seen = new ConcurrentSkipListSet<>();
 
     public MailNotifier(Smtp smtp) {
         this.smtp = smtp;
+        this.sender = new JavaMailSenderImpl();
+    }
+
+    @VisibleForTesting
+    MailNotifier(Smtp smtp, JavaMailSender sender) {
+        this.smtp = smtp;
+        this.sender = sender;
     }
 
     @Override
@@ -38,7 +47,6 @@ public class MailNotifier implements Notifier {
             smm.setSubject(title);
             smm.setText(message);
 
-            JavaMailSender sender = new JavaMailSenderImpl();
             sender.send(smm);
         }
     }

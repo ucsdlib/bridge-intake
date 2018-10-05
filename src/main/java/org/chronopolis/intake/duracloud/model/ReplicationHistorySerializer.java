@@ -16,7 +16,9 @@ import java.lang.reflect.Type;
  */
 public class ReplicationHistorySerializer implements JsonSerializer<ReplicationHistory> {
     @Override
-    public JsonElement serialize(ReplicationHistory replicationHistory, Type type, JsonSerializationContext jsonSerializationContext) {
+    public JsonElement serialize(ReplicationHistory replicationHistory,
+                                 Type type,
+                                 JsonSerializationContext context) {
         JsonObject obj = new JsonObject();
         JsonObject snapshotAction = new JsonObject();
         JsonObject snapshotId = new JsonObject();
@@ -25,8 +27,10 @@ public class ReplicationHistorySerializer implements JsonSerializer<ReplicationH
 
         JsonArray historyArray = new JsonArray();
 
-        snapshotAction.add("snapshot-action", new JsonPrimitive(replicationHistory.getSnapshotAction()));
-        snapshotId.add("snapshot-id", new JsonPrimitive(replicationHistory.getSnapshotId()));
+        JsonPrimitive idPrimitive = new JsonPrimitive(replicationHistory.getSnapshotId());
+        JsonPrimitive actionPrimitive = new JsonPrimitive(replicationHistory.getSnapshotAction());
+        snapshotAction.add("snapshot-action", actionPrimitive);
+        snapshotId.add("snapshot-id", idPrimitive);
 
         JsonArray bagIdArray = new JsonArray();
 

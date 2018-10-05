@@ -25,7 +25,9 @@ public class HistoryDeserializer implements JsonDeserializer<History> {
     private final Logger log = LoggerFactory.getLogger(HistoryDeserializer.class);
 
     @Override
-    public History deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+    public History deserialize(JsonElement jsonElement,
+                               Type type,
+                               JsonDeserializationContext context) throws JsonParseException {
         ImmutableMap<String, Type> typeMap = ImmutableMap.<String, Type>builder()
                 .put("SNAPSHOT_BAGGED", BaggingHistory.class)
                 .put("SNAPSHOT_STAGED", SnapshotStaged.class)
@@ -40,7 +42,7 @@ public class HistoryDeserializer implements JsonDeserializer<History> {
             // If we don't have a deserializer for the action, ignore it and return a "null" history object
             Type actionType = typeMap.get(action);
             if (actionType != null) {
-                return jsonDeserializationContext.deserialize(jsonElement, actionType);
+                return context.deserialize(jsonElement, actionType);
             }
         }
 

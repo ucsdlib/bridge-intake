@@ -73,7 +73,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(bridge.completeSnapshot(any(String.class), any(AlternateIds.class)))
                 .thenReturn(new CallWrapper<>(new SnapshotComplete()));
 
-        check = new ChronopolisCheck(bagData, receipts, context, bridge, depositors, cleaningManager);
+        check = new ChronopolisCheck(bagData, receipts, context, depositors, cleaningManager);
         check.run();
 
         verify(depositors, times(1)).getDepositorBag(eq(depositor), eq(receiptName));
@@ -87,7 +87,7 @@ public class ChronopolisCheckTest extends BatchTestBase {
         when(depositors.getDepositorBag(anyString(), anyString()))
                 .thenReturn(new CallWrapper<>(createChronBagPartialReplications()));
 
-        check = new ChronopolisCheck(data(), receipts(), context, bridge, depositors, cleaningManager);
+        check = new ChronopolisCheck(data(), receipts(), context, depositors, cleaningManager);
         check.run();
         verify(depositors, times(2)).getDepositorBag(anyString(), anyString());
         verify(bridge, times(0)).postHistory(any(String.class), any(History.class));

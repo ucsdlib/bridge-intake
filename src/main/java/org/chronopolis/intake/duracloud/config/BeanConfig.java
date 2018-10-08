@@ -5,7 +5,11 @@ import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.api.LocalAPI;
+import org.chronopolis.intake.duracloud.batch.BaggingFactory;
+import org.chronopolis.intake.duracloud.batch.ChronFactory;
+import org.chronopolis.intake.duracloud.batch.DpnFactory;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
+import org.chronopolis.intake.duracloud.batch.check.DepositorCheck;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.inteceptor.HttpTraceInterceptor;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
@@ -37,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Config for our beans
+ * Bean declarations
  *
  * @author shake
  */
@@ -69,22 +73,49 @@ public class BeanConfig {
         return new MailNotifier(settings.getSmtp());
     }
 
-    @Bean(destroyMethod = "destroy")
-    public SnapshotJobManager snapshotJobManager(Notifier notifier,
-                                                 BagProperties bagProperties,
-                                                 BagStagingProperties bagStagingProperties,
-                                                 Bicarbonate cleaningManager,
-                                                 ServiceGenerator generator,
-                                                 LocalAPI dpn) {
-        return new SnapshotJobManager(notifier,
-                cleaningManager,
-                bagProperties,
-                bagStagingProperties,
-                dpn,
-                generator.bags(),
+    @Bean
+    public BaggingFactory baggingFactory(Notifier notifier,
+                                         BagProperties bagProperties,
+                                         BagStagingProperties bagStagingProperties) {
+        return new BaggingFactory(notifier, bagProperties, bagStagingProperties);
+    }
+
+    @Bean
+    public ChronFactory chronFactory(ServiceGenerator generator,
+                                     Bicarbonate cleaner,
+                                     IntakeSettings settings,
+                                     BagStagingProperties properties) {
+        return new ChronFactory(generator.bags(),
                 generator.files(),
                 generator.staging(),
-                generator.depositors());
+                generator.depositors(),
+                cleaner,
+                settings,
+                properties);
+    }
+
+    @Bean
+    public DpnFactory dpnFactory(LocalAPI localAPI,
+                                 Bicarbonate cleaner,
+                                 IntakeSettings settings,
+                                 ServiceGenerator generator,
+                                 BagStagingProperties properties) {
+        return new DpnFactory(localAPI, generator.depositors(), cleaner, settings, properties);
+    }
+
+    @Bean
+    public DepositorCheck depositorCheck(Notifier notifier,
+                                         LocalAPI localAPI,
+                                         ServiceGenerator generator) {
+        return new DepositorCheck(notifier, localAPI.getMemberAPI(), generator.depositors());
+    }
+
+    @Bean(destroyMethod = "destroy")
+    public SnapshotJobManager snapshotJobManager(DpnFactory dpnFactory,
+            ChronFactory chronFactory,
+            BaggingFactory baggingFactory,
+            DepositorCheck depositorCheck) {
+        return new SnapshotJobManager(dpnFactory, chronFactory, baggingFactory, depositorCheck);
     }
 
     @Bean

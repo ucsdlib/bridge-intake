@@ -33,12 +33,11 @@ public abstract class Checker implements Runnable {
 
     public Checker(BagData data,
                    List<BagReceipt> receipts,
-                   BridgeContext context,
-                   BridgeAPI bridge) {
+                   BridgeContext context) {
         this.data = data;
-        this.bridge = bridge;
         this.receipts = receipts;
         this.log = context.getLogger();
+        this.bridge = context.getApi();
     }
 
     @Override

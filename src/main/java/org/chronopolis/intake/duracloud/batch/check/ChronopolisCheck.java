@@ -7,7 +7,6 @@ import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.enums.BagStatus;
@@ -33,10 +32,9 @@ public class ChronopolisCheck extends Checker {
     public ChronopolisCheck(BagData data,
                             List<BagReceipt> receipts,
                             BridgeContext context,
-                            BridgeAPI bridge,
                             DepositorService depositors,
                             Bicarbonate cleaningManager) {
-        super(data, receipts, context, bridge);
+        super(data, receipts, context);
         this.log = context.getLogger();
         this.depositors = depositors;
         this.cleaningManager = cleaningManager;

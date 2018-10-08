@@ -59,7 +59,7 @@ public class DpnCheckTest extends BatchTestBase {
     @Before
     public void setup() {
         settings = new IntakeSettings();
-        check = new DpnCheck(data(), receipts(), context, bridge, bags, events, depositors,
+        check = new DpnCheck(data(), receipts(), context, bags, events, depositors,
                 cleaningManager, settings);
     }
 

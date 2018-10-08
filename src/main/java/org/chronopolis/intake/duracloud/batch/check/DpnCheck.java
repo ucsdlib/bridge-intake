@@ -60,13 +60,12 @@ public class DpnCheck extends Checker {
     public DpnCheck(BagData data,
                     List<BagReceipt> receipts,
                     BridgeContext context,
-                    BridgeAPI bridge,
                     BalustradeBag bags,
                     Events eventsAPI,
                     DepositorService depositors,
                     Bicarbonate cleaningManager,
                     IntakeSettings settings) {
-        super(data, receipts, context, bridge);
+        super(data, receipts, context);
         this.bags = bags;
         this.log = context.getLogger();
         this.events = eventsAPI;

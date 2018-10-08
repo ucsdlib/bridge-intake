@@ -11,7 +11,8 @@ import java.util.function.Predicate;
  * This is to ensure that all Bags in a Snapshot will be able to replicate to a Node.
  *
  * todo We could have this be a BiFunction and pass the SnapshotDetails to the test
- * todo Something other than a String
+ * todo For all these predicate, we could apply a negate before filtering so we don't need to do it
+ * in the impl
  *
  * @author shake
  */
@@ -28,10 +29,9 @@ public class SnapshotSizePredicate implements Predicate<String> {
     @Override
     public boolean test(String node) {
         Constraints.SizeLimit limit = constraintMap.getOrDefault(node, new Constraints.SizeLimit());
+        double upperBound = limit.getSize() * limit.getUnit().size();
 
-        //     no limit
-        return limit.getSize() < 0 ||
-                // check against bag size
-                (size != null && size < (limit.getSize() * limit.getUnit().size()));
+        //     no limit               check against bag size
+        return limit.getSize() < 0 || (size != null && size < upperBound);
     }
 }

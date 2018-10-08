@@ -4,12 +4,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.HttpUrl;
-import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.intake.duracloud.DataCollector;
 import org.chronopolis.intake.duracloud.PropertiesDataCollector;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.model.BaggingHistoryDeserializer;
@@ -49,20 +47,13 @@ public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
 
-    private final IntakeSettings settings;
     private final SnapshotJobManager manager;
     private final List<BridgeContext> contexts;
-    private final BagStagingProperties stagingProperties;
 
     @Autowired
-    public Bridge(IntakeSettings settings,
-                  SnapshotJobManager manager,
-                  List<BridgeContext> contexts,
-                  BagStagingProperties stagingProperties) {
-        this.settings = settings;
+    public Bridge(SnapshotJobManager manager, List<BridgeContext> contexts) {
         this.manager = manager;
         this.contexts = contexts;
-        this.stagingProperties = stagingProperties;
     }
 
     @Scheduled(cron = "${bridge.poll:0 0 0 * * *}")
@@ -171,9 +162,7 @@ public class Bridge {
                         data,
                         details,
                         baggingHistory.getHistory(),
-                        settings,
-                        bridgeContext,
-                        stagingProperties);
+                        bridgeContext);
             }
         } else {
             contextLogger.info("Snapshot {} has no history, ignoring", snapshotId);

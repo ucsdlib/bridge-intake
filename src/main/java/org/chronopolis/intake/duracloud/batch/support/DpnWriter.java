@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
  *
  * Created by shake on 2/19/16.
  */
+@Deprecated
 public class DpnWriter extends SimpleBagWriter {
     private final Logger log;
 

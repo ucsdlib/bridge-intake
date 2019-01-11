@@ -32,6 +32,7 @@ import java.util.function.Supplier;
  *
  * @author shake
  */
+@Deprecated
 public class DpnIngest implements Supplier<Bag> {
 
     /**

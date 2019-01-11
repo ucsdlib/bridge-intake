@@ -19,6 +19,7 @@ import java.util.function.Function;
  *
  * @author shake
  */
+@Deprecated
 public class DpnDigest implements Function<Bag, Bag> {
 
     private final Logger log;

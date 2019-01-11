@@ -49,7 +49,6 @@ public class Cleaner implements Function<Logger, Boolean> {
         return success;
     }
 
-    // @Override
     public Boolean call() {
         return apply(log);
     }

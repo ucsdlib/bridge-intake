@@ -16,6 +16,7 @@ import java.util.function.Predicate;
  *
  * @author shake
  */
+@Deprecated
 public class SnapshotSizePredicate implements Predicate<String> {
 
     @Nullable private final Double size;

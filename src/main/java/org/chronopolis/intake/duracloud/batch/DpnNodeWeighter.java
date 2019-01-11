@@ -38,6 +38,7 @@ import static java.util.Comparator.reverseOrder;
  * <p>
  * Created by shake on 6/5/17.
  */
+@Deprecated
 public class DpnNodeWeighter implements Supplier<List<Weight>> {
 
     private final Logger log = LoggerFactory.getLogger(DpnNodeWeighter.class);

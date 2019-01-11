@@ -20,6 +20,7 @@ import java.util.List;
  *
  * Created by shake on 11/12/15.
  */
+@Deprecated
 public class DpnInfoReader {
     private static final String DPN_INFO = "dpn-tags/dpn-info.txt";
 

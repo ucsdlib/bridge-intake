@@ -18,6 +18,7 @@ import java.util.Map;
  *
  * Created by shake on 2/18/16.
  */
+@Deprecated
 public class DpnInfo implements TagFile {
     private final Logger log;
 

@@ -15,7 +15,6 @@ import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.enums.BagStatus;
 import org.slf4j.Logger;
@@ -47,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author shake
  */
+@Deprecated
 public class DpnCheck extends Checker {
     private static final int EXPECTED_REPLICATIONS = 3;
 

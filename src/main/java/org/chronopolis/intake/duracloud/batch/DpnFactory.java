@@ -24,6 +24,7 @@ import java.util.List;
  *
  * @author shake
  */
+@Deprecated
 @SuppressWarnings("WeakerAccess")
 public class DpnFactory {
 

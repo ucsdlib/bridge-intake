@@ -28,6 +28,7 @@ import java.util.function.Predicate;
  *
  * @author shake
  */
+@Deprecated
 public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
 
     private final Logger log;

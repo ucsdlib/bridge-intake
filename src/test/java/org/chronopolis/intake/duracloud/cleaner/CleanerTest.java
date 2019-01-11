@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,8 +23,9 @@ public class CleanerTest {
     private final String FROM_TAR = "5309da6f-c1cc-40ad-be42-e67e722cce04";
 
     @Before
-    public void setup() throws IOException, URISyntaxException {
+    public void setup() throws IOException {
         tmp = Files.createTempDirectory("cleanertest");
+        tmp.toFile().deleteOnExit();
         stagingProperties = new BagStagingProperties()
                 .setPosix(new Posix().setPath(tmp.toString()));
     }
@@ -40,8 +40,8 @@ public class CleanerTest {
         // one more level
         Files.createDirectories(bagLevel.resolve(FROM_DIR));
         Files.createFile(bagLevel.resolve(FROM_DIR).resolve(TEST_FILE));
-
-        Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_DIR), stagingProperties);
+        Path path = Paths.get(TEST_DEPOSITOR, FROM_DIR);
+        Cleaner cleaner = new Cleaner(path, stagingProperties);
         cleaner.call();
 
         Assert.assertTrue(Files.notExists(bagLevel.resolve(TEST_FILE)));
@@ -58,8 +58,8 @@ public class CleanerTest {
         Files.createFile(bagLevel.resolve(TEST_FILE));
         Path extra = depositorLevel.resolve(UUID.randomUUID().toString());
         Files.createDirectories(depositorLevel.resolve(extra));
-
-        Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_DIR), stagingProperties);
+        Path path = Paths.get(TEST_DEPOSITOR, FROM_DIR);
+        Cleaner cleaner = new Cleaner(path, stagingProperties);
         cleaner.call();
 
         Assert.assertTrue(Files.notExists(bagLevel.resolve(TEST_FILE)));
@@ -67,11 +67,15 @@ public class CleanerTest {
         Assert.assertTrue(Files.exists(depositorLevel));
         Assert.assertTrue(Files.exists(extra));
         Assert.assertTrue(Files.exists(tmp));
+
+        Files.delete(extra);
+        Files.delete(depositorLevel);
     }
 
     @Test
     public void cleanDirectoryNotExists() {
-        Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, UUID.randomUUID().toString()), stagingProperties);
+        Path path = Paths.get(TEST_DEPOSITOR, UUID.randomUUID().toString());
+        Cleaner cleaner = new Cleaner(path, stagingProperties);
         cleaner.call();
     }
 
@@ -81,18 +85,13 @@ public class CleanerTest {
         Path bag = depositorLevel.resolve(FROM_TAR + ".tar");
         Files.createDirectories(depositorLevel);
         Files.createFile(bag);
-
-        Cleaner cleaner = new Cleaner(Paths.get(TEST_DEPOSITOR, FROM_TAR + ".tar"), stagingProperties);
+        Path path = Paths.get(TEST_DEPOSITOR, FROM_TAR + ".tar");
+        Cleaner cleaner = new Cleaner(path, stagingProperties);
         cleaner.call();
 
         Assert.assertTrue(Files.notExists(bag));
         Assert.assertTrue(Files.notExists(depositorLevel));
         Assert.assertTrue(Files.exists(tmp));
-    }
-
-    // what exactly should this be testing?
-    public void cleanNonExistent() {
-
     }
 
 }

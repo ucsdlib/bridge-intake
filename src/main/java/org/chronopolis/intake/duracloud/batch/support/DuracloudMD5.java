@@ -1,8 +1,9 @@
 package org.chronopolis.intake.duracloud.batch.support;
 
 import org.chronopolis.bag.core.OnDiskTagFile;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,16 +26,18 @@ import java.util.stream.Stream;
  * Created by shake on 5/12/16.
  */
 public class DuracloudMD5 extends OnDiskTagFile {
-    private final Logger log = LoggerFactory.getLogger(DuracloudMD5.class);
+    private final Logger log;
 
-    private transient Predicate<String> predicate;
-    private List<String> collection;
-    private Long size;
     private final String path;
+    private transient Predicate<String> predicate;
 
-    public DuracloudMD5(Path tag) {
+    private Long size;
+    private List<String> collection;
+
+    public DuracloudMD5(Path tag, BridgeContext context) {
         super(tag);
         this.path = tag.toString();
+        this.log = context.getLogger();
     }
 
     // TODO: Can probably combine this + update stream and discard the predicate when we're done
@@ -55,7 +58,8 @@ public class DuracloudMD5 extends OnDiskTagFile {
             throw new RuntimeException("");
         }
 
-        size = collection.stream().reduce(0L, (l, s) -> l + (s + "\n").getBytes().length, (l, r) -> l + r);
+        size = collection.stream()
+                .reduce(0L, (l, s) -> l + (s + "\n").getBytes().length, (l, r) -> l + r);
     }
 
     @Override
@@ -78,15 +82,15 @@ public class DuracloudMD5 extends OnDiskTagFile {
 
     class IteratorInputStream extends InputStream {
 
-        Iterator<String> iterator;
-        ByteBuffer current;
+        private Iterator<String> iterator;
+        private ByteBuffer current;
 
         public IteratorInputStream(Iterator<String> iterator) {
             this.iterator = iterator;
         }
 
         @Override
-        public int read() throws IOException {
+        public int read() {
             if ((current == null || !current.hasRemaining()) && !iterator.hasNext()) {
                 return -1;
             } else if ((current == null || !current.hasRemaining()) && iterator.hasNext()) {
@@ -98,19 +102,10 @@ public class DuracloudMD5 extends OnDiskTagFile {
         }
 
         @Override
-        public int read(byte[] b) throws IOException {
+        public int read(@NotNull byte[] b) {
            current.get(b);
            return b.length;
         }
-
-        /*
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            return 0;
-        }
-        */
-
-
     }
 
 }

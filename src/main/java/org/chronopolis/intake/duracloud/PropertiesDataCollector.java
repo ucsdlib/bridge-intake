@@ -1,10 +1,7 @@
 package org.chronopolis.intake.duracloud;
 
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
-import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,34 +16,31 @@ import java.util.Properties;
  * Created by shake on 7/30/15.
  */
 public class PropertiesDataCollector implements DataCollector {
-    private final Logger log = LoggerFactory.getLogger(PropertiesDataCollector.class);
 
-    private final String FILE = ".collection-snapshot.properties";
-    private final String PROPERTY_MEMBER_ID = "member-id";
-    private final String PROPERTY_OWNER_ID = "owner-id";
-    private final String PROPERTY_SPACE_ID = "duracloud-space-id";
+    private BridgeContext bridgeContext;
 
-    private IntakeSettings settings;
-
-    public PropertiesDataCollector(IntakeSettings settings) {
-        this.settings = settings;
+    public PropertiesDataCollector(BridgeContext bridgeContext) {
+        this.bridgeContext = bridgeContext;
     }
 
     @Override
     public BagData collectBagData(String snapshotId) throws IOException {
-        BagData data = new BagData(settings.getChron().getPrefix());
-        Duracloud dc = settings.getDuracloud();
+        String FILE = ".collection-snapshot.properties";
+        String PROPERTY_SPACE_ID = "duracloud-space-id";
+        String PROPERTY_OWNER_ID = "owner-id";
+        String PROPERTY_MEMBER_ID = "member-id";
+
+        BagData data = new BagData(bridgeContext.getChronopolisPrefix());
         Properties properties = new Properties();
-        Path propertiesPath = Paths.get(dc.getSnapshots(), snapshotId, FILE);
-        InputStream is = Files.newInputStream(propertiesPath);
-        properties.load(is);
-        is.close();
+        Path propertiesPath = Paths.get(bridgeContext.getSnapshots(), snapshotId, FILE);
+        try (InputStream is = Files.newInputStream(propertiesPath)) {
+            properties.load(is);
+        }
 
         data.setSnapshotId(snapshotId);
         data.setName(properties.getProperty(PROPERTY_SPACE_ID, "NAME_PLACEHOLDER"));
         data.setMember(properties.getProperty(PROPERTY_MEMBER_ID, "MEMBER_PLACEHOLDER"));
         data.setDepositor(properties.getProperty(PROPERTY_OWNER_ID, "DEPOSITOR_PLACEHOLDER"));
-            // throw new RuntimeException(e);
 
         return data;
     }

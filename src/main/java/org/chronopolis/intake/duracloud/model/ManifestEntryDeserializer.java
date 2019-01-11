@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 public class ManifestEntryDeserializer extends JsonDeserializer<ManifestEntry> {
     @Override
-    public ManifestEntry deserialize(JsonParser p, DeserializationContext ctxt)
+    public ManifestEntry deserialize(JsonParser p, DeserializationContext context)
             throws IOException {
         ObjectCodec codec = p.getCodec();
         JsonNode treeNode = codec.readTree(p);

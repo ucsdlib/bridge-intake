@@ -20,9 +20,9 @@ import org.chronopolis.common.storage.Posix;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Duracloud;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.notify.Notifier;
@@ -47,57 +47,53 @@ import java.util.Optional;
  */
 public class BaggingTasklet implements Runnable {
 
-    private final Logger log = LoggerFactory.getLogger(BaggingTasklet.class);
+    private final Logger log;
 
     public static final String SNAPSHOT_CONTENT_PROPERTIES = "content-properties.json";
     public static final String SNAPSHOT_COLLECTION_PROPERTIES = ".collection-snapshot.properties";
     public static final String SNAPSHOT_MD5 = "manifest-md5.txt";
-    public static final String SNAPSHOT_SHA = "manifest-sha256.txt";
-
-    private final String TITLE = "Unable to create bag for %s";
 
     private String snapshotId;
     private String depositor;
-    private IntakeSettings settings;
     private BagProperties bagProperties;
     private BagStagingProperties stagingProperties;
 
-    private BridgeAPI bridge;
     private Notifier notifier;
+    private BridgeContext bridgeContext;
 
     public BaggingTasklet(String snapshotId,
                           String depositor,
-                          IntakeSettings settings,
+                          BridgeContext bridgeContext,
                           BagProperties bagProperties,
                           BagStagingProperties stagingProperties,
-                          BridgeAPI bridge,
                           Notifier notifier) {
-        this.snapshotId = snapshotId;
+        this.notifier = notifier;
         this.depositor = depositor;
-        this.settings = settings;
+        this.snapshotId = snapshotId;
+        this.bridgeContext = bridgeContext;
         this.bagProperties = bagProperties;
         this.stagingProperties = stagingProperties;
-        this.bridge = bridge;
-        this.notifier = notifier;
+        this.log = bridgeContext.getLogger();
     }
 
     @Override
     public void run() {
-        final String errorMsg = "Snapshot contains no files and is unable to be bagged";
-        Duracloud dc = settings.getDuracloud();
         Posix posix = stagingProperties.getPosix();
 
-        Path duraBase = Paths.get(dc.getSnapshots());
         Path out = Paths.get(posix.getPath(), depositor);
+        Path duraBase = Paths.get(bridgeContext.getSnapshots());
         Path snapshotBase = duraBase.resolve(snapshotId);
-        String manifestName = dc.getManifest();
+        String manifestName = bridgeContext.getManifest();
 
         // Create the manifest to be used later on
         try (InputStream input = Files.newInputStream(snapshotBase.resolve(manifestName))) {
             PayloadManifest manifest = PayloadManifest.loadFromStream(input, snapshotBase);
             if (manifest.getFiles().isEmpty()) {
                 log.warn("{} - snapshot is empty!", snapshotId);
-                notifier.notify(String.format(TITLE, snapshotId), errorMsg);
+
+                String title = "Snapshot Error %s: No Files";
+                String errorMsg = "Snapshot contains no files and is unable to be bagged";
+                notifier.notify(String.format(title, snapshotId), errorMsg);
             } else {
                 prepareBags(snapshotBase, out, manifest);
             }
@@ -114,6 +110,7 @@ public class BaggingTasklet implements Runnable {
      * @param manifest     The PayloadManifest of all files in the snapshot
      */
     private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) {
+        boolean pushToDpn = bridgeContext.getPush() == Push.DPN;
         // TODO: fill out with what...?
         BagInfo info = new BagInfo()
                 .includeMissingTags(true)
@@ -127,23 +124,25 @@ public class BaggingTasklet implements Runnable {
                 .withBagit(new BagIt())
                 .withPayloadManifest(manifest)
                 .withMaxSize(bagProperties.getMaxSize(), bagProperties.getUnit())
-                .withTagFile(new DuracloudMD5(duracloudManifest))
+                .withTagFile(new DuracloudMD5(duracloudManifest, bridgeContext))
                 .withTagFile(new OnDiskTagFile(contentProperties))
                 .withTagFile(new OnDiskTagFile(collectionProperties));
-        bagger = configurePartitioner(bagger, settings.pushDPN());
+        bagger = configurePartitioner(bagger, pushToDpn);
 
         BaggingResult partition = bagger.partition();
         if (partition.isSuccess()) {
-            BagWriter writer = settings.pushDPN() ? buildDpnWriter(out) : buildWriter(out);
+            BagWriter writer = pushToDpn ? buildDpnWriter(out) : buildWriter(out);
             List<WriteResult> results = writer.write(partition.getBags());
             updateBridge(results);
         } else {
             // do some logging of the failed bags
             log.error("{} - unable to partition bags! {} Invalid Files",
                     snapshotId, partition.getRejected());
+
+            String title = "Snapshot Error %s: Unable to partition";
             String message = "Snapshot was not able to be partitioned."
                     + partition.getRejected().size() + " Rejected Files";
-            notifier.notify(String.format(TITLE, snapshotId), message);
+            notifier.notify(String.format(title, snapshotId), message);
         }
     }
 
@@ -158,6 +157,7 @@ public class BaggingTasklet implements Runnable {
      */
     @SuppressWarnings("UnusedReturnValue")
     private Optional<HistorySummary> updateBridge(List<WriteResult> results) {
+        BridgeAPI bridge = bridgeContext.getApi();
         Optional<HistorySummary> response = Optional.empty();
         SimpleCallback<HistorySummary> summaryCB = new SimpleCallback<>();
         BaggingHistory history = new BaggingHistory(snapshotId, false);
@@ -176,11 +176,12 @@ public class BaggingTasklet implements Runnable {
             response = summaryCB.getResponse();
         } else {
             log.error("Error writing bags for {}", snapshotId);
+            String title = "Unable to create bag for %s";
             String message = "Unable to write bags for snapshot, "
                     + history.getHistory().size()
                     + " out of " + results.size()
                     + " succeeded";
-            notifier.notify(String.format(TITLE, snapshotId), message);
+            notifier.notify(String.format(title, snapshotId), message);
         }
 
         return response;
@@ -247,7 +248,7 @@ public class BaggingTasklet implements Runnable {
      * @return the DpnWriter
      */
     private BagWriter buildDpnWriter(Path out) {
-        return new DpnWriter(depositor, snapshotId, bagProperties)
+        return new DpnWriter(depositor, snapshotId, bagProperties, bridgeContext)
                 .validate(true)
                 .withPackager(new TarPackager(out));
     }

@@ -9,14 +9,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 /**
  * Class to remove data under a directory
  *
  * @author shake
  */
-public class Cleaner implements Callable<Boolean> {
+public class Cleaner implements Function<Logger, Boolean> {
 
     private final Logger log = LoggerFactory.getLogger(Cleaner.class);
 
@@ -29,11 +29,11 @@ public class Cleaner implements Callable<Boolean> {
     }
 
     @Override
-    public Boolean call() {
+    public Boolean apply(Logger log) {
         String root = stagingProperties.getPosix().getPath();
         Path bag = Paths.get(root).resolve(relative);
 
-        boolean success = rm(bag);
+        boolean success = rm(bag, log);
 
         try {
             Path parent = bag.getParent();
@@ -49,13 +49,17 @@ public class Cleaner implements Callable<Boolean> {
         return success;
     }
 
+    public Boolean call() {
+        return apply(log);
+    }
+
     /**
      * Helper to remove a file or directory given by a full path.
      *
      * @param path the full path of the object to remove
      * @return whether that path was successfully removed
      */
-    protected boolean rm(Path path) {
+    protected boolean rm(Path path, Logger log) {
         boolean success = true;
         try {
             log.info("[Cleaner] Attempting to remove {}", path);
@@ -70,4 +74,5 @@ public class Cleaner implements Callable<Boolean> {
         }
         return success;
     }
+
 }

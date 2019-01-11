@@ -7,13 +7,9 @@ import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
 import org.chronopolis.bag.core.PayloadManifest;
 import org.chronopolis.bag.core.Unit;
-import org.chronopolis.bag.packager.TarPackager;
 import org.chronopolis.bag.partitioner.Bagger;
 import org.chronopolis.bag.partitioner.BaggingResult;
-import org.chronopolis.bag.writer.BagWriter;
 import org.chronopolis.bag.writer.WriteResult;
-import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
-import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.slf4j.Logger;
@@ -30,11 +26,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_COLLECTION_PROPERTIES;
 import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_CONTENT_PROPERTIES;
-import static org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet.SNAPSHOT_MD5;
 
 /**
  *
@@ -106,7 +100,7 @@ public class DevService implements ChronService {
                 .withBagInfo(info)
                 .withBagit(new BagIt())
                 .withPayloadManifest(manifest)
-                .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
+                // .withTagFile(new DuracloudMD5(snapshotBase.resolve(SNAPSHOT_MD5)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_CONTENT_PROPERTIES)))
                 .withTagFile(new OnDiskTagFile(snapshotBase.resolve(SNAPSHOT_COLLECTION_PROPERTIES)));
         bagger = bagger
@@ -117,13 +111,15 @@ public class DevService implements ChronService {
 
         String depositor = "tufts";
         String snapshotId = "tufts_1106_ms208-mobius_2017-01-10-15-55-24";
-        BagWriter writer = new DpnWriter(depositor, snapshotId, bagProperties)
+        /*
+        BagWriter writer = new DpnWriter(depositor, snapshotId, bagProperties, context)
                 .withPackager(new TarPackager(Paths.get("/export/gluster/test-bags/tufts-test")));
         partition.getBags().forEach(b ->
                 log.info("{} -> ({} Files, {} Size)",
                         new Object[]{b.getName(), b.getManifest().getFiles().size(), b.getManifest().getSize()}));
         List<WriteResult> results = writer.write(partition.getBags());
         results.forEach(this::printInfo);
+        */
 
         log.info("{}", Charset.defaultCharset());
 

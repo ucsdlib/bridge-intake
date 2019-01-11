@@ -2,12 +2,12 @@ package org.chronopolis.intake.duracloud.cleaner;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
-import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
-import org.chronopolis.rest.models.BagStatus;
-import org.chronopolis.rest.models.storage.ActiveToggle;
-import org.chronopolis.rest.models.storage.StagingStorageModel;
+import org.chronopolis.rest.models.StagingStorage;
+import org.chronopolis.rest.models.enums.BagStatus;
+import org.chronopolis.rest.models.update.ActiveToggle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
@@ -18,9 +18,9 @@ import java.util.Optional;
 
 /**
  * Class to remove data under a directory for Chronopolis content. Once data has been removed,
- * the StagingStorageModel of the Bag will be deactivated in the Ingest Server.
+ * the StagingStorage of the Bag will be deactivated in the Ingest Server.
  * <p>
- * todo: might want to use the relative path given by the ingest server when  issuing the rm. while
+ * todo: might want to use the relative path given by the ingest server when issuing the rm. while
  * everything should be the same, in the event of a schema change later down the line for storing
  * bags, it would make less work. If we do this there's some extra logic in checking that the
  * bagStorage is not null but that should be pretty easy. Maybe targeted for 2.1.1.
@@ -31,7 +31,7 @@ public class ChronopolisCleaner extends Cleaner {
 
     private final Logger log = LoggerFactory.getLogger(ChronopolisCleaner.class);
 
-    private final DepositorAPI depositors;
+    private final DepositorService depositors;
     private final StagingService stagingService;
     private final BagStagingProperties properties;
 
@@ -55,7 +55,7 @@ public class ChronopolisCleaner extends Cleaner {
      * staging.
      */
     public ChronopolisCleaner(Path relative,
-                              DepositorAPI depositors,
+                              DepositorService depositors,
                               StagingService stagingService,
                               BagStagingProperties properties,
                               Bag bag) {
@@ -73,7 +73,7 @@ public class ChronopolisCleaner extends Cleaner {
      * bag can be removed.
      */
     public ChronopolisCleaner(Path relative,
-                              DepositorAPI depositors,
+                              DepositorService depositors,
                               StagingService stagingService,
                               BagStagingProperties properties,
                               String depositor,
@@ -93,27 +93,32 @@ public class ChronopolisCleaner extends Cleaner {
     }
 
     @Override
-    public Boolean call() {
+    public Boolean apply(Logger log) {
         Optional<Bag> option = Optional.ofNullable(this.bag);
 
-        return option.map(this::fromBag)
-                .orElseGet(this::fromQuery);
+        return option.map(bag -> fromBag(bag, log))
+                .orElseGet(() -> fromQuery(log));
     }
 
-    private boolean fromBag(Bag bag) {
+    @Override
+    public Boolean call() {
+        return apply(log);
+    }
+
+    private boolean fromBag(Bag bag, Logger log) {
         log.info("[Cleaner] Removing content for {} {}", bag.getDepositor(), bag.getName());
         boolean success = false;
         Path root = Paths.get(properties.getPosix().getPath());
         Path full = root.resolve(bag.getDepositor()).resolve(bag.getName());
 
         if (bag.getStatus() == BagStatus.PRESERVED) {
-            success = rm(full) && deactivate(bag);
+            success = rm(full, log) && deactivate(bag, log);
         }
 
         return success;
     }
 
-    private boolean fromQuery() {
+    private boolean fromQuery(Logger log) {
         if (depositor == null && name == null) {
             throw new IllegalArgumentException("Depositor and Bag Name are not allowed to be null");
         }
@@ -130,7 +135,7 @@ public class ChronopolisCleaner extends Cleaner {
 
         return callback.getResponse()
                 .filter(this::checkPreserved) // only continue if the bag is preserved
-                .map(bag -> rm(full) && deactivate(bag)).orElse(false);
+                .map(bag -> rm(full, log) && deactivate(bag, log)).orElse(false);
     }
 
     private boolean checkPreserved(Bag bag) {
@@ -145,17 +150,19 @@ public class ChronopolisCleaner extends Cleaner {
      * Deactivate the bag storage for a given bag
      *
      * @param bag the bag to deactivate storage for
+     * @param log the {@link Logger} to log to
      */
-    private boolean deactivate(Bag bag) {
+    private boolean deactivate(Bag bag, Logger log) {
         boolean deactivated = true;
         if (bag.getBagStorage() != null) {
             log.info("[Cleaner] Deactivating storage for {} {}", bag.getDepositor(), bag.getName());
-            SimpleCallback<StagingStorageModel> stagingCB = new SimpleCallback<>();
-            Call<StagingStorageModel> call = stagingService
+            SimpleCallback<StagingStorage> stagingCB = new SimpleCallback<>();
+            Call<StagingStorage> call = stagingService
                     .toggleStorage(bag.getId(), "BAG", new ActiveToggle(false));
             call.enqueue(stagingCB);
             deactivated = stagingCB.getResponse()
-                    .map(staging -> !staging.isActive()) // make sure the staging model is NOT active
+                    // make sure the staging model is NOT active
+                    .map(staging -> !staging.getActive())
                     .orElse(false);
         }
 

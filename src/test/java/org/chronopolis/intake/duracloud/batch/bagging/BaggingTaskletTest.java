@@ -2,15 +2,14 @@ package org.chronopolis.intake.duracloud.batch.bagging;
 
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
-import org.chronopolis.intake.duracloud.config.IntakeSettings;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Chron;
-import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;
+import org.chronopolis.test.support.CallWrapper;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -18,9 +17,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.chronopolis.intake.duracloud.config.props.Push.DPN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * mawp
- *
+ * <p>
  * Created by shake on 5/4/16.
  */
 public class BaggingTaskletTest {
@@ -38,8 +37,8 @@ public class BaggingTaskletTest {
 
     private BridgeAPI bridge;
     private Notifier notifier;
+    private BridgeContext context;
     private BaggingTasklet tasklet;
-    private IntakeSettings settings;
     private BagProperties bagProperties;
     private BagStagingProperties stagingProperties;
 
@@ -47,24 +46,23 @@ public class BaggingTaskletTest {
     public void setup() throws URISyntaxException {
         // setup
         bagProperties = new BagProperties();
+        String prefix = "";
+        String shortName = "bridge";
+        String manifest = "manifest-sha256.txt";
         URL resources = ClassLoader.getSystemClassLoader().getResource("");
-        Path bags = Paths.get(resources.toURI()).resolve("bags");
-        Path snapshots = Paths.get(resources.toURI()).resolve("snapshots");
+        Assert.assertNotNull(resources);
 
-        settings = new IntakeSettings();
-        settings.setPushDPN(true);
-        Chron chron = new Chron();
-        Duracloud dc = new Duracloud();
+        String bags = Paths.get(resources.toURI()).resolve("bags").toString();
+        String snapshots = Paths.get(resources.toURI()).resolve("snapshots").toString();
+
         stagingProperties = new BagStagingProperties();
-        stagingProperties.setPosix(new Posix().setPath(bags.toString()));
-        dc.setSnapshots(snapshots.toString());
-        dc.setManifest("manifest-sha256.txt");
-        settings.setChron(chron);
-        settings.setDuracloud(dc);
+        stagingProperties.setPosix(new Posix().setPath(bags));
 
         // http calls can be mocked
         bridge = mock(BridgeAPI.class);
         notifier = mock(Notifier.class);
+
+        context = new BridgeContext(bridge, prefix, manifest, snapshots, snapshots, DPN, shortName);
     }
 
     @Test
@@ -72,8 +70,10 @@ public class BaggingTaskletTest {
         String id = "test-snapshot";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
-        when(bridge.postHistory(eq("test-snapshot"), any(History.class))).thenReturn(new CallWrapper<>(new HistorySummary()));
+        tasklet = new BaggingTasklet(id,
+                depositor, context, bagProperties, stagingProperties, notifier);
+        when(bridge.postHistory(eq("test-snapshot"), any(History.class)))
+                .thenReturn(new CallWrapper<>(new HistorySummary()));
 
         try {
             tasklet.run();
@@ -89,7 +89,8 @@ public class BaggingTaskletTest {
         String id = "empty-snapshot";
         String depositor = "test-depositor";
 
-        tasklet = new BaggingTasklet(id, depositor, settings, bagProperties, stagingProperties, bridge, notifier);
+        tasklet = new BaggingTasklet(id,
+                depositor, context, bagProperties, stagingProperties, notifier);
 
         try {
             tasklet.run();

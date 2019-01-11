@@ -38,7 +38,9 @@ import static java.util.Comparator.reverseOrder;
  * <p>
  * Created by shake on 6/5/17.
  */
+@Deprecated
 public class DpnNodeWeighter implements Supplier<List<Weight>> {
+
     private final Logger log = LoggerFactory.getLogger(DpnNodeWeighter.class);
 
     private final BalustradeNode nodeAPI;
@@ -59,6 +61,20 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
 
     @Override
     public List<Weight> get() {
+        return get(log);
+    }
+
+    /**
+     * Similar to the get for supplier, but use a specific {@link Logger} for logging
+     *
+     * Useful when operating on a specific BridgeContext and we want to preserve the logger used
+     * todo: maybe look in to whether or not we should use Function<Logger, List<Weight>>
+     *
+     * @param log the logger to use
+     * @return a list of weighted nodes
+     */
+    public List<Weight> get(Logger log) {
+        List<String> replicatingNodes = loadNode(settings, log);
         List<Predicate<String>> constraints = new ArrayList<>();
         constraints.add(new MemberToNodePredicate(details.getMemberId(), memberConstraints));
         constraints.add(new SnapshotSizePredicate(
@@ -68,7 +84,6 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
                 .reduce(Predicate::and)
                 .orElse(entry -> true);
 
-        List<String> replicatingNodes = loadNode(settings);
         return replicatingNodes.stream()
                 .filter(combinedPredicate)
                 .map(node -> new Weight(node, details.getSnapshotId()))
@@ -76,7 +91,7 @@ public class DpnNodeWeighter implements Supplier<List<Weight>> {
                 .collect(Collectors.toList());
     }
 
-    private List<String> loadNode(IntakeSettings settings) {
+    private List<String> loadNode(IntakeSettings settings, Logger log) {
         DPN cfg = settings.getDpn();
         List<String> nodes;
         Response<Node> response = null;

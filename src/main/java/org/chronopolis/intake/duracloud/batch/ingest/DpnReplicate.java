@@ -9,8 +9,10 @@ import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Replication;
 import org.chronopolis.earth.models.Response;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.constraint.ReplicationDoesNotExist;
+import org.slf4j.Logger;
 import retrofit2.Call;
 
 import java.nio.file.Path;
@@ -26,7 +28,10 @@ import java.util.function.Predicate;
  *
  * @author shake
  */
+@Deprecated
 public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
+
+    private final Logger log;
 
     private final String depositor;
     private final IntakeSettings settings;
@@ -34,13 +39,15 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
     private final BalustradeTransfers transfers;
 
     public DpnReplicate(String depositor,
+                        BridgeContext context,
                         IntakeSettings settings,
                         BagStagingProperties staging,
                         BalustradeTransfers transfers) {
-        this.depositor = depositor;
-        this.settings = settings;
         this.staging = staging;
+        this.settings = settings;
+        this.depositor = depositor;
         this.transfers = transfers;
+        this.log = context.getLogger();
     }
 
     /**
@@ -103,6 +110,7 @@ public class DpnReplicate implements BiConsumer<Bag, List<Weight>> {
      * @return the http request to execute
      */
     private Call<Replication> call(Bag bag, String to) {
+        log.info("[{}] Creating replication for {}", bag.getUuid(), to);
         final String PROTOCOL = "rsync";
         final String ALGORITHM = "sha256";
 

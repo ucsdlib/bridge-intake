@@ -4,18 +4,17 @@ import com.google.common.collect.ImmutableList;
 import org.chronopolis.bag.core.Unit;
 import org.chronopolis.earth.api.BalustradeNode;
 import org.chronopolis.earth.models.Node;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
-import org.chronopolis.intake.duracloud.batch.support.ExceptingWrapper;
-import org.chronopolis.intake.duracloud.batch.support.NotFoundWrapper;
 import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.config.props.Constraints;
 import org.chronopolis.intake.duracloud.config.props.DPN;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
+import org.chronopolis.test.support.CallWrapper;
+import org.chronopolis.test.support.ErrorCallWrapper;
+import org.chronopolis.test.support.ExceptingCallWrapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 
 import java.util.List;
 
@@ -42,15 +41,10 @@ public class DpnNodeWeighterTest {
 
     private SnapshotDetails details;
     private DpnNodeWeighter weighter;
-
-    @Mock
-    private BalustradeNode nodes;
+    private BalustradeNode nodes = mock(BalustradeNode.class);
 
     @Before
     public void setup() {
-        // Setup our mock api
-        nodes = mock(BalustradeNode.class);
-
         // Setup our settings
         IntakeSettings settings = new IntakeSettings();
         DPN dpn = new DPN();
@@ -80,7 +74,7 @@ public class DpnNodeWeighterTest {
 
     @Test
     public void exception() {
-        when(nodes.getNode(node)).thenReturn(new ExceptingWrapper<>());
+        when(nodes.getNode(node)).thenReturn(new ExceptingCallWrapper<>(response()));
         List<Weight> weights = weighter.get();
         Assert.assertEquals(0, weights.size());
         verify(nodes, times(1)).getNode(node);
@@ -88,7 +82,7 @@ public class DpnNodeWeighterTest {
 
     @Test
     public void serverError() {
-        when(nodes.getNode(node)).thenReturn(new NotFoundWrapper<>(response()));
+        when(nodes.getNode(node)).thenReturn(new ErrorCallWrapper<>(response(), 404, "not found"));
         List<Weight> weights = weighter.get();
         Assert.assertEquals(0, weights.size());
         verify(nodes, times(1)).getNode(node);

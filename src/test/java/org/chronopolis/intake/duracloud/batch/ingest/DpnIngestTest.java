@@ -5,35 +5,40 @@ import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.intake.duracloud.DpnInfoReader;
 import org.chronopolis.intake.duracloud.batch.BatchTestBase;
-import org.chronopolis.intake.duracloud.batch.support.CallWrapper;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
+import org.chronopolis.intake.duracloud.remote.BridgeAPI;
+import org.chronopolis.test.support.CallWrapper;
 import org.chronopolis.test.support.ErrorCallWrapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(SpringRunner.class)
+/**
+ * Tests for {@link DpnIngest}
+ *
+ * @author shake
+ */
 public class DpnIngestTest extends BatchTestBase {
 
     private DpnIngest ingest;
     private final Long VERSION = 1L;
     private final String LOCAL_ID = "dpn-ingest-test";
 
-    // Mocks
     @Mock private BalustradeBag bags;
     @Mock private DpnInfoReader dpnInfoReader;
     @Mock private DpnIngest.ReaderFactory readerFactory;
@@ -44,7 +49,11 @@ public class DpnIngestTest extends BatchTestBase {
 
         BagData data = data();
         BagReceipt receipt = receipt();
-        ingest = new DpnIngest(data, receipt, bags, settings, stagingProperties, readerFactory);
+        BridgeContext context = new BridgeContext(mock(BridgeAPI.class), "prefix", "manifest",
+                "restores", "snapshots", Push.DPN, "short-name");
+
+        ingest = new DpnIngest(data, receipt, context, bags, settings,
+                stagingProperties, readerFactory);
     }
 
     @Test

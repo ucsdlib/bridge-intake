@@ -3,10 +3,10 @@ package org.chronopolis.intake.duracloud.batch.ingest;
 import org.chronopolis.earth.api.BalustradeBag;
 import org.chronopolis.earth.models.Bag;
 import org.chronopolis.earth.models.Digest;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.IntakeSettings;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -19,18 +19,24 @@ import java.util.function.Function;
  *
  * @author shake
  */
+@Deprecated
 public class DpnDigest implements Function<Bag, Bag> {
 
-    private final Logger log = LoggerFactory.getLogger(DpnDigest.class);
+    private final Logger log;
 
     private final BagReceipt receipt;
     private final BalustradeBag bags;
     private final IntakeSettings settings;
 
-    public DpnDigest(BagReceipt receipt, BalustradeBag bags, IntakeSettings settings) {
-        this.receipt = receipt;
+    public DpnDigest(BagReceipt receipt,
+                     BridgeContext context,
+                     BalustradeBag bags,
+                     IntakeSettings settings) {
         this.bags = bags;
+        this.receipt = receipt;
         this.settings = settings;
+
+        this.log = context.getLogger();
     }
 
     @Override

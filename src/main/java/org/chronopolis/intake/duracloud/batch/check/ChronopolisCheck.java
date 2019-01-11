@@ -3,15 +3,14 @@ package org.chronopolis.intake.duracloud.batch.check;
 import com.google.common.collect.ImmutableSet;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
+import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
-import org.chronopolis.intake.duracloud.remote.BridgeAPI;
-import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Bag;
-import org.chronopolis.rest.models.BagStatus;
+import org.chronopolis.rest.models.enums.BagStatus;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 
 import java.util.List;
@@ -25,17 +24,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by shake on 6/1/16.
  */
 public class ChronopolisCheck extends Checker {
-    private final Logger log = LoggerFactory.getLogger(ChronopolisCheck.class);
 
-    private final DepositorAPI depositors;
+    private final Logger log;
+    private final DepositorService depositors;
     private final Bicarbonate cleaningManager;
 
     public ChronopolisCheck(BagData data,
                             List<BagReceipt> receipts,
-                            BridgeAPI bridge,
-                            DepositorAPI depositors,
+                            BridgeContext context,
+                            DepositorService depositors,
                             Bicarbonate cleaningManager) {
-        super(data, receipts, bridge);
+        super(data, receipts, context);
+        this.log = context.getLogger();
         this.depositors = depositors;
         this.cleaningManager = cleaningManager;
     }
@@ -53,7 +53,7 @@ public class ChronopolisCheck extends Checker {
         bagCall.enqueue(callback);
         Set<String> replicatingNodes = callback.getResponse()
                 .filter(bag -> bag.getStatus() == BagStatus.PRESERVED)
-                .filter(bag -> cleaningManager.forChronopolis(bag).call())
+                .filter(bag -> cleaningManager.forChronopolis(bag).apply(log))
                 .map(Bag::getReplicatingNodes).orElse(ImmutableSet.of());
 
         for (String node : replicatingNodes) {

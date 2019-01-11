@@ -1,7 +1,7 @@
 package org.chronopolis.intake.duracloud.cleaner;
 
 import org.chronopolis.common.storage.BagStagingProperties;
-import org.chronopolis.rest.api.DepositorAPI;
+import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;
 
@@ -15,11 +15,11 @@ import java.nio.file.Paths;
  */
 public class Bicarbonate {
 
-    private final DepositorAPI depositors;
+    private final DepositorService depositors;
     private final StagingService stagingService;
     private final BagStagingProperties stagingProperties;
 
-    public Bicarbonate(DepositorAPI depositors,
+    public Bicarbonate(DepositorService depositors,
                        StagingService stagingService,
                        BagStagingProperties stagingProperties) {
         this.depositors = depositors;

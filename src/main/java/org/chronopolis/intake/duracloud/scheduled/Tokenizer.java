@@ -73,14 +73,22 @@ public class Tokenizer {
             if (response.isSuccessful()) {
                 // execute consumers here?
 
-                log.debug("Found {} bags for tokenization", response.body().getSize());
+                log.debug("Found {} bags for tokenization", response.body().getNumberOfElements());
                 for (Bag bag : response.body()) {
-                    // HttpFilter httpFilter = new HttpFilter(bag.getId(), tokens);
-                    BagProcessor processor = new BagProcessor(bag,
-                            ImmutableSet.of(processingFilter), //, httpFilter),
-                            stagingProperties,
-                            supervisor);
-                    executor.submitIfAvailable(processor, bag);
+                    // todo: get a proper staging call in the api
+                    Call<Bag> stagingCall = bags.get(bag.getId());
+                    bag = stagingCall.execute().body();
+                    if (bag.getBagStorage() != null) {
+
+                        // HttpFilter httpFilter = new HttpFilter(bag.getId(), tokens);
+                        BagProcessor processor = new BagProcessor(bag,
+                                ImmutableSet.of(processingFilter), //, httpFilter),
+                                stagingProperties,
+                                supervisor);
+                        executor.submitIfAvailable(processor, bag);
+                    } else {
+                        log.info("[{}] Waiting for storage init", bag.getName());
+                    }
                 }
             }
         } catch (IOException e) {

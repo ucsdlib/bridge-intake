@@ -2,6 +2,7 @@ package org.chronopolis.intake.duracloud.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.apache.activemq.artemis.api.core.TransportConfiguration;
 import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
 import org.apache.activemq.artemis.api.core.client.ServerLocator;
@@ -65,6 +66,7 @@ public class TokenTaskConfig {
         module.addDeserializer(ManifestEntry.class, new ManifestEntryDeserializer());
         module.addDeserializer(FixityAlgorithm.class, new FixityAlgorithmDeserializer());
         mapper.registerModule(module);
+        mapper.registerModule(new KotlinModule());
         return mapper;
     }
 

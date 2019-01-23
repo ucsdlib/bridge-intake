@@ -3,8 +3,6 @@ package org.chronopolis.intake.duracloud.batch.ingest;
 import com.google.common.annotations.VisibleForTesting;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
-import okio.BufferedSink;
-import okio.Okio;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
@@ -29,16 +27,17 @@ import org.chronopolis.rest.service.IngestRequestSupplier;
 import org.slf4j.Logger;
 import retrofit2.Call;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
+import static okhttp3.MultipartBody.Part;
+
 
 /**
  * Ingest a bag into Chronopolis
- *
+ * <p>
  * As we have added more operations to ingesting content, the constructor has continued to grow. It
  * might be good to look into splitting up operations similar to the DPN operations.
  *
@@ -194,17 +193,13 @@ public class ChronopolisIngest implements Runnable {
         factory.generator(output, root, algorithm)
                 .call()
                 .getCsv()
-                .map(csv -> files.createBatch(bag.getId(), new RequestBody() {
-                    @Override
-                    public MediaType contentType() {
-                        return MediaType.parse("text/csv");
-                    }
-
-                    @Override
-                    public void writeTo(BufferedSink sink) throws IOException {
-                        sink.writeAll(Okio.source(csv));
-                    }
-                })).ifPresent(this::enqueueCallback);
+                .map(csv -> {
+                    RequestBody body = RequestBody.create(
+                            MediaType.parse("text/csv"),
+                            csv.toFile());
+                    Part part = Part.createFormData("file", csv.toFile().getName(), body);
+                    return files.createBatch(bag.getId(), part);
+                }).ifPresent(this::enqueueCallback);
 
     }
 
@@ -223,7 +218,7 @@ public class ChronopolisIngest implements Runnable {
 
         if (!bagPath.toFile().exists()) {
             log.error("[{}/{}] Unable to find bag in staging area {}!",
-                   bag.getDepositor(), bag.getName(), stage);
+                    bag.getDepositor(), bag.getName(), stage);
         } else if (bag.getBagStorage() == null) {
             log.info("[{}] Creating staging resource", bag.getName());
             StagingCreate create = new StagingCreate();

@@ -128,7 +128,7 @@
         <dependency>
             <groupId>org.chronopolis</groupId>
             <artifactId>chron-test</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
 

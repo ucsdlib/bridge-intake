@@ -74,7 +74,7 @@ public class Bridge {
         Logger contextLogger = bridgeContext.getLogger();
         BridgeAPI bridge = bridgeContext.getApi();
 
-        Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.WAITING_FOR_DPN);
+        Call<Snapshots> snapshotCall = bridge.getSnapshots(null, SnapshotStatus.REPLICATING_TO_STORAGE);
         // something like this for logging... basically derive the bridge fqdn from this
         HttpUrl requestUrl = snapshotCall.request().url();
         try {

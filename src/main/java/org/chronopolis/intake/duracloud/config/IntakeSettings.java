@@ -2,7 +2,6 @@ package org.chronopolis.intake.duracloud.config;
 
 import org.chronopolis.intake.duracloud.config.props.Chron;
 import org.chronopolis.intake.duracloud.config.props.Constraints;
-import org.chronopolis.intake.duracloud.config.props.DPN;
 import org.chronopolis.intake.duracloud.config.props.Duracloud;
 import org.chronopolis.intake.duracloud.config.props.Smtp;
 import org.slf4j.Logger;
@@ -19,13 +18,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  */
 @ConfigurationProperties
 @EnableConfigurationProperties(value = {
-        DPN.class, Chron.class, Duracloud.class, Constraints.class, Smtp.class
+        Chron.class, Duracloud.class, Constraints.class, Smtp.class
 })
 @SuppressWarnings("UnusedDeclaration")
 public class IntakeSettings {
     private final Logger log = LoggerFactory.getLogger(IntakeSettings.class);
 
-    private DPN dpn = new DPN();
     private Smtp smtp = new Smtp();
     private Chron chron = new Chron();
     private Duracloud duracloud = new Duracloud();
@@ -98,15 +96,6 @@ public class IntakeSettings {
 
     public IntakeSettings setConstraints(Constraints constraints) {
         this.constraints = constraints;
-        return this;
-    }
-
-    public DPN getDpn() {
-        return dpn;
-    }
-
-    public IntakeSettings setDpn(DPN dpn) {
-        this.dpn = dpn;
         return this;
     }
 

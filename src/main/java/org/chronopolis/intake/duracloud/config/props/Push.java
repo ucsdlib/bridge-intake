@@ -6,7 +6,7 @@ package org.chronopolis.intake.duracloud.config.props;
  * @author shake
  */
 public enum Push {
-    CHRONOPOLIS(""), DPN(".tar"), NONE("");
+    CHRONOPOLIS(""), @Deprecated DPN(".tar"), NONE("");
 
     private final String postfix;
 

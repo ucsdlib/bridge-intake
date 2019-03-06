@@ -15,11 +15,6 @@ ace.ims:
   endpoint: ims.umiacs.umd.edu
   waitTime: 5000
 
-dpn:
-  endpoint: http://localhost:3000/
-  username: chron
-  api-key: replace-me
-
 duracloud:
   bridge:
     - name: bridge-0
@@ -28,7 +23,6 @@ duracloud:
       username: replace-me
       password: replace-me
       endpoint: http://localhost:8080/
-      push: DPN
     - name: bridge-1
       snapshots: /bridge-1/snapshots/
       restores: /bridge-1/restore/

@@ -10,7 +10,6 @@ import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.enums.BagStatus;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -69,39 +68,6 @@ public class BatchTestBase {
                 ImmutableSet.of(UUID.randomUUID().toString(),
                         UUID.randomUUID().toString(),
                         UUID.randomUUID().toString()));
-    }
-
-    // DPN Entities
-    // todo: move these somewhere else... maybe a DPNTestRoot
-    protected org.chronopolis.earth.models.Bag createBagNoReplications() {
-        org.chronopolis.earth.models.Bag b = new org.chronopolis.earth.models.Bag();
-        b.setUuid(UUID.randomUUID().toString());
-        b.setLocalId("local-id");
-        b.setFirstVersionUuid(b.getUuid());
-        b.setIngestNode("test-node");
-        b.setAdminNode("test-node");
-        b.setBagType('D');
-        b.setMember(MEMBER);
-        b.setCreatedAt(ZonedDateTime.now());
-        b.setUpdatedAt(ZonedDateTime.now());
-        b.setSize(10L);
-        b.setVersion(1L);
-        b.setInterpretive(new ArrayList<>());
-        b.setReplicatingNodes(new ArrayList<>());
-        b.setRights(new ArrayList<>());
-        return b;
-    }
-
-    protected org.chronopolis.earth.models.Bag createBagFullReplications() {
-        org.chronopolis.earth.models.Bag b = createBagNoReplications();
-        b.setReplicatingNodes(ImmutableList.of("test-repl-1", "test-repl-2", "test-repl-3"));
-        return b;
-    }
-
-    protected org.chronopolis.earth.models.Bag createBagPartialReplications() {
-        org.chronopolis.earth.models.Bag b = createBagNoReplications();
-        b.setReplicatingNodes(ImmutableList.of("test-repl-1"));
-        return b;
     }
 
 }

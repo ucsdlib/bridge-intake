@@ -1,10 +1,10 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
-import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
+import org.chronopolis.intake.duracloud.model.SimpleCallback;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.AlternateIds;
 import org.chronopolis.intake.duracloud.remote.model.HistorySummary;

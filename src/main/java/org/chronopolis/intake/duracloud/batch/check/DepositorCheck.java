@@ -1,11 +1,8 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
-import org.chronopolis.earth.SimpleCallback;
-import org.chronopolis.earth.api.BalustradeMember;
-import org.chronopolis.earth.models.Member;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
-import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
+import org.chronopolis.intake.duracloud.model.SimpleCallback;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Depositor;
@@ -20,12 +17,10 @@ import java.util.function.BiPredicate;
 public class DepositorCheck implements BiPredicate<BagData, BridgeContext> {
 
     private final Notifier notifier;
-    private final BalustradeMember dpn;
     private final DepositorService chronopolis;
 
-    public DepositorCheck(Notifier notifier, BalustradeMember dpn, DepositorService chronopolis) {
+    public DepositorCheck(Notifier notifier, DepositorService chronopolis) {
         this.notifier = notifier;
-        this.dpn = dpn;
         this.chronopolis = chronopolis;
     }
 
@@ -54,17 +49,6 @@ public class DepositorCheck implements BiPredicate<BagData, BridgeContext> {
             message.append("Chronopolis Depositor ")
                     .append(depositor)
                     .append(" is missing\n");
-        }
-
-        if (context.getPush() == Push.DPN) {
-            String member = bagData.member();
-            SimpleCallback<Member> dpnCallback = new SimpleCallback<>();
-            Call<Member> memberCall = dpn.getMember(member);
-            memberCall.enqueue(dpnCallback);
-            if (!dpnCallback.getResponse().isPresent()) {
-                exists = false;
-                message.append("DPN Member ").append(member).append(" is missing\n");
-            }
         }
 
         if (!exists) {

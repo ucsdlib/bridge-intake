@@ -1,6 +1,5 @@
 package org.chronopolis.intake.duracloud;
 
-import org.chronopolis.intake.duracloud.config.DPNConfig;
 import org.chronopolis.intake.duracloud.scheduled.Bridge;
 import org.chronopolis.intake.duracloud.service.ChronService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,7 @@ import org.springframework.context.annotation.ComponentScan;
  * @author shake
  */
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
-@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class, DPNConfig.class})
+@ComponentScan(basePackageClasses = {Bridge.class, ChronService.class})
 public class Application implements CommandLineRunner {
 
     private final ChronService service;

@@ -4,10 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import org.chronopolis.common.storage.BagStagingProperties;
-import org.chronopolis.earth.api.LocalAPI;
 import org.chronopolis.intake.duracloud.batch.BaggingFactory;
 import org.chronopolis.intake.duracloud.batch.ChronFactory;
-import org.chronopolis.intake.duracloud.batch.DpnFactory;
 import org.chronopolis.intake.duracloud.batch.SnapshotJobManager;
 import org.chronopolis.intake.duracloud.batch.check.DepositorCheck;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
@@ -95,27 +93,16 @@ public class BeanConfig {
     }
 
     @Bean
-    public DpnFactory dpnFactory(LocalAPI localAPI,
-                                 Bicarbonate cleaner,
-                                 IntakeSettings settings,
-                                 ServiceGenerator generator,
-                                 BagStagingProperties properties) {
-        return new DpnFactory(localAPI, generator.depositors(), cleaner, settings, properties);
-    }
-
-    @Bean
     public DepositorCheck depositorCheck(Notifier notifier,
-                                         LocalAPI localAPI,
                                          ServiceGenerator generator) {
-        return new DepositorCheck(notifier, localAPI.getMemberAPI(), generator.depositors());
+        return new DepositorCheck(notifier, generator.depositors());
     }
 
     @Bean(destroyMethod = "destroy")
-    public SnapshotJobManager snapshotJobManager(DpnFactory dpnFactory,
-            ChronFactory chronFactory,
-            BaggingFactory baggingFactory,
-            DepositorCheck depositorCheck) {
-        return new SnapshotJobManager(dpnFactory, chronFactory, baggingFactory, depositorCheck);
+    public SnapshotJobManager snapshotJobManager(ChronFactory chronFactory,
+                                                 BaggingFactory baggingFactory,
+                                                 DepositorCheck depositorCheck) {
+        return new SnapshotJobManager(chronFactory, baggingFactory, depositorCheck);
     }
 
     @Bean

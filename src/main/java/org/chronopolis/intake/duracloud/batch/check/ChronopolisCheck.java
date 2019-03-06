@@ -1,12 +1,12 @@
 package org.chronopolis.intake.duracloud.batch.check;
 
 import com.google.common.collect.ImmutableSet;
-import org.chronopolis.earth.SimpleCallback;
 import org.chronopolis.intake.duracloud.cleaner.Bicarbonate;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.ReplicationHistory;
+import org.chronopolis.intake.duracloud.model.SimpleCallback;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.models.Bag;
 import org.chronopolis.rest.models.enums.BagStatus;

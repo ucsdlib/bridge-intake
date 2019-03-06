@@ -4,6 +4,7 @@ import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
+import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.notify.Notifier;
 import org.chronopolis.intake.duracloud.remote.BridgeAPI;
 import org.chronopolis.intake.duracloud.remote.model.History;
@@ -19,7 +20,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 
-import static org.chronopolis.intake.duracloud.config.props.Push.DPN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -62,7 +62,7 @@ public class BaggingTaskletTest {
         bridge = mock(BridgeAPI.class);
         notifier = mock(Notifier.class);
 
-        context = new BridgeContext(bridge, prefix, manifest, snapshots, snapshots, DPN, shortName);
+        context = new BridgeContext(bridge, prefix, manifest, snapshots, snapshots, Push.CHRONOPOLIS, shortName);
     }
 
     @Test

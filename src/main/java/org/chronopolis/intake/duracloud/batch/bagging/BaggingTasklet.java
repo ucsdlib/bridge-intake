@@ -1,7 +1,6 @@
 package org.chronopolis.intake.duracloud.batch.bagging;
 
 import org.chronopolis.bag.SimpleNamingSchema;
-import org.chronopolis.bag.UUIDNamingSchema;
 import org.chronopolis.bag.core.BagInfo;
 import org.chronopolis.bag.core.BagIt;
 import org.chronopolis.bag.core.OnDiskTagFile;
@@ -9,7 +8,6 @@ import org.chronopolis.bag.core.PayloadManifest;
 import org.chronopolis.bag.metrics.Metric;
 import org.chronopolis.bag.metrics.WriteMetrics;
 import org.chronopolis.bag.packager.DirectoryPackager;
-import org.chronopolis.bag.packager.TarPackager;
 import org.chronopolis.bag.partitioner.Bagger;
 import org.chronopolis.bag.partitioner.BaggingResult;
 import org.chronopolis.bag.writer.BagWriter;
@@ -18,11 +16,9 @@ import org.chronopolis.bag.writer.WriteResult;
 import org.chronopolis.common.storage.BagStagingProperties;
 import org.chronopolis.common.storage.Posix;
 import org.chronopolis.earth.SimpleCallback;
-import org.chronopolis.intake.duracloud.batch.support.DpnWriter;
 import org.chronopolis.intake.duracloud.batch.support.DuracloudMD5;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
 import org.chronopolis.intake.duracloud.config.props.BagProperties;
-import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.model.BaggingHistory;
 import org.chronopolis.intake.duracloud.notify.Notifier;
@@ -110,7 +106,6 @@ public class BaggingTasklet implements Runnable {
      * @param manifest     The PayloadManifest of all files in the snapshot
      */
     private void prepareBags(Path snapshotBase, Path out, PayloadManifest manifest) {
-        boolean pushToDpn = bridgeContext.getPush() == Push.DPN;
         // TODO: fill out with what...?
         BagInfo info = new BagInfo()
                 .includeMissingTags(true)
@@ -127,11 +122,11 @@ public class BaggingTasklet implements Runnable {
                 .withTagFile(new DuracloudMD5(duracloudManifest, bridgeContext))
                 .withTagFile(new OnDiskTagFile(contentProperties))
                 .withTagFile(new OnDiskTagFile(collectionProperties));
-        bagger = configurePartitioner(bagger, pushToDpn);
+        bagger = configurePartitioner(bagger);
 
         BaggingResult partition = bagger.partition();
         if (partition.isSuccess()) {
-            BagWriter writer = pushToDpn ? buildDpnWriter(out) : buildWriter(out);
+            BagWriter writer = buildWriter(out);
             List<WriteResult> results = writer.write(partition.getBags());
             updateBridge(results);
         } else {
@@ -148,7 +143,7 @@ public class BaggingTasklet implements Runnable {
 
     /**
      * Update the bridge with the results of our bagging if we succeeded
-     *
+     * <p>
      * Not sure if we need to return the response, but we'll do it for now in case we end up
      * needing it.
      *
@@ -219,12 +214,8 @@ public class BaggingTasklet implements Runnable {
      * @param dpn    boolean flag indicating if we're dpn bound
      * @return The updated Bagger
      */
-    private Bagger configurePartitioner(Bagger bagger, boolean dpn) {
-        if (dpn) {
-            bagger.withNamingSchema(new UUIDNamingSchema());
-        } else {
-            bagger.withNamingSchema(new SimpleNamingSchema(snapshotId));
-        }
+    private Bagger configurePartitioner(Bagger bagger) {
+        bagger.withNamingSchema(new SimpleNamingSchema(snapshotId));
         return bagger;
     }
 
@@ -238,19 +229,6 @@ public class BaggingTasklet implements Runnable {
         return new SimpleBagWriter()
                 .validate(true)
                 .withPackager(new DirectoryPackager(out));
-    }
-
-    /**
-     * Build a bag writer which curates content for DPN
-     * and writes a serialized bag
-     *
-     * @param out the location to write to
-     * @return the DpnWriter
-     */
-    private BagWriter buildDpnWriter(Path out) {
-        return new DpnWriter(depositor, snapshotId, bagProperties, bridgeContext)
-                .validate(true)
-                .withPackager(new TarPackager(out));
     }
 
 }

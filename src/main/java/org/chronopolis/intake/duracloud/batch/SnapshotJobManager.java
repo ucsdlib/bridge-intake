@@ -5,12 +5,7 @@ import org.chronopolis.intake.duracloud.batch.bagging.BaggingTasklet;
 import org.chronopolis.intake.duracloud.batch.check.Checker;
 import org.chronopolis.intake.duracloud.batch.check.DepositorCheck;
 import org.chronopolis.intake.duracloud.batch.ingest.ChronopolisIngest;
-import org.chronopolis.intake.duracloud.batch.ingest.DpnDigest;
-import org.chronopolis.intake.duracloud.batch.ingest.DpnIngest;
-import org.chronopolis.intake.duracloud.batch.ingest.DpnReplicate;
-import org.chronopolis.intake.duracloud.batch.support.Weight;
 import org.chronopolis.intake.duracloud.config.BridgeContext;
-import org.chronopolis.intake.duracloud.config.props.Push;
 import org.chronopolis.intake.duracloud.model.BagData;
 import org.chronopolis.intake.duracloud.model.BagReceipt;
 import org.chronopolis.intake.duracloud.remote.model.SnapshotDetails;
@@ -39,7 +34,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class SnapshotJobManager {
     private final Logger log = LoggerFactory.getLogger(SnapshotJobManager.class);
 
-    private final DpnFactory dpnFactory;
     private final ChronFactory chronFactory;
     private final BaggingFactory baggingFactory;
     private final DepositorCheck depositorCheck;
@@ -51,30 +45,26 @@ public class SnapshotJobManager {
     /**
      * Create a SnapshotJobManager
      *
-     * @param dpnFactory     the {@link DpnFactory} for creating Dpn tasks
      * @param chronFactory   the {@link ChronFactory} for creating Chronopolis tasks
      * @param baggingFactory the {@link BaggingFactory} for creating Bagging tasks
      * @param depositorCheck the {@link DepositorCheck} for validating Depositors exist
      */
-    public SnapshotJobManager(DpnFactory dpnFactory,
-                              ChronFactory chronFactory,
+    public SnapshotJobManager(ChronFactory chronFactory,
                               BaggingFactory baggingFactory,
                               DepositorCheck depositorCheck) {
-        this(dpnFactory, chronFactory, baggingFactory, depositorCheck,
+        this(chronFactory, baggingFactory, depositorCheck,
                 new ConcurrentSkipListSet<>(),
                 new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>()),
                 new ThreadPoolExecutor(4, 4, 0, MILLISECONDS, new LinkedBlockingQueue<>()));
     }
 
     @VisibleForTesting
-    SnapshotJobManager(DpnFactory dpnFactory,
-                       ChronFactory chronFactory,
+    SnapshotJobManager(ChronFactory chronFactory,
                        BaggingFactory baggingFactory,
                        DepositorCheck depositorCheck,
                        ConcurrentSkipListSet<String> processing,
                        ThreadPoolExecutor longIo,
                        ThreadPoolExecutor shortIo) {
-        this.dpnFactory = dpnFactory;
         this.chronFactory = chronFactory;
         this.baggingFactory = baggingFactory;
         this.depositorCheck = depositorCheck;
@@ -141,52 +131,11 @@ public class SnapshotJobManager {
         CompletableFuture<Void> ingestFuture;
         ChronopolisIngest chronIngest = chronFactory.ingest(data, receipts, bridgeContext);
 
-        if (bridgeContext.getPush() == Push.DPN) {
-            check = dpnFactory.dpnCheck(data, receipts, bridgeContext);
-
-            // Also need to do DPN Ingest steps
-            CompletableFuture<Void> dpnIngest = dpnIngest(data, details, receipts, bridgeContext);
-            ingestFuture = dpnIngest.thenRunAsync(chronIngest, longIo);
-        } else {
-            check = chronFactory.check(data, receipts, bridgeContext);
-            ingestFuture = CompletableFuture.runAsync(chronIngest, longIo);
-        }
+        check = chronFactory.check(data, receipts, bridgeContext);
+        ingestFuture = CompletableFuture.runAsync(chronIngest, longIo);
 
         ingestFuture.thenRunAsync(check, longIo)
                 .whenComplete((v, t) -> processing.remove(snapshotId));
-    }
-
-    /**
-     * Create a CompletableFuture for the steps required to ingest content into DPN
-     *
-     * @param data     the {@link BagData} for this snapshot
-     * @param details  the {@link SnapshotDetails} for this snapshot
-     * @param receipts the {@link BagReceipt} list for this snapshot
-     * @return the CompletableFuture
-     */
-    private CompletableFuture<Void> dpnIngest(BagData data,
-                                              SnapshotDetails details,
-                                              List<BagReceipt> receipts,
-                                              BridgeContext context) {
-        String depositor = data.depositor();
-
-        int i = 0;
-        CompletableFuture[] futures = new CompletableFuture[receipts.size()];
-        DpnNodeWeighter weighter = dpnFactory.dpnNodeWeighter(details);
-
-        for (BagReceipt receipt : receipts) {
-            DpnDigest dpnDigest = dpnFactory.dpnDigest(receipt, context);
-            DpnIngest dpnIngest = dpnFactory.dpnIngest(data, receipt, context);
-            DpnReplicate dpnReplicate = dpnFactory.dpnReplicate(depositor, context);
-
-            CompletableFuture<List<Weight>> weights =
-                    CompletableFuture.supplyAsync(() -> weighter.get(context.getLogger()));
-            futures[i++] = CompletableFuture.supplyAsync(dpnIngest, shortIo)
-                    .thenApplyAsync(dpnDigest, shortIo)
-                    .thenAcceptBothAsync(weights, dpnReplicate, shortIo);
-        }
-
-        return CompletableFuture.allOf(futures);
     }
 
 }

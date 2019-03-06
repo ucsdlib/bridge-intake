@@ -33,7 +33,6 @@ public class SnapshotJobManagerTest {
         String empty = "";
 
         BridgeAPI bridge = mock(BridgeAPI.class);
-        DpnFactory dpnFactory = mock(DpnFactory.class);
         ChronFactory chronFactory = mock(ChronFactory.class);
         BaggingFactory bagFactory = mock(BaggingFactory.class);
         DepositorCheck depositorCheck = mock(DepositorCheck.class);
@@ -43,7 +42,7 @@ public class SnapshotJobManagerTest {
         ConcurrentSkipListSet<String> processing = new ConcurrentSkipListSet<>();
 
         SnapshotJobManager manager = new SnapshotJobManager(
-                dpnFactory, chronFactory, bagFactory, depositorCheck, processing, executor, executor
+                chronFactory, bagFactory, depositorCheck, processing, executor, executor
         );
 
         BagData bagData = new BagData(empty);
@@ -64,10 +63,6 @@ public class SnapshotJobManagerTest {
         verify(depositorCheck, times(1)).test(eq(bagData), eq(context));
         verify(chronFactory, never()).ingest(any(), any(), any());
         verify(chronFactory, never()).check(any(), any(), any());
-        verify(dpnFactory, never()).dpnCheck(any(), any(), any());
-        verify(dpnFactory, never()).dpnIngest(any(), any(), any());
-        verify(dpnFactory, never()).dpnDigest(any(), any());
-        verify(dpnFactory, never()).dpnReplicate(any(), any());
     }
 
 }

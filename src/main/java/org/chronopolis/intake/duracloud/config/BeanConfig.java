@@ -99,8 +99,7 @@ public class BeanConfig {
     }
 
     @Bean(destroyMethod = "destroy")
-    public SnapshotJobManager snapshotJobManager(// DpnFactory dpnFactory,
-                                                 ChronFactory chronFactory,
+    public SnapshotJobManager snapshotJobManager(ChronFactory chronFactory,
                                                  BaggingFactory baggingFactory,
                                                  DepositorCheck depositorCheck) {
         return new SnapshotJobManager(chronFactory, baggingFactory, depositorCheck);

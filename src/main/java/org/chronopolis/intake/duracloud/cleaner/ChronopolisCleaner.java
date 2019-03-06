@@ -1,7 +1,7 @@
 package org.chronopolis.intake.duracloud.cleaner;
 
 import org.chronopolis.common.storage.BagStagingProperties;
-import org.chronopolis.earth.SimpleCallback;
+import org.chronopolis.intake.duracloud.model.SimpleCallback;
 import org.chronopolis.rest.api.DepositorService;
 import org.chronopolis.rest.api.StagingService;
 import org.chronopolis.rest.models.Bag;

@@ -12,10 +12,10 @@
 
     <groupId>org.chronopolis.intake</groupId>
     <artifactId>duracloud-backend</artifactId>
-    <version>2.4.1-RELEASE</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <properties>
-        <chron.version>3.0.2-RELEASE</chron.version>
+        <chron.version>3.1.1-RELEASE</chron.version>
     </properties>
 
     <build>
@@ -100,52 +100,13 @@
             <groupId>org.chronopolis</groupId>
             <artifactId>tokenizer-mq</artifactId>
             <version>${chron.version}</version>
-            <exclusions>
-                <!-- Exclude libs we don't need; hopefully most will be split off soon -->
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-jdbc</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.zaxxer</groupId>
-                    <artifactId>HikariCP</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.hibernate</groupId>
-                    <artifactId>hibernate-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.querydsl</groupId>
-                    <artifactId>querydsl-apt</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.querydsl</groupId>
-                    <artifactId>querydsl-jpa</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.chronopolis</groupId>
             <artifactId>chron-test</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.chronopolis</groupId>
-            <artifactId>earth-core</artifactId>
-            <version>2.3.1-RELEASE</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.chronopolis</groupId>
-                    <artifactId>rest-common</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.hsqldb</groupId>
-                    <artifactId>hsqldb</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -163,6 +124,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>retrofit</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>converter-gson</artifactId>
+            <version>2.5.0</version>
         </dependency>
     </dependencies>
 

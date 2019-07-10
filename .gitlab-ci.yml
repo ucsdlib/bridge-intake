@@ -73,7 +73,7 @@ deploy:jdk8:
   script:
     - 'mvn $MAVEN_CLI_OPTS deploy'
   only:
-    - master
+    - develop
   # Archive up the built documentation site.
   image: maven:3-jdk-8
 
@@ -84,9 +84,7 @@ rpm:
     - apt-get install -y rpm
   stage: deploy
   only:
-    - master
     - develop
-    - 5-integrate-chronopolis-tokenization-module
   script:
     - 'cd rpm'
     - './build.sh'
